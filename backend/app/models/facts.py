@@ -6,7 +6,7 @@ cross-module questions ("total admin cost per branch") a single query. Module-sp
 """
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey, Index, Integer, Numeric, String
+from sqlalchemy import Date, ForeignKey, Index, Integer, Numeric, SmallInteger, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, IdMixin, JsonType, TimestampMixin
@@ -23,6 +23,7 @@ class FactCost(Base, IdMixin, TimestampMixin, LineageMixin):
         Index("ix_fact_cost_module_period", "module_id", "period"),
         Index("ix_fact_cost_branch_period", "branch_id", "period"),
         Index("ix_fact_cost_supplier_period", "supplier_id", "period"),
+        Index("uq_fact_cost_source", "module_id", "source_ref", unique=True),
     )
 
     module_id: Mapped[str] = mapped_column(ForeignKey("report_module.id"))
@@ -34,6 +35,8 @@ class FactCost(Base, IdMixin, TimestampMixin, LineageMixin):
     asset_id: Mapped[int | None] = mapped_column(ForeignKey("dim_asset.id"))
     amount: Mapped[float] = mapped_column(Numeric(18, 2))
     currency: Mapped[str] = mapped_column(String(3), default="EGP")
+    # natural key of the originating detail row (e.g. "po_line:123") so reloads upsert instead of duplicating
+    source_ref: Mapped[str | None] = mapped_column(String(64))
     attrs: Mapped[dict] = mapped_column(JsonType, default=dict)
 
 
@@ -61,10 +64,13 @@ class FactPoLine(Base, IdMixin, TimestampMixin, LineageMixin):
 
     __tablename__ = "fact_po_line"
     __table_args__ = (
+        UniqueConstraint("po_header_id", "line_number", name="uq_fact_po_line_header_line"),
         Index("ix_fact_po_line_po", "po_number", "line_number"),
         Index("ix_fact_po_line_item_date", "item_id", "po_date"),
     )
 
+    po_header_id: Mapped[int | None] = mapped_column(ForeignKey("po_header.id"))
+    fiscal_year: Mapped[int | None] = mapped_column(SmallInteger)
     po_number: Mapped[str] = mapped_column(String(64))
     line_number: Mapped[int] = mapped_column(Integer, default=1)
     po_date: Mapped[date] = mapped_column(Date)
@@ -77,7 +83,10 @@ class FactPoLine(Base, IdMixin, TimestampMixin, LineageMixin):
     quantity: Mapped[float] = mapped_column(Numeric(18, 4))
     uom: Mapped[str | None] = mapped_column(String(20))
     unit_price: Mapped[float] = mapped_column(Numeric(18, 4))
-    line_amount: Mapped[float] = mapped_column(Numeric(18, 2))
+    line_amount: Mapped[float] = mapped_column(Numeric(18, 2))  # payable amount as stated on the PO
+    # Paper and some goods are VAT-exempt while quotes/POs differ on "incl./excl. VAT": keep it explicit.
+    vat_rate: Mapped[float | None] = mapped_column(Numeric(5, 2))
+    vat_amount: Mapped[float | None] = mapped_column(Numeric(18, 2))
     currency: Mapped[str] = mapped_column(String(3), default="EGP")
     requested_by: Mapped[str | None] = mapped_column(String(200))
     required_date: Mapped[date | None] = mapped_column(Date)

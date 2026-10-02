@@ -1,7 +1,30 @@
 id: purchase_orders
 name: Purchase Orders & Spend Analysis
-version: 0.1.0
+version: 0.2.0
 category: procurement
-description: PO lines, supplier and category spend, branch spend, price variance and procurement savings.
+description: PO headers and lines, supplier and category spend, branch spend, price variance and procurement savings.
 period_grain: month
-fact_targets: [fact_po_line, fact_cost, fact_savings]
+fact_targets: [po_header, fact_po_line, fact_cost, procurement_case, procurement_document]
+
+# Unmatched names: branches are a fixed master list, so hold for review; the rest are created on first sight.
+# Near-matches (e.g. "Digitec Distribution" vs "Digitec") are always held for review, whatever the policy.
+entity_policy:
+  branch: review
+  supplier: create
+  category: create
+  item: create
+  cost_center: create
+
+# End-to-end workflow, in lifecycle order. Only purchase_order is loaded in Phase 1b; the others attach
+# later via core/documents.py. "required" documents drive the missing-documents check on a case.
+document_types:
+  - {code: requisition, label: Purchase Requisition, label_ar: إشعار الاحتياج, stage: 1, required: true}
+  - {code: quotation, label: Supplier Quotation, label_ar: عرض سعر, stage: 2, required: true}
+  - {code: price_comparison, label: Price Comparison, label_ar: المقارنة بين عروض الأسعار, stage: 3, required: true}
+  - {code: committee_approval, label: Procurement Committee Approval, label_ar: اعتماد لجنة المشتريات, stage: 4, required: true}
+  - {code: purchase_order, label: Purchase Order, label_ar: أمر شراء, stage: 5, required: true}
+  - {code: goods_receipt, label: Goods Receipt / Delivery Note, label_ar: إشعار استلام, stage: 6}
+  - {code: inspection_acceptance, label: Inspection & Acceptance, label_ar: نموذج فحص واستلام, stage: 7, required: true}
+  - {code: supplier_invoice, label: Supplier Invoice, label_ar: فاتورة المورد, stage: 8, required: true}
+  - {code: payment_request, label: Payment / Transfer Request, label_ar: طلب تحويل بنكي, stage: 9, required: true}
+  - {code: bank_transfer, label: Bank Transfer Confirmation, label_ar: إشعار التحويل البنكي, stage: 10}

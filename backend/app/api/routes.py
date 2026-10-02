@@ -84,13 +84,13 @@ def load(batch_id: int, session: Session = Depends(get_session)):
     batch = session.get(ImportBatch, batch_id)
     if batch is None:
         raise HTTPException(404, "Batch not found")
-    if batch.status != "validated":
-        raise HTTPException(409, "Validate the batch before loading")
+    if batch.status not in ("validated", "partially_loaded"):
+        raise HTTPException(409, "Validate the batch before loading (or resolve reviews and reload a partial one)")
     try:
         written = get_loader(batch.module_id).load(session, batch)
     except LoaderNotImplemented as exc:
         raise HTTPException(501, str(exc)) from exc
-    return {"batch_id": batch.id, "rows_loaded": written}
+    return {"batch_id": batch.id, "status": batch.status, "rows_loaded": written, "rows_held": batch.rows_held}
 
 
 @router.get("/imports/{batch_id}")

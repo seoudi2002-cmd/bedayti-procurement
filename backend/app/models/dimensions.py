@@ -102,6 +102,7 @@ class EntityAlias(Base, IdMixin, TimestampMixin):
     entity_type: Mapped[str] = mapped_column(String(20))  # branch | supplier | category | item
     alias_raw: Mapped[str] = mapped_column(String(400))
     alias_norm: Mapped[str] = mapped_column(String(400))  # output of normalize_text()
-    entity_id: Mapped[int | None] = mapped_column()  # null while awaiting review
+    # approved: the canonical row. pending: the *suggested* row (fuzzy match) or null if none was close.
+    entity_id: Mapped[int | None] = mapped_column()
     confidence: Mapped[float | None] = mapped_column(Numeric(4, 3))
     status: Mapped[str] = mapped_column(String(12), default="pending")  # pending|approved|rejected

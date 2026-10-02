@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     upload_dir: str = "./uploads"
     max_upload_mb: int = 50
     default_currency: str = "EGP"
+    fiscal_year_start_month: int = 1  # 1 = calendar year; 7 = July–June named by end year
 
 
 @lru_cache

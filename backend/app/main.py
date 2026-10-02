@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
+from app.api.procurement import router as procurement_router
 from app.api.routes import router
 from app.core.modules.registry import get_registry
 from app.db import get_engine
@@ -18,3 +19,4 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Procurement & Administrative Intelligence Platform", version="0.1.0", lifespan=lifespan)
 app.include_router(router, prefix="/api")
+app.include_router(procurement_router, prefix="/api")

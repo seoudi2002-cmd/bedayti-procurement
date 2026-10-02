@@ -12,6 +12,7 @@ from app.core.cleaning.normalizers import (
     clean_text, normalize_text, parse_bool, parse_date, parse_number,
 )
 from app.core.ingestion.readers import TableData, read_table
+from app.core.periods import fiscal_year
 from app.core.mapping.engine import missing_required, suggest_mapping
 from app.core.modules.spec import FieldSpec, ReportModuleSpec
 from app.models.meta import ImportBatch, RawRow, ValidationIssue
@@ -146,6 +147,9 @@ def validate_batch(
                     continue  # already reported once as a missing_column
                 errors += 1
                 issue(row, "error", "missing_required", f.name, f"{f.label} is required")
+        fy_field = schema.fiscal_year_field
+        if fy_field and cleaned.get(fy_field) is None and cleaned.get(schema.date_field):
+            cleaned[fy_field] = fiscal_year(cleaned[schema.date_field])
         key = tuple(cleaned.get(n) for n in schema.unique_key)
         if key and all(k is not None for k in key):
             if key in seen_keys:

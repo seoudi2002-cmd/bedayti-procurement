@@ -7,3 +7,4 @@ from app.models.facts import FactBudget, FactCost, FactPoLine, FactSavings, Fact
 from app.models.meta import (  # noqa: F401
     ImportBatch, MappingTemplate, RawRow, ReportModule, ValidationIssue,
 )
+from app.models.procurement import DocumentFile, PoHeader, ProcurementCase, ProcurementDocument  # noqa: F401

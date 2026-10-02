@@ -1,8 +1,11 @@
 # Canonical PO-line fields. Aliases cover common English and Arabic export headers.
 date_field: po_date
 dayfirst: true
-unique_key: [po_number, line_number]
+unique_key: [fiscal_year, po_number, line_number]
+fiscal_year_field: fiscal_year  # derived from po_date when the file has no such column
 fields:
+  - {name: fiscal_year, label: Fiscal Year, type: integer,
+     aliases: ["FY", "Fiscal Year", "السنة المالية"]}
   - {name: po_number, label: PO Number, type: text, required: true,
      aliases: ["PO No", "PO #", "Purchase Order", "Order Number", "رقم أمر الشراء", "رقم الطلب", "أمر الشراء"]}
   - {name: line_number, label: Line Number, type: integer, default: 1,
@@ -38,3 +41,21 @@ fields:
      aliases: ["Receipt Date", "GRN Date", "Delivered On", "تاريخ الاستلام"]}
   - {name: status, label: Status, type: text,
      aliases: ["PO Status", "Order Status", "الحالة"]}
+  - {name: requisition_no, label: Requisition Number, type: text,
+     aliases: ["Requisition No", "Requisition", "PR No", "Purchase Request", "رقم إشعار الاحتياج", "إشعار الاحتياج"]}
+  - {name: requesting_unit, label: Requesting Unit, type: text, dimension: cost_center,
+     aliases: ["Requesting Unit", "Department", "Requesting Department", "الجهة الطالبة", "الإدارة"]}
+  - {name: approval_date, label: Approval Date, type: date,
+     aliases: ["Approval Date", "Approved On", "تاريخ الاعتماد"]}
+  - {name: purchase_method, label: Purchase Method, type: text,
+     aliases: ["Purchase Method", "Procurement Method", "Method", "طريقة الشراء"]}
+  - {name: delivery_days, label: Delivery Days, type: integer, min: 0,
+     aliases: ["Delivery Days", "Lead Time Days", "مدة التوريد"]}
+  - {name: payment_days, label: Payment Days, type: integer, min: 0,
+     aliases: ["Payment Days", "Credit Days", "مدة السداد"]}
+  - {name: payment_terms, label: Payment Terms, type: text,
+     aliases: ["Payment Terms", "شروط الدفع", "نظام الدفع"]}
+  - {name: vat_rate, label: VAT Rate, type: number, min: 0,
+     aliases: ["VAT %", "VAT Rate", "Tax Rate", "نسبة الضريبة"]}
+  - {name: vat_amount, label: VAT Amount, type: number,
+     aliases: ["VAT Amount", "VAT", "Tax Amount", "قيمة الضريبة"]}

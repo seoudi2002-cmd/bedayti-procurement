@@ -63,6 +63,21 @@ def test_api_modules_and_upload_flow(client):
     assert client.post(f"/api/imports/{bid}/load").status_code == 409  # not validated yet
     v = client.post(f"/api/imports/{bid}/validate").json()
     assert (v["rows_valid"], v["rows_rejected"]) == (3, 2)
-    assert client.post(f"/api/imports/{bid}/load").status_code == 501  # loader is a later phase
-    assert client.get(f"/api/imports/{bid}").json()["issues"]
+    # first load: branches are unknown → everything held for review, nothing loaded
+    loaded = client.post(f"/api/imports/{bid}/load").json()
+    assert (loaded["rows_loaded"], loaded["rows_held"], loaded["status"]) == (0, 3, "partially_loaded")
+    pending = client.get("/api/aliases").json()
+    assert {a["raw"] for a in pending} == {"Branch A", "Branch B"}
+    for a in pending:
+        assert client.post(f"/api/aliases/{a['id']}/resolve", json={"create_new": True}).status_code == 200
+    assert client.post(f"/api/aliases/{pending[0]['id']}/resolve", json={}).status_code == 422
+    loaded = client.post(f"/api/imports/{bid}/load").json()
+    assert (loaded["rows_loaded"], loaded["rows_held"], loaded["status"]) == (3, 0, "loaded")
+    pos = client.get("/api/purchase-orders").json()
+    assert {p["po_number"] for p in pos} == {"PO-0001", "PO-0002"}
+    detail = client.get(f"/api/purchase-orders/{pos[0]['id']}").json()
+    assert detail["documents"][0]["type"] == "purchase_order" and "quotation" in detail["missing_required_documents"]
+    assert client.get("/api/kpis/purchase_orders/total_spend").json()["values"][0]["value"] == 9550 + 450 + 2400
+    assert client.post(f"/api/imports/{bid}/rollback").json()["status"] == "rolled_back"
     assert client.get("/api/kpis/purchase_orders/total_spend").json()["values"][0]["value"] is None
+    assert client.get(f"/api/imports/{bid}").json()["issues"]

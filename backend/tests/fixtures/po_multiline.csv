@@ -1,0 +1,5 @@
+FY,PO No,Line,Date,Requisition No,Requesting Unit,Branch,Vendor,Category,Item Code,Description,Qty,UOM,Price,Amount,VAT %,Payment Days,Method
+2026,35,1,12/05/2026,35,Admin Affairs,Head Office,Vendor Alpha,Paper,PAP-A4-80,A4 copy paper 80g carton,900,carton,705,,0,60,Negotiated
+2026,36,1,14/05/2026,36,Admin Affairs,Branch North,Vendor Beta,Cleaning,CLN-001,Detergent 5L,20,pcs,120,,14,30,Direct
+2026,36,2,14/05/2026,36,Admin Affairs,Branch North,Vendor Beta,Cleaning,CLN-002,Mop,5,pcs,30,,14,30,Direct
+2026,37,1,20/05/2026,37,IT,Branch Nrth,Vendor Gamma,IT,IT-MOUSE,Mouse,10,pcs,150,1500,14,30,Direct

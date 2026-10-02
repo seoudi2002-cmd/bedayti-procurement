@@ -28,10 +28,14 @@ class ModuleSchema(BaseModel):
     dayfirst: bool = True
     # fields that identify a source row; repeats are flagged as duplicate_key warnings
     unique_key: list[str] = Field(default_factory=list)
+    # optional field derived from date_field when the source has no fiscal-year column
+    fiscal_year_field: str | None = None
 
     @model_validator(mode="after")
     def _check(self):
         names = [f.name for f in self.fields]
+        if self.fiscal_year_field and self.fiscal_year_field not in names:
+            raise ValueError("fiscal_year_field is not a schema field")
         if any(k not in names for k in self.unique_key):
             raise ValueError("unique_key references unknown field")
         if len(names) != len(set(names)):
@@ -88,6 +92,16 @@ class RuleSpec(BaseModel):
     title: str
 
 
+class DocumentTypeSpec(BaseModel):
+    """A document kind in the module's end-to-end workflow (requisition → ... → payment)."""
+
+    code: str
+    label: str
+    label_ar: str = ""
+    stage: int  # position in the lifecycle; used to derive a case's current stage
+    required: bool = False  # expected for a complete file; drives "missing documents" checks
+
+
 class ModuleManifest(BaseModel):
     id: str
     name: str
@@ -96,6 +110,9 @@ class ModuleManifest(BaseModel):
     description: str = ""
     period_grain: Literal["month"] = "month"
     fact_targets: list[str] = Field(default_factory=list)  # tables the loader writes to
+    document_types: list[DocumentTypeSpec] = Field(default_factory=list)
+    # unmatched names per dimension: "create" a new dim row, or hold the row for "review"
+    entity_policy: dict[str, Literal["create", "review"]] = Field(default_factory=dict)
 
 
 class ReportModuleSpec(BaseModel):

@@ -2,7 +2,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import (
-    Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint,
+    Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -38,7 +38,9 @@ class MappingTemplate(Base, IdMixin, TimestampMixin):
 class ImportBatch(Base, IdMixin, TimestampMixin):
     __tablename__ = "import_batch"
     __table_args__ = (
-        UniqueConstraint("module_id", "file_hash", name="uq_import_batch_module_file"),
+        # one live batch per file; a rolled-back file may be uploaded again
+        Index("uq_import_batch_module_file", "module_id", "file_hash", unique=True,
+              postgresql_where=text("status <> 'rolled_back'"), sqlite_where=text("status <> 'rolled_back'")),
         Index("ix_import_batch_module_period", "module_id", "period_from"),
     )
 
@@ -50,11 +52,13 @@ class ImportBatch(Base, IdMixin, TimestampMixin):
     mapping_template_id: Mapped[int | None] = mapped_column(ForeignKey("mapping_template.id"))
     period_from: Mapped[date | None] = mapped_column(Date)
     period_to: Mapped[date | None] = mapped_column(Date)
-    # uploaded -> staged -> validated -> loaded | failed | rolled_back
+    # uploaded -> staged -> validated -> loaded | partially_loaded | rolled_back
     status: Mapped[str] = mapped_column(String(20), default="uploaded")
     rows_total: Mapped[int] = mapped_column(Integer, default=0)
     rows_valid: Mapped[int] = mapped_column(Integer, default=0)
     rows_rejected: Mapped[int] = mapped_column(Integer, default=0)
+    rows_loaded: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    rows_held: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # waiting on entity review
     created_by: Mapped[str | None] = mapped_column(String(200))
     loaded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -72,7 +76,7 @@ class RawRow(Base, IdMixin):
     row_number: Mapped[int] = mapped_column(Integer)
     payload: Mapped[dict] = mapped_column(JsonType)  # original cells keyed by source header
     cleaned: Mapped[dict | None] = mapped_column(JsonType)  # canonical fields after cleaning
-    status: Mapped[str] = mapped_column(String(12), default="pending")  # pending|valid|rejected
+    status: Mapped[str] = mapped_column(String(12), default="pending")  # pending|valid|rejected|held|loaded
 
     batch: Mapped[ImportBatch] = relationship(back_populates="rows")
 
