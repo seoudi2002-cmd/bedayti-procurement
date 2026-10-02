@@ -1,0 +1,15 @@
+sheet: "سجل الموردين"
+fields:
+  - {name: seq, label: Sequence, type: integer, aliases: ["#"]}
+  - {name: name, label: Supplier Name, type: text, required: true, aliases: ["اسم المورد"]}
+  - {name: register_no, label: Supplier Register No., type: integer, aliases: ["رقم سجل المورد"]}
+  - {name: code, label: Supplier Code, type: text, required: true, aliases: ["كود المورد"]}
+  - {name: category_source, label: Category (source), type: text, aliases: ["التصنيف"]}
+  - {name: services_source, label: Services (source), type: text, aliases: ["الخدمات"]}
+  - {name: contact_name, label: Contact Person, type: text, aliases: ["مسئول التواصل"]}
+  - {name: phone, label: Phone, type: text, aliases: ["رقم الهاتف"]}
+  - {name: email, label: E-mail, type: text, aliases: ["البريد الالكتروني"]}
+  - {name: address, label: Address, type: text, aliases: ["العنوان"]}
+  - {name: commercial_reg_no, label: Commercial Registry No., type: text, aliases: ["السجل التجاري"]}
+  - {name: tax_id, label: Tax ID (raw), type: text, aliases: ["البطاقة الضريبية"]}
+  - {name: notes, label: Notes, type: text, aliases: ["ملاحظات"]}

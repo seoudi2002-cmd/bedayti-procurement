@@ -1,0 +1,7 @@
+id: branches
+name: Branches & Regions
+version: 0.1.0
+category: master_data
+contains_personal_data: true   # manager names/phones/e-mail live in branch_contact (admin-only)
+description: Branch master (primary source - the "فروع بدايتي" sheet), regions, head office and the unallocated bucket.
+fact_targets: [dim_region, dim_branch, branch_contact]

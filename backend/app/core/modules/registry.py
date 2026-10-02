@@ -28,9 +28,15 @@ def load_module(path: Path) -> ReportModuleSpec:
         schema = ModuleSchema(**_load_yaml(path / "schema.yaml"))
         kpis = [KpiSpec(**k) for k in (_load_yaml(path / "kpis.yaml") or {}).get("kpis", [])]
         rules = [RuleSpec(**r) for r in (_load_yaml(path / "rules.yaml") or {}).get("rules", [])]
+        profile_schemas = {}
+        for prof in manifest.profiles:
+            data = _load_yaml(path / "profiles" / f"{prof.code}.yaml")
+            if data is None:
+                raise ValueError(f"profile '{prof.code}' declared but profiles/{prof.code}.yaml is missing")
+            profile_schemas[prof.code] = ModuleSchema(**data)
     except Exception as exc:  # surface which package is broken
         raise ModuleConfigError(f"Invalid module package '{path.name}': {exc}") from exc
-    spec = ReportModuleSpec(manifest=manifest, schema_=schema, kpis=kpis, rules=rules)
+    spec = ReportModuleSpec(manifest=manifest, schema_=schema, profile_schemas=profile_schemas, kpis=kpis, rules=rules)
     _validate_references(spec)
     if manifest.id != path.name:
         raise ModuleConfigError(f"Module id '{manifest.id}' must match folder name '{path.name}'")
@@ -71,7 +77,8 @@ class ModuleRegistry:
         for spec in self.all():
             m = spec.manifest
             row = session.get(ReportModule, m.id)
-            config = {"fact_targets": m.fact_targets, "description": m.description}
+            config = {"fact_targets": m.fact_targets, "description": m.description,
+                      "profiles": [p.code for p in m.profiles], "contains_personal_data": m.contains_personal_data}
             if row is None:
                 session.add(ReportModule(id=m.id, name=m.name, version=m.version, category=m.category, config=config))
             else:

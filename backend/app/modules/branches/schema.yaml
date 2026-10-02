@@ -1,0 +1,19 @@
+# Source: branch master workbook, sheet "فروع بدايتي". Region and region manager are merged cells (fill-down),
+# subtotal rows are skipped. No branch code exists in the source: none is generated.
+sheet: "فروع بدايتي"
+fill_down:
+  - {field: region}
+  - {field: region_manager, reset_on: region}
+row_filter: {field: seq, regex: '^\d+(\.0+)?$'}
+fields:
+  - {name: seq, label: Sequence, type: integer, required: true, aliases: ["م"]}
+  - {name: region, label: Region, type: text, required: true, aliases: ["المنطقة"]}
+  - {name: region_manager, label: Region Manager, type: text, aliases: ["مدير المنطقة"]}
+  - {name: name, label: Branch Name, type: text, required: true, aliases: ["اسم الفرع"]}
+  - {name: address, label: Address, type: text, aliases: ["العنوان"]}
+  - {name: branch_manager, label: Branch Manager, type: text, aliases: ["اسم مدير الفرع"]}
+  - {name: branch_phone, label: Branch Phone, type: text, aliases: ["رقم تليفون الفرع"]}
+  - {name: manager_phone_1, label: Manager Phone 1, type: text, aliases: ["هاتف مدير الفرع"]}
+  - {name: manager_phone_2, label: Manager Phone 2, type: text, aliases: ["هاتف مدير الفرع 2"]}
+  - {name: region_manager_phone, label: Region Manager Phone, type: text, aliases: ["هاتف مدير المنطقة"]}
+  - {name: email, label: Branch E-mail, type: text, aliases: ["البريد الإلكتروني للفرع"]}

@@ -85,6 +85,8 @@ def parse_date(value: object, dayfirst: bool = True) -> date | None:
     text = str(value).translate(_ARABIC_DIGITS).strip()
     if not text:
         return None
+    if re.match(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}", text):  # ISO datetime (how staged Excel dates are stored)
+        return date.fromisoformat(text[:10])
     if re.fullmatch(r"\d{5}(\.\d+)?", text):
         return parse_date(float(text), dayfirst)
     formats = _DATE_FORMATS_DAYFIRST if dayfirst else _DATE_FORMATS_MONTHFIRST
@@ -109,3 +111,22 @@ def parse_bool(value: object) -> bool | None:
     if text in {"0", "false", "no", "n", "لا", "خطا"}:
         return False
     raise ValueError(f"not a boolean: {value!r}")
+
+
+_EXCEL_ERRORS = {"#N/A", "#REF!", "#VALUE!", "#DIV/0!", "#NAME?", "#NUM!", "#NULL!"}
+
+
+def excel_error(value: object) -> str | None:
+    """Return the error literal when a cell holds an Excel formula error (kept as evidence, never as data)."""
+    if isinstance(value, str) and value.strip().upper() in _EXCEL_ERRORS:
+        return value.strip().upper()
+    return None
+
+
+def text_from_cell(value: object) -> str | None:
+    """Text for identifiers/phones/codes that Excel may have stored as numbers (160130.0 -> '160130')."""
+    if isinstance(value, bool):
+        return clean_text(value)
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return clean_text(value)

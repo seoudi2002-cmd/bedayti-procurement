@@ -2,6 +2,7 @@
 (title rows above the header, blank rows, Arabic CSV encodings)."""
 import csv
 import io
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import PurePath
 
@@ -25,13 +26,26 @@ class TableData:
     sheet_names: list[str] = field(default_factory=list)
 
 
-def read_table(filename: str, content: bytes, sheet: str | None = None, header_row: int | None = None) -> TableData:
+# extension -> reader(content, sheet, header_row, sheet_hint) -> TableData
+# Word/PDF extractors plug in here later: they must return the same TableData (canonical-header rows) so that
+# everything downstream (mapping, validation, loaders, exceptions, KPIs) is shared with Excel/CSV.
+READERS: dict[str, Callable[..., "TableData"]] = {}
+
+
+def register_reader(extensions: tuple[str, ...], fn: Callable[..., "TableData"]) -> None:
+    for ext in extensions:
+        READERS[ext] = fn
+
+
+def read_table(filename: str, content: bytes, sheet: str | None = None, header_row: int | None = None,
+               sheet_hint: str | None = None) -> TableData:
     ext = PurePath(filename).suffix.lower()
-    if ext in {".xlsx", ".xlsm"}:
-        return _read_xlsx(content, sheet, header_row)
-    if ext in {".csv", ".txt"}:
-        return _read_csv(content, header_row)
-    raise UnsupportedFileError(f"Unsupported file type '{ext}'. Upload .xlsx, .xlsm or .csv")
+    reader = READERS.get(ext)
+    if reader is None:
+        raise UnsupportedFileError(
+            f"No reader configured for '{ext}'. Supported: {', '.join(sorted(READERS))}. "
+            "Word/PDF documents need an extractor (not configured yet).")
+    return reader(content, sheet, header_row, sheet_hint)
 
 
 def _decode(content: bytes) -> str:
@@ -43,7 +57,7 @@ def _decode(content: bytes) -> str:
     raise UnsupportedFileError("Could not decode file text")
 
 
-def _read_csv(content: bytes, header_row: int | None) -> TableData:
+def _read_csv(content: bytes, sheet: str | None, header_row: int | None, sheet_hint: str | None = None) -> TableData:
     text = _decode(content)
     try:
         dialect = csv.Sniffer().sniff(text[:4096], delimiters=",;\t|")
@@ -53,12 +67,17 @@ def _read_csv(content: bytes, header_row: int | None) -> TableData:
     return _build_table(raw, header_row, sheet_name=None, sheet_names=[])
 
 
-def _read_xlsx(content: bytes, sheet: str | None, header_row: int | None) -> TableData:
+def _read_xlsx(content: bytes, sheet: str | None, header_row: int | None, sheet_hint: str | None = None) -> TableData:
     wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
     try:
         names = wb.sheetnames
         if sheet is not None and sheet not in names:
             raise UnsupportedFileError(f"Sheet '{sheet}' not found. Available: {names}")
+        if sheet is None and sheet_hint is not None:
+            if sheet_hint in names:
+                sheet = sheet_hint
+            elif len(names) > 1:  # never silently read a different sheet of a multi-sheet workbook
+                raise UnsupportedFileError(f"Expected sheet '{sheet_hint}'. Available: {names}. Pass sheet=...")
         ws = wb[sheet] if sheet else wb[names[0]]
         raw = [tuple(r) for r in ws.iter_rows(values_only=True)]
         return _build_table(raw, header_row, sheet_name=ws.title, sheet_names=names)
@@ -96,3 +115,7 @@ def _build_table(raw: list[tuple], header_row: int | None, sheet_name: str | Non
         padded = list(row) + [None] * (len(headers) - len(row))
         rows.append((offset, dict(zip(headers, padded[: len(headers)]))))
     return TableData(headers, rows, sheet_name, hdr, sheet_names)
+
+
+register_reader((".xlsx", ".xlsm"), _read_xlsx)
+register_reader((".csv", ".txt"), _read_csv)

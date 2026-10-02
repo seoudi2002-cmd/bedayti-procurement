@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.core.cleaning.normalizers import normalize_text
 from app.core.documents import ensure_po_anchor
+from app.core.po_costs import sync_po_cost
 from app.core.entities import EntityResolver
 from app.core.modules.registry import get_registry
 from app.core.periods import ensure_period
@@ -22,6 +23,7 @@ from app.models import (
     FactCost, FactPoLine, ImportBatch, PoHeader, ProcurementCase, ProcurementDocument, RawRow, ValidationIssue,
 )
 
+MODULE = "purchase_orders"
 LOAD_ISSUE_CODES = ("unresolved_entity", "inconsistent_header")
 HEADER_TEXT = ("requisition_no", "purchase_method", "payment_terms", "status")
 HEADER_INT = ("delivery_days", "payment_days")
@@ -39,7 +41,7 @@ def _first(cleaned_rows: list[dict], key: str):
     return next((c[key] for c in cleaned_rows if c.get(key) not in (None, "")), None)
 
 
-def load(session: Session, batch: ImportBatch) -> int:
+def load_lines(session: Session, batch: ImportBatch) -> int:
     spec = get_registry().get(batch.module_id)
     resolver = EntityResolver(session, spec.manifest.entity_policy)
     session.execute(delete(ValidationIssue).where(
@@ -158,6 +160,8 @@ def load(session: Session, batch: ImportBatch) -> int:
         session.flush()
         header.total_amount = session.scalar(select(func.sum(FactPoLine.line_amount)).where(
             FactPoLine.po_header_id == header.id)) or 0
+        header.granularity = "lines"
+        sync_po_cost(session, header)  # line-level cost rows supersede any header-level one
         ensure_po_anchor(session, header)
 
     _refresh_counts(session, batch)
@@ -179,10 +183,13 @@ def rollback(session: Session, batch: ImportBatch) -> None:
     """Remove what this batch last wrote. Lines first upserted by an earlier batch and refreshed by this one
     are removed too (lineage points to the latest batch) — re-load the earlier file to restore them."""
     session.execute(delete(FactCost).where(FactCost.batch_id == batch.id))
+    register_headers = {h for (h,) in session.execute(select(PoHeader.id).where(
+        PoHeader.batch_id == batch.id, PoHeader.granularity == "header_only")).all()}
     line_headers = {h for (h,) in session.execute(select(FactPoLine.po_header_id).where(
         FactPoLine.batch_id == batch.id)).all()}
     session.execute(delete(FactPoLine).where(FactPoLine.batch_id == batch.id))
     session.flush()
+    line_headers |= register_headers
     for hid in line_headers:
         if hid and not session.scalar(select(func.count()).select_from(FactPoLine).where(FactPoLine.po_header_id == hid)):
             header = session.get(PoHeader, hid)
@@ -206,3 +213,175 @@ def rollback(session: Session, batch: ImportBatch) -> None:
         r.status = "valid"
     batch.status, batch.rows_loaded, batch.rows_held = "rolled_back", 0, 0
     session.commit()
+
+
+# --------------------------------------------------------------------------------------------------
+# Dispatcher and header-level (register) profile
+# --------------------------------------------------------------------------------------------------
+def load(session: Session, batch: ImportBatch) -> int:
+    return load_register(session, batch) if batch.profile == "register" else load_lines(session, batch)
+
+
+def load_register(session: Session, batch: ImportBatch) -> int:
+    """PO register (one row per PO, no lines) → po_header (+ one header-level cost row when priced and dated).
+
+    Principle: load what the source says and flag what is uncertain; never invent. Only conflicting PO numbers
+    (same number on several rows) are held. Every flag is a data_exception for manual review.
+    """
+    from app.core.attribution import BranchAttributor
+    from app.core.procurement_attribution import reattribute_po
+    from app.core.documents import link_po_to_requisition
+    from app.core.entities import EntityResolver, compact
+    from app.core.exceptions import raise_exception
+    from app.core.loader_utils import date_from_json, flag_for, parse_number_year, raw_value, rows_with_status
+    from app.core.periods import fiscal_year as fy_of
+    from app.models import DimSupplier, Requisition
+
+    spec = get_registry().get(MODULE)
+    resolver = EntityResolver(session, spec.manifest.entity_policy)
+    attributor = BranchAttributor(session)
+    rows = rows_with_status(session, batch, ("valid", "held", "loaded"))
+    suppliers: dict[int, list[DimSupplier]] = {}
+    for s_ in session.scalars(select(DimSupplier).where(DimSupplier.register_no.is_not(None))):
+        suppliers.setdefault(s_.register_no, []).append(s_)
+    requisitions = {(r_.fiscal_year, r_.req_number): r_ for r_ in session.scalars(select(Requisition))}
+    parsed = {r.id: parse_number_year(r.cleaned["po_ref"]) for r in rows}
+    groups: dict[tuple[str, int], list[RawRow]] = {}
+    for r in rows:
+        if parsed[r.id]:
+            groups.setdefault(parsed[r.id], []).append(r)
+
+    def exc(code, severity, key, message, details=None, entity="po_header"):
+        raise_exception(session, code, severity, entity, key, message, details or {}, MODULE, batch.id)
+
+    loaded = held = 0
+    for r in rows:
+        c = r.cleaned
+        key = parsed[r.id]
+        if key is None:
+            r.status = "held"
+            held += 1
+            exc("po_number_format", "error", f"{batch.id}:{r.row_number}",
+                f"PO number '{c['po_ref']}' is not in n/yyyy form; row held", {"row": r.row_number}, "po_row")
+            continue
+        number, fy = key
+        label = f"{fy}/{number}"
+        if len(groups[key]) > 1:
+            r.status = "held"
+            held += 1
+            exc("po_number_conflict", "error", label,
+                "The same PO number appears on several rows (different suppliers/requisitions?): all rows held for "
+                "manual review; the source is not modified",
+                {"rows": [x.row_number for x in groups[key]],
+                 "suppliers": [x.cleaned.get("supplier_name") for x in groups[key]],
+                 "requisitions": [x.cleaned.get("requisition_ref") for x in groups[key]],
+                 "totals": [x.cleaned.get("total_amount") for x in groups[key]]})
+            continue
+
+        header = session.scalar(select(PoHeader).where(PoHeader.fiscal_year == fy, PoHeader.po_number == number))
+        if header is None:
+            header = PoHeader(fiscal_year=fy, po_number=number, po_date=None, currency=get_settings().default_currency,
+                              granularity="header_only")
+            session.add(header)
+        header.number_source = c["po_ref"]
+        header.batch_id = batch.id
+        # --- date: NULL when missing/invalid, raw text kept
+        header.po_date = date_from_json(c.get("po_date"))
+        raw_date = raw_value(batch, r, "po_date")
+        header.po_date_source = None if raw_date is None else str(raw_date)
+        flag = flag_for(r, "po_date")
+        if header.po_date is None:
+            header.period = None
+            if flag:
+                exc("po_date_invalid", "error", label, f"PO date is invalid: {flag['message']}",
+                    {"raw": flag["raw"]})
+            else:
+                exc("po_date_missing", "warning", label, "PO has no date in the source")
+        else:
+            header.period = ensure_period(session, header.po_date)
+            if fy_of(header.po_date) != fy:
+                exc("po_fiscal_year_vs_date", "warning", label, "Fiscal year in the PO number differs from the PO date's year",
+                    {"po_date": header.po_date.isoformat()})
+        # --- supplier: by register number (an ID), name only as cross-check / fallback
+        header.supplier_name_source = c.get("supplier_name")
+        header.supplier_register_no_source = c.get("supplier_register_no")
+        header.supplier_category_source = c.get("supplier_category_source")
+        regno, sname = c.get("supplier_register_no"), c.get("supplier_name")
+        supplier = None
+        if regno is not None:
+            all_cands = suppliers.get(regno, [])
+            cands = all_cands
+            if sname and len(all_cands) > 1:  # shared register number: the name decides, if it can
+                cands = [x for x in all_cands if compact(x.name) == compact(sname)]
+            if len(cands) == 1:
+                supplier = cands[0]
+                if sname and compact(supplier.name) != compact(sname):
+                    exc("po_supplier_name_mismatch", "warning", label,
+                        "Supplier name on the PO differs from the register entry for that register number",
+                        {"po_name": sname, "register_name": supplier.name, "register_no": regno})
+            elif not all_cands:
+                exc("po_supplier_register_no_not_found", "warning", label,
+                    "Supplier register number is not in the supplier register", {"register_no": regno})
+            else:
+                exc("po_supplier_ambiguous_register_no", "warning", label,
+                    "Several suppliers share this register number and the name does not decide", {"register_no": regno})
+        elif sname:
+            res = resolver.resolve("supplier", sname)
+            if res and res.status == "resolved":
+                supplier = session.get(DimSupplier, res.entity_id)
+            else:
+                exc("po_supplier_unresolved", "warning", label, "Supplier name matches no register entry", {"name": sname})
+        else:
+            exc("po_supplier_missing", "info", label, "PO has no supplier in the source",
+                {"order_status": c.get("order_status")})
+        header.supplier_id = supplier.id if supplier else None
+        # --- amounts (NULL = not stated, never zero)
+        total = Decimal(c["total_amount"]) if c.get("total_amount") not in (None, "") else None
+        header.total_amount = total
+        tflag = flag_for(r, "total_amount")
+        if total is None:
+            exc("po_total_invalid" if tflag else "po_total_missing", "warning" if tflag else "info", label,
+                "PO total is invalid in the source" if tflag else "PO has no total in the source (excluded from spend)",
+                {"order_status": c.get("order_status"), "raw": tflag["raw"] if tflag else None})
+        handed = Decimal(c["finance_handover_amount"]) if c.get("finance_handover_amount") not in (None, "") else None
+        header.finance_handover_amount_register = handed
+        header.remaining_register = Decimal(c["remaining_register"]) if c.get("remaining_register") not in (None, "") else None
+        if handed is not None and total is not None and handed > total + Decimal("0.5"):
+            exc("finance_handover_amount_exceeds_total", "warning", label,
+                "Finance handover amount in the register is greater than the PO total (not treated as a confirmed payment)",
+                {"po_total": str(total), "handover_amount": str(handed)})
+        elif handed is not None and total is None:
+            exc("po_handover_without_total", "warning", label, "Handover amount present but no PO total", {"handover_amount": str(handed)})
+        # --- descriptive source fields
+        header.description_source = c.get("description")
+        header.po_category_source = c.get("po_category_source")
+        header.issuance_status_source, header.order_status_source = c.get("issuance_status"), c.get("order_status")
+        # --- requisition link (by stated number only)
+        header.requisition_no = c.get("requisition_ref")
+        rkey = parse_number_year(c.get("requisition_ref"))
+        if c.get("requisition_ref") and rkey is None:
+            exc("po_requisition_format", "warning", label, "Requisition number is not in n/yyyy form",
+                {"requisition_ref": c.get("requisition_ref")})
+        elif rkey is not None:
+            if rkey != (number, fy):
+                exc("po_requisition_number_differs", "warning", label,
+                    "PO number differs from the requisition number it references: review the cross-reference",
+                    {"po": label, "requisition": c["requisition_ref"]})
+            req = requisitions.get((rkey[1], rkey[0]))
+            if req is not None:
+                link_po_to_requisition(session, header, req)
+            else:
+                exc("po_requisition_not_found", "warning", label,
+                    "Referenced requisition is not in the loaded requisition register", {"requisition_ref": c["requisition_ref"]})
+        session.flush()
+        reattribute_po(session, header, attributor, batch.id)  # after the requisition link: it is evidence too
+        sync_po_cost(session, header)
+        ensure_po_anchor(session, header)
+        r.status = "loaded"
+        loaded += 1
+    batch.rows_loaded, batch.rows_held = loaded, held
+    batch.rows_valid = batch.rows_total - batch.rows_rejected - batch.rows_skipped
+    batch.status = "partially_loaded" if held else "loaded"
+    batch.loaded_at = func.now()
+    session.commit()
+    return loaded

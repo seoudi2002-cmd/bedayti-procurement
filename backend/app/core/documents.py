@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.modules.spec import ReportModuleSpec
-from app.models import PoHeader, ProcurementCase, ProcurementDocument
+from app.models import PoHeader, ProcurementCase, ProcurementDocument, Requisition
 
 
 class DocumentLinkError(ValueError):
@@ -19,6 +19,49 @@ class DocumentLinkError(ValueError):
 
 def _case_key(header: PoHeader) -> str:
     return f"{header.fiscal_year}-PO-{header.po_number}"
+
+
+def requisition_case_key(fiscal_year: int, req_number: str) -> str:
+    return f"{fiscal_year}-REQ-{req_number}"
+
+
+def ensure_requisition_case(session: Session, req: Requisition) -> ProcurementCase:
+    key = requisition_case_key(req.fiscal_year, req.req_number)
+    case = session.scalar(select(ProcurementCase).where(ProcurementCase.case_key == key))
+    if case is None:
+        case = ProcurementCase(case_key=key, fiscal_year=req.fiscal_year, opened_on=req.request_date)
+        session.add(case)
+        session.flush()
+    req.case_id = case.id
+    doc = session.scalar(select(ProcurementDocument).where(
+        ProcurementDocument.ref_table == "requisition", ProcurementDocument.ref_id == req.id))
+    if doc is None:
+        session.add(ProcurementDocument(
+            case_id=case.id, doc_type="requisition", doc_number=req.number_source, doc_date=req.request_date,
+            fiscal_year=req.fiscal_year, status=req.status_source, ref_table="requisition", ref_id=req.id,
+            batch_id=req.batch_id))
+    else:
+        doc.case_id, doc.doc_date, doc.status = case.id, req.request_date, req.status_source
+    session.flush()
+    return case
+
+
+def link_po_to_requisition(session: Session, header: PoHeader, req: Requisition) -> None:
+    """Attach a PO to its requisition's case, moving documents out of a PO-only case created earlier."""
+    header.requisition_id = req.id
+    target = req.case_id or ensure_requisition_case(session, req).id
+    if header.case_id and header.case_id != target:
+        old = header.case_id
+        for doc in session.scalars(select(ProcurementDocument).where(ProcurementDocument.case_id == old)):
+            doc.case_id = target
+        header.case_id = target
+        session.flush()
+        if not session.scalar(select(ProcurementDocument.id).where(ProcurementDocument.case_id == old).limit(1)):
+            leftover = session.get(ProcurementCase, old)
+            if leftover is not None:
+                session.delete(leftover)
+    header.case_id = target
+    session.flush()
 
 
 def ensure_po_anchor(session: Session, header: PoHeader) -> ProcurementCase:

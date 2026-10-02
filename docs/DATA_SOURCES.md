@@ -1,6 +1,6 @@
 # Reference data sources — analysis and DRAFT mapping
 
-> **Status: DRAFT — not final.** Section 6 lists questions that must be answered before the mapping is frozen.
+> **Status:** analysis (2026-10-02) + business decisions received the same day (see §7). Implementation: `docs/SCHEMA_PROPOSAL_v3.md`.
 > This file contains **no names, phone numbers, e-mails or supplier names** (counts and row references only).
 > The original workbooks were opened read-only and are not in the repository.
 
@@ -86,3 +86,18 @@ Loader changes this implies (not built yet — waiting for Q1/Q2): header-only m
 10. **Departments / cost centres:** list of requesting departments (only 3 appear) and their owners.
 11. **Supplier status:** formalise blacklist / advance-payment regime / superseded-by as fields? Confirm the second shared tax ID pair is legitimate.
 12. **Personal data:** the files contain employee names, manager phones and e-mails. Confirm they may be stored in the cloud database (recommend: encrypted at rest, admin-only access, minimal fields; no salary/ID data requested).
+
+## 7. Decisions received and first load results (sanitised)
+Decisions: PO register = header-level (documents are the line-level source); branch = explicit evidence → HQ → regional office → *Unallocated* (flagged), source text and method kept; flag, never edit, source data (PO 36/2026 conflict, 29/32 cross-reference, invalid date, handover > total, duplicate memo); "amount paid" = *Finance Handover Amount*; service memos stay a separate type; branch master = `فروع بدايتي`, no invented codes; branch vs HR manager both kept with a reconciliation status; categories not merged; HR file carries a freshness warning, missing fields labelled; personal data admin-only.
+
+First run of the new loaders on the real files (scratch database, aggregates only):
+| Load | Result |
+|---|---|
+| Branches | 100 branches, 15 regions; 16 non-data rows skipped (15 subtotals + 1 control cell); contacts stored separately |
+| Employees | 1,816 loaded; branch resolved exact 1,586 / spacing-variant 22 / head-office alias 139 / **unresolved 69** (17 distinct texts → review queue); 23 `#N/A` governorates flagged; **freshness warning: latest hire date 410 days old** |
+| Suppliers | 118 loaded; flags: 1 duplicate register no., 2 shared tax IDs, 1 non-standard tax-ID cell, missing tax IDs / registry nos. |
+| Requisitions | 60 loaded (3 without date → left empty, flagged) |
+| PO register | 58 loaded, **2 held** (PO 36/2026 conflict); 51 with a stated total → total spend 9.96 M; 1 invalid date (→ NULL, excluded from spend); 7 without total; 2 requisition cross-references flagged; 3 "handover > total" flagged |
+| Finance handover | 114 loaded (PO memos 10.62 M, service memos 3.65 M); 5 possible-duplicate groups, 5 POs whose memos exceed the PO total, 1 PO-type memo without PO, 1 service memo with PO no., 1 supplier name not in the register |
+| Branch attribution (58 POs) | 6 assigned from explicit text (5 branch, 1 head office), 3 of them with a conflict flag; 15 multi-site/plural wording; 37 no explicit branch → *Unallocated*, needs review |
+| Branch-manager reconciliation | exact-name match to HR: 47 same branch, 9 matched to a different branch, 43 not found, 1 branch without a manager name |

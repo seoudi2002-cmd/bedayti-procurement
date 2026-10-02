@@ -1,0 +1,8 @@
+kpis:
+  - {code: handover_amount, name: Finance Handover Amount, source: finance_handover, column: amount, agg: sum,
+     unit: EGP, format: currency}
+  - {code: handover_memos, name: Handover Memos, source: finance_handover, agg: count, unit: count, format: number}
+  - {code: handover_amount_po, name: Handover Amount - PO memos, source: finance_handover, column: amount, agg: sum,
+     where: {memo_type: po}, unit: EGP, format: currency}
+  - {code: handover_amount_service, name: Handover Amount - service memos (no PO), source: finance_handover,
+     column: amount, agg: sum, where: {memo_type: service}, unit: EGP, format: currency}

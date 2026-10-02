@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from app.core.kpi.engine import compute_kpi
 from app.db import get_session
 from app.main import app
-from app.models import DimBranch, DimPeriod, DimSupplier, FactPoLine, FactSavings
+from app.models import DimBranch, DimPeriod, DimSupplier, FactCost, FactPoLine, FactSavings, PoHeader
 
 
 def _seed(session):
@@ -15,9 +15,20 @@ def _seed(session):
     session.add_all([DimBranch(id=1, code="A"), DimBranch(id=2, code="B"), DimSupplier(id=1, code="S1", name="S1")])
     session.flush()
 
+    headers = {}
+
     def line(po, n, m, branch, amt):
-        session.add(FactPoLine(po_number=po, line_number=n, po_date=date(2025, m, 5), period=date(2025, m, 1),
-                               branch_id=branch, supplier_id=1, quantity=1, unit_price=amt, line_amount=amt))
+        if po not in headers:
+            headers[po] = PoHeader(fiscal_year=2025, po_number=po, po_date=date(2025, m, 5), period=date(2025, m, 1),
+                                   supplier_id=1, total_amount=0)
+            session.add(headers[po])
+            session.flush()
+        headers[po].total_amount += amt
+        session.add(FactPoLine(po_header_id=headers[po].id, po_number=po, line_number=n, po_date=date(2025, m, 5),
+                               period=date(2025, m, 1), branch_id=branch, supplier_id=1, quantity=1, unit_price=amt,
+                               line_amount=amt))
+        session.add(FactCost(module_id="purchase_orders", period=date(2025, m, 1), branch_id=branch, supplier_id=1,
+                             amount=amt, source_ref=f"po_line:{po}:{n}"))
     line("P1", 1, 1, 1, 100); line("P1", 2, 1, 1, 300); line("P2", 1, 1, 2, 200); line("P3", 1, 2, 1, 400)
     session.add(FactSavings(period=date(2025, 1, 1), savings_type="negotiation",
                             baseline_amount=1000, actual_amount=900, savings_amount=100))
@@ -51,7 +62,7 @@ def client(session):
 
 def test_api_modules_and_upload_flow(client):
     assert client.get("/api/health").json() == {"status": "ok"}
-    assert client.get("/api/modules").json()[0]["id"] == "purchase_orders"
+    assert "purchase_orders" in {m["id"] for m in client.get("/api/modules").json()}
     assert client.get("/api/modules/nope").status_code == 404
     csv_bytes = (__import__("pathlib").Path(__file__).parent / "fixtures" / "po_sample.csv").read_bytes()
     r = client.post("/api/imports", data={"module_id": "purchase_orders"}, files={"file": ("po.csv", csv_bytes)})
@@ -67,7 +78,8 @@ def test_api_modules_and_upload_flow(client):
     loaded = client.post(f"/api/imports/{bid}/load").json()
     assert (loaded["rows_loaded"], loaded["rows_held"], loaded["status"]) == (0, 3, "partially_loaded")
     pending = client.get("/api/aliases").json()
-    assert {a["raw"] for a in pending} == {"Branch A", "Branch B"}
+    # suppliers and branches are never invented: unknown names wait for a review decision
+    assert {a["raw"] for a in pending} == {"Branch A", "Branch B", "Supplier One", "Supplier Two"}
     for a in pending:
         assert client.post(f"/api/aliases/{a['id']}/resolve", json={"create_new": True}).status_code == 200
     assert client.post(f"/api/aliases/{pending[0]['id']}/resolve", json={}).status_code == 422

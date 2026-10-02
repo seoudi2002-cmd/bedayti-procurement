@@ -1,0 +1,7 @@
+id: suppliers
+name: Suppliers
+version: 0.1.0
+category: master_data
+contains_personal_data: true   # contact person/phone/e-mail live in supplier_contact (admin-only)
+description: Supplier register. Source category/services text is kept verbatim; no taxonomy mapping yet.
+fact_targets: [dim_supplier, supplier_contact]

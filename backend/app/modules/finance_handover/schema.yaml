@@ -1,0 +1,14 @@
+sheet: "استلامات المالية"
+date_field: sent_date
+unique_key: [memo_no]
+fields:
+  - {name: memo_no, label: Memo No., type: integer, required: true, aliases: ["#"]}
+  - {name: memo_type, label: Memo Type, type: text, required: true, aliases: ["نوع المدفوعة"],
+     value_map: {"امر شراء": po, "خدمات": service}}
+  - {name: sent_date, label: Date Sent to Finance, type: date, on_invalid: flag, aliases: ["تاريخ الارسال للمالية"]}
+  - {name: po_ref, label: PO No. (n/yyyy), type: text, aliases: ["رقم امر الشراء"]}
+  - {name: supplier_name, label: Supplier (name), type: text, dimension: supplier, aliases: ["اسم المورد"]}
+  - {name: supplier_category_source, label: Supplier Category (source), type: text, aliases: ["تصنيف المورد"]}
+  - {name: subject_source, label: Memo Subject, type: text, aliases: ["مضمون المذكرة"]}
+  - {name: purchase_category_source, label: Purchase Category (source), type: text, aliases: ["تصنيف الشراء"]}
+  - {name: amount, label: Finance Handover Amount, type: number, aliases: ["اجمالي مبلغ الطلب"]}

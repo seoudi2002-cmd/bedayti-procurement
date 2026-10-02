@@ -18,14 +18,14 @@ def suggest_mapping(headers: list[str], schema: ModuleSchema) -> dict[str, dict]
     """Return {header: {"field": name, "score": 0-1}} for confident matches; each field maps at most once."""
     candidates: list[tuple[float, str, str]] = []
     for header in headers:
-        norm = normalize_text(header)
+        norm = normalize_text(header) or str(header).strip()  # headers like "#" normalise to nothing
         if not norm:
             continue
         for f in schema.fields:
             names = [f.name, f.label, *f.aliases]
             best = 0.0
             for alias in names:
-                a = normalize_text(alias)
+                a = normalize_text(alias) or str(alias).strip()
                 if not a:
                     continue
                 score = 1.0 if a == norm else SequenceMatcher(None, a, norm).ratio()

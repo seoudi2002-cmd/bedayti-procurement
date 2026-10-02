@@ -20,7 +20,10 @@ def _count(session, model):
 
 @pytest.fixture
 def branches(session):
-    session.add_all([DimBranch(code="HO", name_en="Head Office"), DimBranch(code="N1", name_en="Branch North")])
+    """Branches (synthetic, no codes - the platform never invents them) and the supplier register."""
+    session.add_all([DimBranch(name_en="Head Office", branch_type="branch"), DimBranch(name_en="Branch North", branch_type="branch"),
+                     DimSupplier(code="S1", name="Vendor Alpha"), DimSupplier(code="S2", name="Vendor Beta"),
+                     DimSupplier(code="S3", name="Vendor Gamma")])
     session.commit()
 
 
@@ -57,7 +60,7 @@ def test_review_then_reload_completes_and_is_idempotent(session, po_spec, branch
     loader.load(session, batch)
     alias = session.scalar(select(EntityAlias).where(EntityAlias.status == "pending"))
     assert alias.entity_type == "branch" and alias.alias_raw == "Branch Nrth" and alias.entity_id is not None
-    north = session.scalar(select(DimBranch).where(DimBranch.code == "N1"))
+    north = session.scalar(select(DimBranch).where(DimBranch.name_en == "Branch North"))
     assert alias.entity_id == north.id  # suggestion points at the right branch
     resolve_alias(session, alias, entity_id=north.id)
     loader.load(session, batch)
@@ -86,7 +89,7 @@ def test_cumulative_reexport_updates_instead_of_duplicating(session, po_spec, br
     loader.load(session, _batch(session, po_spec, second, "feb.csv"))
     assert (_count(session, PoHeader), _count(session, FactPoLine)) == (2, 3)
     assert float(session.scalar(select(PoHeader.total_amount).where(PoHeader.po_number == "1"))) == 1200.0
-    assert _count(session, DimSupplier) == 2
+    assert _count(session, DimSupplier) == 3  # the seeded register only; none invented
 
 
 def test_inconsistent_supplier_within_po_is_rejected(session, po_spec, branches):

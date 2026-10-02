@@ -19,10 +19,35 @@ class DimPeriod(Base):
     fiscal_year: Mapped[int] = mapped_column(SmallInteger)
 
 
+class DimRegion(Base, IdMixin, TimestampMixin):
+    __tablename__ = "dim_region"
+
+    name: Mapped[str] = mapped_column(String(200), unique=True)  # as written in the branch master
+
+
+class DimDepartment(Base, IdMixin, TimestampMixin):
+    """Requesting departments. No department master exists yet: rows come from source values (see `source`)."""
+
+    __tablename__ = "dim_department"
+
+    name: Mapped[str] = mapped_column(String(200), unique=True)
+    source: Mapped[str | None] = mapped_column(String(100))
+
+
 class DimBranch(Base, IdMixin, TimestampMixin):
+    """Branch master. `code` is only ever filled from an official source: never generated.
+
+    branch_type: branch | head_office | regional_office | unallocated. The two system rows
+    (Head Office, Unallocated / Branch Not Identified) are identified by `system_key`.
+    """
+
     __tablename__ = "dim_branch"
 
-    code: Mapped[str] = mapped_column(String(32), unique=True)
+    code: Mapped[str | None] = mapped_column(String(32), unique=True)
+    system_key: Mapped[str | None] = mapped_column(String(32), unique=True)
+    source_seq: Mapped[int | None] = mapped_column(Integer)  # running number in the branch master file
+    region_id: Mapped[int | None] = mapped_column(ForeignKey("dim_region.id"))
+    address: Mapped[str | None] = mapped_column(String(600))
     name_en: Mapped[str | None] = mapped_column(String(200))
     name_ar: Mapped[str | None] = mapped_column(String(200))
     region: Mapped[str | None] = mapped_column(String(100))
@@ -36,16 +61,81 @@ class DimBranch(Base, IdMixin, TimestampMixin):
     attrs: Mapped[dict] = mapped_column(JsonType, default=dict)
 
 
+class BranchContact(Base, IdMixin, TimestampMixin):
+    """PERSONAL DATA (admin-only): managers' names, phones, e-mail. Kept apart from dim_branch so reports
+    and dashboards that join dim_branch never expose it. Source values are never overwritten."""
+
+    __tablename__ = "branch_contact"
+
+    branch_id: Mapped[int] = mapped_column(ForeignKey("dim_branch.id"), unique=True)
+    branch_manager_name_source: Mapped[str | None] = mapped_column(String(300))
+    branch_phone: Mapped[str | None] = mapped_column(String(100))
+    manager_phone_1: Mapped[str | None] = mapped_column(String(100))
+    manager_phone_2: Mapped[str | None] = mapped_column(String(100))
+    region_manager_name_source: Mapped[str | None] = mapped_column(String(300))
+    region_manager_phone: Mapped[str | None] = mapped_column(String(200))
+    email: Mapped[str | None] = mapped_column(String(200))
+    notes_source: Mapped[str | None] = mapped_column(String(500))
+    # reconciliation with the HR file: both values are kept, disagreement is a status, not an overwrite
+    manager_employee_id: Mapped[int | None] = mapped_column(ForeignKey("dim_employee.id"))
+    manager_reconciliation_status: Mapped[str | None] = mapped_column(String(30))
+
+
+class DimEmployee(Base, IdMixin, TimestampMixin):
+    """PERSONAL DATA (admin-only). Master from the HR 'actives' file.
+
+    Fields the source does not contain (department, cost centre, manager) stay NULL *and* are listed in
+    `missing_fields`, so "not provided" is never confused with "none"/zero.
+    """
+
+    __tablename__ = "dim_employee"
+
+    employee_code: Mapped[int] = mapped_column(unique=True)
+    full_name: Mapped[str] = mapped_column(String(300))
+    hire_date: Mapped[date | None] = mapped_column(Date)
+    position_source: Mapped[str | None] = mapped_column(String(200))
+    branch_id: Mapped[int | None] = mapped_column(ForeignKey("dim_branch.id"))
+    branch_source_text: Mapped[str | None] = mapped_column(String(300))
+    branch_match_method: Mapped[str | None] = mapped_column(String(30))  # exact|compact|alias|unresolved
+    governorate_source: Mapped[str | None] = mapped_column(String(100))
+    governorate_issue: Mapped[str | None] = mapped_column(String(50))  # e.g. source_error:#N/A
+    department_id: Mapped[int | None] = mapped_column(ForeignKey("dim_department.id"))
+    cost_center_id: Mapped[int | None] = mapped_column(ForeignKey("dim_cost_center.id"))
+    manager_employee_id: Mapped[int | None] = mapped_column(ForeignKey("dim_employee.id"))
+    missing_fields: Mapped[list] = mapped_column(JsonType, default=list)
+    source_batch_id: Mapped[int | None] = mapped_column(ForeignKey("import_batch.id", ondelete="SET NULL"))
+
+
 class DimSupplier(Base, IdMixin, TimestampMixin):
+    """Supplier register. Source category/services text is kept verbatim (no taxonomy mapping yet);
+    contact people/phones/e-mail live in supplier_contact (admin-only)."""
+
     __tablename__ = "dim_supplier"
 
-    code: Mapped[str] = mapped_column(String(32), unique=True)
+    code: Mapped[str | None] = mapped_column(String(32), unique=True)  # SUPnnn from the register
+    register_no: Mapped[int | None] = mapped_column(Integer)  # NOT unique in the source (see data_exception)
     name: Mapped[str] = mapped_column(String(300))
     name_ar: Mapped[str | None] = mapped_column(String(300))
-    tax_id: Mapped[str | None] = mapped_column(String(50))
+    commercial_reg_no: Mapped[str | None] = mapped_column(String(60))
+    address: Mapped[str | None] = mapped_column(String(600))
+    category_source: Mapped[str | None] = mapped_column(String(200))
+    services_source: Mapped[str | None] = mapped_column(String(300))
+    notes_source: Mapped[str | None] = mapped_column(String(500))
+    tax_id: Mapped[str | None] = mapped_column(String(50))  # raw text as in the source, never reformatted
     primary_category_id: Mapped[int | None] = mapped_column(ForeignKey("dim_category.id"))
     status: Mapped[str] = mapped_column(String(20), default="active")
     attrs: Mapped[dict] = mapped_column(JsonType, default=dict)
+
+
+class SupplierContact(Base, IdMixin, TimestampMixin):
+    """PERSONAL DATA (admin-only)."""
+
+    __tablename__ = "supplier_contact"
+
+    supplier_id: Mapped[int] = mapped_column(ForeignKey("dim_supplier.id"), unique=True)
+    contact_name_source: Mapped[str | None] = mapped_column(String(300))
+    phone_source: Mapped[str | None] = mapped_column(String(100))
+    email: Mapped[str | None] = mapped_column(String(200))
 
 
 class DimCategory(Base, IdMixin, TimestampMixin):
@@ -86,7 +176,7 @@ class DimAsset(Base, IdMixin, TimestampMixin):
 class DimCostCenter(Base, IdMixin, TimestampMixin):
     __tablename__ = "dim_cost_center"
 
-    code: Mapped[str] = mapped_column(String(32), unique=True)
+    code: Mapped[str | None] = mapped_column(String(32), unique=True)
     name: Mapped[str] = mapped_column(String(200))
 
 
@@ -105,4 +195,5 @@ class EntityAlias(Base, IdMixin, TimestampMixin):
     # approved: the canonical row. pending: the *suggested* row (fuzzy match) or null if none was close.
     entity_id: Mapped[int | None] = mapped_column()
     confidence: Mapped[float | None] = mapped_column(Numeric(4, 3))
-    status: Mapped[str] = mapped_column(String(12), default="pending")  # pending|approved|rejected
+    status: Mapped[str] = mapped_column(String(12), default="pending")  # pending|approved
+    method: Mapped[str | None] = mapped_column(String(30))  # who/what approved it: review | system_seed

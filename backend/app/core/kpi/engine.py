@@ -19,6 +19,8 @@ FACT_TABLES = {
     "fact_po_line": models.FactPoLine,
     "fact_savings": models.FactSavings,
     "fact_budget": models.FactBudget,
+    "po_header": models.PoHeader,
+    "finance_handover": models.FinanceHandover,
 }
 GROUP_COLUMNS = {
     "period": "period", "branch": "branch_id", "supplier": "supplier_id",
@@ -45,7 +47,7 @@ def _aggregate(spec: KpiSpec, group_by: str | None, date_from: date | None, date
             raise ValueError(f"KPI '{spec.code}' cannot be grouped by '{group_by}' (table {spec.source})")
         group_col = getattr(model, attr)
         cols.insert(0, group_col.label("key"))
-    q = select(*cols)
+    q = select(*cols).select_from(model)  # count(*) has no column to infer the FROM from
     if hasattr(model, "module_id") and spec.source in ("fact_cost", "fact_usage"):
         q = q.where(model.module_id == module_id)
     if date_from:
@@ -54,6 +56,8 @@ def _aggregate(spec: KpiSpec, group_by: str | None, date_from: date | None, date
         q = q.where(model.period <= date_to)
     for k, v in spec.where.items():
         q = q.where(getattr(model, k) == v)
+    for k in spec.where_not_null:
+        q = q.where(getattr(model, k).is_not(None))
     return q.group_by(group_col) if group_col is not None else q
 
 

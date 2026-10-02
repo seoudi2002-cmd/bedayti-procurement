@@ -1,0 +1,9 @@
+id: employees
+name: Employees (HR master)
+version: 0.1.0
+category: master_data
+contains_personal_data: true   # whole module is admin-only
+description: Employee master from the HR "actives" file. Department, cost centre and manager are NOT in the source and stay labelled as missing.
+fact_targets: [dim_employee]
+entity_policy:
+  branch: review

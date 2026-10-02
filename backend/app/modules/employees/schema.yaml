@@ -1,0 +1,8 @@
+# Source: HR "actives" workbook. Row 1 is a control total (HC), the header is on row 2 (auto-detected).
+fields:
+  - {name: employee_code, label: Employee Code, type: integer, required: true, aliases: ["الكود", "كود الموظف"]}
+  - {name: full_name, label: Full Name, type: text, required: true, aliases: ["الاسم"]}
+  - {name: hire_date, label: Hire Date, type: date, on_invalid: flag, aliases: ["تاريخ التعيين"]}
+  - {name: position, label: Position, type: text, aliases: ["الوظيفة"]}
+  - {name: branch, label: Branch (as written), type: text, aliases: ["الفرع"]}
+  - {name: governorate, label: Governorate, type: text, aliases: ["المحافظه", "المحافظة"]}

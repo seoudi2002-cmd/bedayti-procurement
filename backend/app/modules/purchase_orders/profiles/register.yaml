@@ -1,0 +1,20 @@
+# Header-level PO register (one row per PO, no lines). Line detail comes from the PO documents (default profile).
+sheet: "اوامر الشراء"
+date_field: po_date
+fields:
+  - {name: seq, label: Sequence, type: integer, aliases: ["#"]}
+  - {name: po_ref, label: PO No. (n/yyyy), type: text, required: true, aliases: ["رقم امر الشراء"]}
+  - {name: po_date, label: PO Date, type: date, on_invalid: flag, aliases: ["تاريخ امر الشراء"]}
+  - {name: supplier_name, label: Supplier (name), type: text, aliases: ["اسم المورد"]}
+  - {name: supplier_register_no, label: Supplier Register No., type: integer, aliases: ["رقم سجل المورد"]}
+  - {name: supplier_category_source, label: Supplier Category (source), type: text, aliases: ["تصنيف المورد"]}
+  - {name: description, label: Order Description, type: text, aliases: ["تفاصيل الطلب"]}
+  - {name: requisition_ref, label: Requisition No. (n/yyyy), type: text, aliases: ["رقم اشعار الاحتياج"]}
+  - {name: po_category_source, label: PO Category (source), type: text, aliases: ["تصنيف امر الشراء"]}
+  # the source header is literally "Column 14" (an unnamed Excel table column); confirm on upload
+  - {name: issuance_status, label: PO Issuance Status, type: text, aliases: ["Column 14"]}
+  - {name: total_amount, label: Total Amount, type: number, on_invalid: flag, aliases: ["اجمالي مبلغ الطلب"]}
+  - {name: order_status, label: Order Status, type: text, aliases: ["حالة الامر"]}
+  - {name: finance_handover_amount, label: Finance Handover Amount (register), type: number, on_invalid: flag,
+     aliases: ["المبلغ المسدد"]}
+  - {name: remaining_register, label: Remaining (register), type: number, on_invalid: flag, aliases: ["المتبقي"]}

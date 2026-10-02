@@ -1,0 +1,10 @@
+id: finance_handover
+name: Finance Handover
+version: 0.1.0
+category: procurement
+description: >
+  Memos handing amounts to Finance (PO memos and no-PO service memos). This is NOT confirmed bank payment;
+  actual payments need a separate payment ledger with bank dates (future module).
+fact_targets: [finance_handover]
+entity_policy:
+  supplier: review

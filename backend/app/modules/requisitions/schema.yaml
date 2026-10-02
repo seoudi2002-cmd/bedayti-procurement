@@ -1,0 +1,11 @@
+sheet: "اشعارات الاحتياج"
+unique_key: [number_source]
+fields:
+  - {name: seq, label: Sequence, type: text, aliases: ["م"]}
+  - {name: number_source, label: Requisition No. (n/yyyy), type: text, required: true, aliases: ["رقم اشعار الاحتياج"]}
+  - {name: request_date, label: Request Date, type: date, on_invalid: flag, aliases: ["تاريخ الطلب"]}
+  - {name: department, label: Requesting Department, type: text, dimension: department, aliases: ["الادارة الطالبة"]}
+  - {name: description, label: Need Description, type: text, aliases: ["وصف الاحتياج"]}
+  - {name: priority, label: Priority, type: text, aliases: ["الاولوية"]}
+  - {name: status, label: Requisition Status, type: text, aliases: ["حالة الاشعار"]}
+  - {name: notes, label: Notes, type: text, aliases: ["ملاحظات"]}

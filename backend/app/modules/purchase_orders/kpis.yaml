@@ -1,13 +1,20 @@
+# Spend comes from fact_cost (one cost source per PO: its lines if it has any, else the header total), so
+# register-only POs and line-level POs report on the same basis. NULL totals are excluded, never counted as 0.
 kpis:
-  - {code: total_spend, name: Total Spend, source: fact_po_line, column: line_amount, agg: sum,
+  - {code: total_spend, name: Total Spend, source: fact_cost, column: amount, agg: sum,
      unit: EGP, format: currency, direction: neutral}
-  - {code: po_count, name: Purchase Orders, source: fact_po_line, column: po_number, agg: count_distinct,
-     unit: count, format: number}
-  - {code: line_count, name: PO Lines, source: fact_po_line, agg: count, unit: count, format: number}
-  - {code: active_suppliers, name: Active Suppliers, source: fact_po_line, column: supplier_id,
+  - {code: po_count, name: Purchase Orders (all), source: po_header, agg: count, unit: count, format: number}
+  - {code: priced_po_count, name: Purchase Orders with a stated total, source: po_header, agg: count,
+     where_not_null: [total_amount], unit: count, format: number}
+  - {code: active_suppliers, name: Suppliers with POs, source: po_header, column: supplier_id,
      agg: count_distinct, unit: count, format: number}
-  - {code: avg_po_value, name: Average PO Value, kind: ratio, numerator: total_spend, denominator: po_count,
-     unit: EGP, format: currency}
+  - {code: avg_po_value, name: Average PO Value (priced POs), kind: ratio, numerator: total_spend,
+     denominator: priced_po_count, unit: EGP, format: currency}
+  - {code: pos_branch_needs_review, name: POs whose branch needs review, source: po_header, agg: count,
+     where: {branch_attribution_status: needs_review}, unit: count, format: number}
+  - {code: register_finance_handover_amount, name: Finance Handover Amount (PO register), source: po_header,
+     column: finance_handover_amount_register, agg: sum, unit: EGP, format: currency}
+  - {code: line_count, name: PO Lines, source: fact_po_line, agg: count, unit: count, format: number}
   - {code: avg_line_value, name: Average Line Value, kind: ratio, numerator: total_spend, denominator: line_count,
      unit: EGP, format: currency}
   - {code: baseline_spend, name: Baseline Spend (savings lines), source: fact_savings, column: baseline_amount,

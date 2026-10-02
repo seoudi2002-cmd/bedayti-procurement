@@ -36,11 +36,21 @@ Tests (SQLite, no Postgres needed):
 cd backend && pip install -e ".[dev]" && pytest
 ```
 
-## Status (Phase 1b)
+## Status
 
-Done: schema + migrations, module registry/contract, upload → parse → map → clean → validate → **load** pipeline,
-PO header/line model with entity resolution + review queue, procurement document graph (case/documents/files),
-declarative KPI engine, API, tests.
-Not yet: loaders for the other workflow documents (quotes, invoice, payment), branch master import, dashboards,
-insights, exports, AI, auth. PO workflow details: `docs/PO_WORKFLOW.md`.
-See `docs/ARCHITECTURE.md`.
+**Built:** schema + migrations (0001-0003), module registry with profiles, Excel/CSV intake (module detection, mapping,
+validation, merged-cell/subtotal handling), loaders for **branches & regions, employees, suppliers, requisitions,
+purchase orders (header-level register + line-level), finance handover**, entity resolution with review queue,
+`data_exception` workflow, auditable branch attribution, procurement document graph, KPI engine, role-based API
+(viewer/analyst/admin; personal data admin-only).
+
+**Not yet:** Word/PDF extraction, payment ledger, other modules (see `docs/MODULE_CATALOG.md`, incl. Financial Custody
+design), dashboards/frontend, insight engine, report exports, AI assistant, SSO.
+
+Docs: `docs/ARCHITECTURE.md` · `docs/SCHEMA_PROPOSAL_v3.md` · `docs/MODULE_CATALOG.md` · `docs/DOCUMENT_INTAKE.md` ·
+`docs/PO_WORKFLOW.md` · `docs/DATA_SOURCES.md`.
+
+## Load order (first time)
+`branches` → `employees` → `suppliers` → `requisitions` → `purchase_orders` (profile `register`) → `finance_handover`
+(any order works; links and exception states catch up on later loads). Resolve `GET /api/aliases` and review
+`GET /api/exceptions` after each load. Set `API_TOKENS` before exposing the API.

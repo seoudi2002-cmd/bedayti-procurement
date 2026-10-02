@@ -1,0 +1,8 @@
+id: requisitions
+name: Purchase Requisitions
+version: 0.1.0
+category: procurement
+description: Requisition register (إشعارات الاحتياج). Anchors a procurement case; POs link to it by number.
+fact_targets: [requisition, procurement_case, procurement_document]
+entity_policy:
+  department: create   # no department master exists; distinct source values become departments (source recorded)

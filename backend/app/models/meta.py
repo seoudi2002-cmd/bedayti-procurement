@@ -49,6 +49,9 @@ class ImportBatch(Base, IdMixin, TimestampMixin):
     file_hash: Mapped[str] = mapped_column(String(64))  # sha256, blocks duplicate uploads
     storage_path: Mapped[str | None] = mapped_column(String(1000))
     sheet_name: Mapped[str | None] = mapped_column(String(200))
+    profile: Mapped[str] = mapped_column(String(30), default="default", server_default="default")
+    column_map: Mapped[dict | None] = mapped_column(JsonType)  # {source header: field} used at validation
+    warnings: Mapped[list] = mapped_column(JsonType, default=list, server_default="[]")  # e.g. data-freshness warnings
     mapping_template_id: Mapped[int | None] = mapped_column(ForeignKey("mapping_template.id"))
     period_from: Mapped[date | None] = mapped_column(Date)
     period_to: Mapped[date | None] = mapped_column(Date)
@@ -57,6 +60,7 @@ class ImportBatch(Base, IdMixin, TimestampMixin):
     rows_total: Mapped[int] = mapped_column(Integer, default=0)
     rows_valid: Mapped[int] = mapped_column(Integer, default=0)
     rows_rejected: Mapped[int] = mapped_column(Integer, default=0)
+    rows_skipped: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # subtotals, blanks ...
     rows_loaded: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     rows_held: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # waiting on entity review
     created_by: Mapped[str | None] = mapped_column(String(200))
@@ -76,7 +80,7 @@ class RawRow(Base, IdMixin):
     row_number: Mapped[int] = mapped_column(Integer)
     payload: Mapped[dict] = mapped_column(JsonType)  # original cells keyed by source header
     cleaned: Mapped[dict | None] = mapped_column(JsonType)  # canonical fields after cleaning
-    status: Mapped[str] = mapped_column(String(12), default="pending")  # pending|valid|rejected|held|loaded
+    status: Mapped[str] = mapped_column(String(12), default="pending")  # pending|valid|rejected|held|loaded|skipped
 
     batch: Mapped[ImportBatch] = relationship(back_populates="rows")
 
