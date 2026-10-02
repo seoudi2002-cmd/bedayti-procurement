@@ -1,0 +1,6 @@
+PO No,Line,Date,Branch,Vendor,Category,Description,Qty,UOM,Price,Amount
+PO-0001,1,05/01/2025,Branch A,Supplier One,Stationery,A4 paper ream,100,ream,"95.50","9,550.00"
+PO-0001,2,05/01/2025,Branch A,Supplier One,Stationery,Stapler,10,pcs,45,
+PO-0002,1,12/01/2025,Branch B,Supplier Two,Cleaning,Detergent 5L,20,pcs,120,2400
+PO-0003,1,not a date,Branch B,Supplier Two,Cleaning,Mop,5,pcs,30,150
+PO-0004,1,20/01/2025,,Supplier Three,IT,Mouse,10,pcs,150,1500

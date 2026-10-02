@@ -1,0 +1,40 @@
+# Canonical PO-line fields. Aliases cover common English and Arabic export headers.
+date_field: po_date
+dayfirst: true
+unique_key: [po_number, line_number]
+fields:
+  - {name: po_number, label: PO Number, type: text, required: true,
+     aliases: ["PO No", "PO #", "Purchase Order", "Order Number", "رقم أمر الشراء", "رقم الطلب", "أمر الشراء"]}
+  - {name: line_number, label: Line Number, type: integer, default: 1,
+     aliases: ["Line", "Line No", "Item No", "رقم البند", "م"]}
+  - {name: po_date, label: PO Date, type: date, required: true,
+     aliases: ["Date", "Order Date", "Creation Date", "تاريخ أمر الشراء", "التاريخ"]}
+  - {name: branch, label: Branch, type: text, required: true, dimension: branch,
+     aliases: ["Branch Name", "Site", "Location", "Store", "الفرع", "اسم الفرع", "الموقع"]}
+  - {name: supplier, label: Supplier, type: text, required: true, dimension: supplier,
+     aliases: ["Vendor", "Vendor Name", "Supplier Name", "المورد", "اسم المورد"]}
+  - {name: category, label: Category, type: text, dimension: category,
+     aliases: ["Item Category", "Spend Category", "Group", "الفئة", "التصنيف", "المجموعة"]}
+  - {name: item_code, label: Item Code, type: text, dimension: item,
+     aliases: ["SKU", "Item ID", "Material Code", "كود الصنف", "رقم الصنف"]}
+  - {name: item_description, label: Item Description, type: text,
+     aliases: ["Description", "Item", "Item Name", "Material", "الصنف", "الوصف", "اسم الصنف", "البيان"]}
+  - {name: quantity, label: Quantity, type: number, required: true, min: 0,
+     aliases: ["Qty", "Ordered Qty", "Quantity Ordered", "الكمية"]}
+  - {name: uom, label: Unit of Measure, type: text,
+     aliases: ["UOM", "Unit", "الوحدة"]}
+  - {name: unit_price, label: Unit Price, type: number, required: true, min: 0,
+     aliases: ["Price", "Rate", "Unit Cost", "سعر الوحدة", "السعر"]}
+  - {name: line_amount, label: Line Amount, type: number,
+     derive: {op: multiply, of: [quantity, unit_price]},
+     aliases: ["Amount", "Total", "Line Total", "Net Amount", "الإجمالي", "القيمة", "المبلغ"]}
+  - {name: currency, label: Currency, type: text, default: EGP,
+     aliases: ["Curr", "العملة"]}
+  - {name: requested_by, label: Requested By, type: text,
+     aliases: ["Requester", "Requestor", "Buyer", "مقدم الطلب"]}
+  - {name: required_date, label: Required Date, type: date,
+     aliases: ["Need By", "Delivery Date Required", "تاريخ الاحتياج"]}
+  - {name: received_date, label: Received Date, type: date,
+     aliases: ["Receipt Date", "GRN Date", "Delivered On", "تاريخ الاستلام"]}
+  - {name: status, label: Status, type: text,
+     aliases: ["PO Status", "Order Status", "الحالة"]}

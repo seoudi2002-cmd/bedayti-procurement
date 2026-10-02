@@ -1,0 +1,18 @@
+kpis:
+  - {code: total_spend, name: Total Spend, source: fact_po_line, column: line_amount, agg: sum,
+     unit: EGP, format: currency, direction: neutral}
+  - {code: po_count, name: Purchase Orders, source: fact_po_line, column: po_number, agg: count_distinct,
+     unit: count, format: number}
+  - {code: line_count, name: PO Lines, source: fact_po_line, agg: count, unit: count, format: number}
+  - {code: active_suppliers, name: Active Suppliers, source: fact_po_line, column: supplier_id,
+     agg: count_distinct, unit: count, format: number}
+  - {code: avg_po_value, name: Average PO Value, kind: ratio, numerator: total_spend, denominator: po_count,
+     unit: EGP, format: currency}
+  - {code: avg_line_value, name: Average Line Value, kind: ratio, numerator: total_spend, denominator: line_count,
+     unit: EGP, format: currency}
+  - {code: baseline_spend, name: Baseline Spend (savings lines), source: fact_savings, column: baseline_amount,
+     agg: sum, unit: EGP, format: currency}
+  - {code: total_savings, name: Savings, source: fact_savings, column: savings_amount, agg: sum,
+     unit: EGP, format: currency, direction: higher_is_better}
+  - {code: savings_rate, name: Savings Rate, kind: ratio, numerator: total_savings, denominator: baseline_spend,
+     scale: 100, unit: "%", format: percent, direction: higher_is_better}

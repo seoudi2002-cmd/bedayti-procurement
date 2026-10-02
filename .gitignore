@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+node_modules/
+.next/
+# Never commit company data
+data/
+uploads/
+*.xlsx
+*.xls
+*.csv
+!backend/tests/fixtures/*.csv
+.test_uploads/

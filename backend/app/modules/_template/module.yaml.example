@@ -1,0 +1,5 @@
+id: my_module            # must equal the folder name
+name: My Report
+category: administrative # procurement | administrative | logistics | fleet ...
+description: What this report covers.
+fact_targets: [fact_cost, fact_usage]

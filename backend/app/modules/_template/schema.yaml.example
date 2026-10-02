@@ -1,0 +1,6 @@
+date_field: period_date
+unique_key: []
+fields:
+  - {name: period_date, label: Date, type: date, required: true, aliases: ["Month", "التاريخ"]}
+  - {name: branch, label: Branch, type: text, required: true, dimension: branch, aliases: ["الفرع"]}
+  - {name: amount, label: Amount, type: number, required: true, aliases: ["Cost", "القيمة"]}

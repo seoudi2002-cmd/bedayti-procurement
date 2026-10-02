@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: bedayti
+      POSTGRES_PASSWORD: bedayti
+      POSTGRES_DB: bedayti
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bedayti"]
+      interval: 5s
+      retries: 10
+  api:
+    build: ./backend
+    env_file: .env
+    depends_on:
+      db: {condition: service_healthy}
+    volumes: [uploads:/data/uploads]
+    ports: ["8000:8000"]
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+volumes:
+  pgdata:
+  uploads:

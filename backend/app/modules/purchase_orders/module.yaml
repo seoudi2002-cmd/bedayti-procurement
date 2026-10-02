@@ -1,0 +1,7 @@
+id: purchase_orders
+name: Purchase Orders & Spend Analysis
+version: 0.1.0
+category: procurement
+description: PO lines, supplier and category spend, branch spend, price variance and procurement savings.
+period_grain: month
+fact_targets: [fact_po_line, fact_cost, fact_savings]

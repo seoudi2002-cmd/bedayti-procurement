@@ -1,0 +1,2 @@
+kpis:
+  - {code: total_cost, name: Total Cost, source: fact_cost, column: amount, agg: sum, unit: EGP, format: currency}

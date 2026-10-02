@@ -1,0 +1,14 @@
+# Declarative insight rules; evaluated by the insight engine (Phase 4).
+rules:
+  - {code: spend_spike, kind: period_change, kpi: total_spend, severity: warning,
+     params: {group_by: branch, min_change_pct: 25, min_amount: 10000},
+     title: "Branch spend rose sharply vs previous period"}
+  - {code: branch_peer_outlier, kind: peer_outlier, kpi: total_spend, severity: info,
+     params: {group_by: branch, normalize_by: area_m2, zscore: 2.0},
+     title: "Branch spend per m² is far above peers"}
+  - {code: item_price_variance, kind: price_variance, severity: warning,
+     params: {group_by: item, min_spread_pct: 10},
+     title: "Same item bought at materially different unit prices"}
+  - {code: supplier_concentration, kind: concentration, severity: info,
+     params: {group_by: supplier, top_n: 5, max_share_pct: 60},
+     title: "Spend concentrated in few suppliers"}
