@@ -119,3 +119,27 @@ def test_text_from_cell_and_excel_errors():
     assert text_from_cell(160130.0) == "160130" and text_from_cell(553413434) == "553413434"
     assert text_from_cell("  a   b ") == "a b" and text_from_cell(None) is None
     assert excel_error("#N/A") == "#N/A" and excel_error(" #ref! ") == "#REF!" and excel_error("n/a") is None
+
+
+# ---------------------------------------------------------------- profiling unknown files
+def test_profile_reports_structure_without_values(api):
+    book = employee_workbook([[1, "Employee One", date(2024, 1, 1), "Manager", "X", "#N/A"], [2, "Employee Two", date(2024, 2, 1), "Cashier", "X", "Cairo"]])
+    r = api.post("/api/intake/profile", files={"file": ("hr.xlsx", book)}, headers=auth("analyst"))
+    assert r.status_code == 200
+    sheet = r.json()["profile"]["sheets"][0]
+    assert sheet["header_row"] == 2 and sheet["data_rows"] == 2 and sheet["title_rows_above_header"] == 1
+    cols = {c["column"]: c for c in sheet["columns"]}
+    assert cols["الكود"]["numeric"]["max"] == 2 and cols["تاريخ التعيين"]["dates"]["max"] == "2024-02-01"
+    assert cols["المحافظه"]["formula_errors"] == 1
+    assert "Employee One" not in r.text and "examples" not in cols["الاسم"]  # values hidden by default
+    assert api.post("/api/intake/profile", params={"show_values": True}, files={"file": ("hr.xlsx", book)}, headers=auth("analyst")).status_code == 403
+    shown = api.post("/api/intake/profile", params={"show_values": True}, files={"file": ("hr.xlsx", book)}, headers=auth("admin"))
+    assert "Employee One" in shown.text
+
+
+def test_profile_word_and_unknown_types(api, tmp_path):
+    from tests.test_extraction import make_docx
+    p = make_docx(tmp_path / "m.docx")
+    r = api.post("/api/intake/profile", files={"file": ("m.docx", p.read_bytes())}, headers=auth("analyst")).json()["profile"]
+    assert r["kind"] == "docx" and r["tables"] == 2 and r["table_header_signatures"]
+    assert api.post("/api/intake/profile", files={"file": ("x.zip", b"PK")}, headers=auth("analyst")).status_code == 415

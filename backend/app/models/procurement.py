@@ -19,6 +19,7 @@ class DocumentFile(Base, IdMixin, TimestampMixin):
     __tablename__ = "document_file"
 
     file_name: Mapped[str] = mapped_column(String(500))
+    source_kind: Mapped[str | None] = mapped_column(String(14))  # pdf_scanned | pdf_native | docx | xlsx ...
     sha256: Mapped[str] = mapped_column(String(64), unique=True)
     storage_path: Mapped[str | None] = mapped_column(String(1000))
     content_type: Mapped[str | None] = mapped_column(String(100))
@@ -73,6 +74,7 @@ class PoHeader(Base, IdMixin, TimestampMixin):
     # 'lines' = total derives from fact_po_line; 'header_only' = total as stated in the PO register
     granularity: Mapped[str] = mapped_column(String(12), default="lines", server_default="lines")
     total_amount: Mapped[float | None] = mapped_column(Numeric(18, 2))  # NULL = not stated (never 0)
+    lines_total: Mapped[float | None] = mapped_column(Numeric(18, 2))  # sum of confirmed lines; compared with total_amount
     description_source: Mapped[str | None] = mapped_column(Text)
     po_category_source: Mapped[str | None] = mapped_column(String(200))
     supplier_category_source: Mapped[str | None] = mapped_column(String(200))
@@ -114,6 +116,8 @@ class ProcurementDocument(Base, IdMixin, TimestampMixin):
     file_id: Mapped[int | None] = mapped_column(ForeignKey("document_file.id"))
     batch_id: Mapped[int | None] = mapped_column(ForeignKey("import_batch.id", ondelete="SET NULL"))
     # typed register row this envelope stands for (e.g. requisition / finance_handover), if any
+    page_from: Mapped[int | None] = mapped_column(SmallInteger)  # pages of file_id this document occupies
+    page_to: Mapped[int | None] = mapped_column(SmallInteger)
     ref_table: Mapped[str | None] = mapped_column(String(40))
     ref_id: Mapped[int | None] = mapped_column()
     # type-specific details, e.g. invoice: {tax_registration, e_invoice_uuid, po_reference};

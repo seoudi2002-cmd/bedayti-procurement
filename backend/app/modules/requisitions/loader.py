@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.attribution import BranchAttributor
 from app.core.documents import ensure_requisition_case, link_po_to_requisition
+from app.core.overrides import reapply_approved
 from app.core.po_costs import sync_po_cost
 from app.core.procurement_attribution import reattribute_po
 from app.core.entities import EntityResolver
@@ -74,6 +75,7 @@ def load(session: Session, batch: ImportBatch) -> int:
                                 flag["message"], {"raw": flag["raw"]}, MODULE, batch.id)
         if not c.get("department"):
             no_dept.append(c["number_source"])
+        reapply_approved(session, "requisition", f"{fy}/{number}", req)
         ensure_requisition_case(session, req)
         for header in session.scalars(select(PoHeader).where(PoHeader.fiscal_year == fy)):
             ref = parse_number_year(header.requisition_no)

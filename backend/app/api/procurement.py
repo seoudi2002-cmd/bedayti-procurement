@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import Principal, require
 from app.core.documents import case_overview
+from app.core.overrides import history
 from app.core.entities import resolve_alias
 from app.core.modules.registry import get_registry
 from app.db import get_session
@@ -90,6 +91,22 @@ def get_po(po_id: int, session: Session = Depends(get_session), _: Principal = D
                    "branch_id": ln.branch_id, "category_id": ln.category_id} for ln in lines],
         "documents": [{"type": d.doc_type, "number": d.doc_number, "date": d.doc_date, "amount": d.amount and float(d.amount)}
                       for d in overview["documents"]] if overview else [],
+        "corrections": [{"id": o.id, "field": o.field, "original_value": o.original_value,
+                         "corrected_value": o.corrected_value, "reason": o.reason, "proposed_by": o.proposed_by,
+                         "status": o.status, "reviewed_by": o.reviewed_by}
+                        for o in history(session, "po_header", f"{h.fiscal_year}/{h.po_number}")],
         "current_stage": overview["current_stage"] if overview else None,
         "missing_required_documents": overview["missing_required"] if overview else [],
     }
+
+
+@router.get("/purchase-orders-status-values")
+def status_values(session: Session = Depends(get_session), _: Principal = Depends(require("viewer"))):
+    """Inventory of the status texts found in the register, with counts and amounts: the basis for defining the
+    official spend-inclusion rules. Nothing is excluded by status today."""
+    from sqlalchemy import func
+    rows = session.execute(select(PoHeader.issuance_status_source, PoHeader.order_status_source, func.count(),
+                                  func.sum(PoHeader.total_amount)).group_by(
+        PoHeader.issuance_status_source, PoHeader.order_status_source).order_by(func.count().desc())).all()
+    return [{"issuance_status": a, "order_status": b, "pos": n, "total_amount": None if t is None else float(t)}
+            for a, b, n, t in rows]

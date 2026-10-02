@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.core.cleaning.normalizers import normalize_text
 from app.core.documents import ensure_po_anchor
+from app.core.overrides import reapply_approved
 from app.core.po_costs import sync_po_cost
 from app.core.entities import EntityResolver
 from app.core.modules.registry import get_registry
@@ -24,6 +25,7 @@ from app.models import (
 )
 
 MODULE = "purchase_orders"
+CANCEL_WORDS = tuple(normalize_text(w) for w in ("ملغي", "ملغى", "الغاء", "إلغاء", "cancelled", "canceled"))
 LOAD_ISSUE_CODES = ("unresolved_entity", "inconsistent_header")
 HEADER_TEXT = ("requisition_no", "purchase_method", "payment_terms", "status")
 HEADER_INT = ("delivery_days", "payment_days")
@@ -144,6 +146,7 @@ def load_lines(session: Session, batch: ImportBatch) -> int:
             line.required_date, line.received_date = _d(c.get("required_date")), _d(c.get("received_date"))
             line.batch_id, line.raw_row_id = batch.id, r.id
             session.flush()
+            reapply_approved(session, "po_line", f"{fy}/{po_number}#{line_no}", line)
 
             ref = f"po_line:{line.id}"
             cost = session.scalar(select(FactCost).where(FactCost.module_id == batch.module_id, FactCost.source_ref == ref))
@@ -356,6 +359,13 @@ def load_register(session: Session, batch: ImportBatch) -> int:
         header.description_source = c.get("description")
         header.po_category_source = c.get("po_category_source")
         header.issuance_status_source, header.order_status_source = c.get("issuance_status"), c.get("order_status")
+        status_norm = normalize_text(f"{c.get('issuance_status') or ''} {c.get('order_status') or ''}")
+        if any(k in status_norm for k in CANCEL_WORDS):
+            # flagged only: cancelled POs stay in the source data and in spend until an official inclusion rule exists
+            exc("po_status_indicates_cancellation", "info", label,
+                "PO status text suggests cancellation; NOT excluded from spend (no inclusion rule defined yet)",
+                {"issuance_status": c.get("issuance_status"), "order_status": c.get("order_status"),
+                 "total_amount": c.get("total_amount")})
         # --- requisition link (by stated number only)
         header.requisition_no = c.get("requisition_ref")
         rkey = parse_number_year(c.get("requisition_ref"))
@@ -377,6 +387,7 @@ def load_register(session: Session, batch: ImportBatch) -> int:
         reattribute_po(session, header, attributor, batch.id)  # after the requisition link: it is evidence too
         sync_po_cost(session, header)
         ensure_po_anchor(session, header)
+        reapply_approved(session, "po_header", label, header)  # approved corrections survive every reload
         r.status = "loaded"
         loaded += 1
     batch.rows_loaded, batch.rows_held = loaded, held

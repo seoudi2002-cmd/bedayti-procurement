@@ -11,3 +11,5 @@ from app.models.meta import (  # noqa: F401
 from app.models.procurement import DocumentFile, PoHeader, ProcurementCase, ProcurementDocument  # noqa: F401
 from app.models.quality import DataException  # noqa: F401
 from app.models.registers import FinanceHandover, Requisition  # noqa: F401
+from app.models.extraction import ExtractedDocument, ExtractedLine, ExtractedPage, ExtractionJob, PoLineAllocation  # noqa: F401
+from app.models.overrides import DataOverride  # noqa: F401

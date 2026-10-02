@@ -46,3 +46,14 @@ def auto_resolve(session: Session, code: str, entity_type: str, entity_key: str,
         DataException.entity_key == str(entity_key), DataException.status == "open"))
     if row is not None:
         row.status, row.decided_by, row.decision_note = "resolved", "system", note
+
+
+def reopen_system_resolved(session: Session, entity_type: str, entity_key: str) -> int:
+    """Re-open exceptions the platform closed because of a correction that has since been reverted."""
+    n = 0
+    for row in session.scalars(select(DataException).where(
+            DataException.entity_type == entity_type, DataException.entity_key == str(entity_key),
+            DataException.status == "resolved", DataException.decided_by == "system")):
+        row.status, row.decision_note = "open", "Re-opened: the correction that resolved it was reverted"
+        n += 1
+    return n

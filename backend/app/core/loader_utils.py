@@ -21,8 +21,12 @@ def date_from_json(value) -> date | None:
 
 
 def rows_with_status(session: Session, batch: ImportBatch, statuses: tuple[str, ...]) -> list[RawRow]:
-    return list(session.scalars(select(RawRow).where(
-        RawRow.batch_id == batch.id, RawRow.status.in_(statuses)).order_by(RawRow.row_number)))
+    """Staged rows to load. Rows corrected by an approved source-row correction are included (and re-checked by
+    the loader) even if they were held/rejected before."""
+    from app.core.overrides import apply_row_overrides
+    all_rows = list(session.scalars(select(RawRow).where(RawRow.batch_id == batch.id).order_by(RawRow.row_number)))
+    apply_row_overrides(session, batch, all_rows)
+    return [r for r in all_rows if r.status in statuses]
 
 
 def raw_value(batch: ImportBatch, row: RawRow, field: str):

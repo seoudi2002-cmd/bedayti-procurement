@@ -85,6 +85,13 @@ class FactPoLine(Base, IdMixin, TimestampMixin, LineageMixin):
     unit_price: Mapped[float] = mapped_column(Numeric(18, 4))
     line_amount: Mapped[float] = mapped_column(Numeric(18, 2))  # payable amount as stated on the PO
     # Paper and some goods are VAT-exempt while quotes/POs differ on "incl./excl. VAT": keep it explicit.
+    # where the line came from, and how its price is stated (never assumed)
+    source_kind: Mapped[str] = mapped_column(String(20), default="import", server_default="import")  # import|document_extraction
+    extracted_line_id: Mapped[int | None] = mapped_column(Integer)  # extracted_line.id (soft ref: avoids a table cycle)
+    price_basis: Mapped[str | None] = mapped_column(String(10))  # incl_vat | excl_vat | NULL
+    branch_source_text: Mapped[str | None] = mapped_column(String(600))
+    branch_attribution_method: Mapped[str | None] = mapped_column(String(40))
+    branch_attribution_status: Mapped[str | None] = mapped_column(String(20))
     vat_rate: Mapped[float | None] = mapped_column(Numeric(5, 2))
     vat_amount: Mapped[float | None] = mapped_column(Numeric(18, 2))
     currency: Mapped[str] = mapped_column(String(3), default="EGP")

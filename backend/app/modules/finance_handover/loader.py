@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.core.cleaning.normalizers import normalize_text
 from app.core.attribution import BranchAttributor
 from app.core.entities import EntityResolver
+from app.core.overrides import reapply_approved
 from app.core.po_costs import sync_po_cost
 from app.core.procurement_attribution import reattribute_po
 from app.core.exceptions import raise_exception
@@ -77,6 +78,8 @@ def load(session: Session, batch: ImportBatch) -> int:
         if memo.amount is None:
             raise_exception(session, "handover_amount_missing", "warning", "finance_handover", str(memo.memo_no),
                             "Memo has no amount", {}, MODULE, batch.id)
+        session.flush()
+        reapply_approved(session, "finance_handover", str(memo.memo_no), memo)
         r.status = "loaded"
         memos.append(memo)
     session.flush()
