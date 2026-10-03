@@ -1,0 +1,13 @@
+# INITIAL VALUES — awaiting the owner's confirmation. Effective values live in the system setting `aramex.thresholds`
+# (PUT /api/settings/aramex.thresholds, admin, no code change); every report states the values used.
+heavy_weight_kg: 5             # a billed weight above this is listed as a heavy shipment
+outlier_cost_multiple: 2       # a shipment costing more than this multiple of the median is listed as a cost outlier
+top_n: 10                      # rows in "top" tables and charts
+mom_change_pct: 25             # month-on-month change (%) worth a remark
+low_allocation_pct: 80         # confirmed-allocation rate below this is flagged in the report
+weight_band_1_kg: 1            # weight bands: up to band 1, up to band 2, up to band 3, above
+weight_band_2_kg: 5
+weight_band_3_kg: 10
+weekend_day_1: 4               # weekday numbers (Mon=0 ... Sun=6) listed as weekend pick-ups: Friday
+weekend_day_2: 5               # Saturday
+reconcile_tolerance: 0.01      # money difference (EGP) tolerated in the invoice-vs-sheet reconciliation

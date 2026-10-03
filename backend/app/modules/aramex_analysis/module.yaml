@@ -1,0 +1,12 @@
+id: aramex_analysis
+name: Aramex / Logistics Spend Analytics
+version: 0.1.0
+category: administration
+description: >
+  Management analysis of Aramex domestic shipping: per branch, shipments sent / received and their cost, month by month,
+  from the Aramex e-invoice (PDF: dates, products, totals) reconciled to its shipment sheet (Excel: parties, weights).
+  The scanned contract appendix is reference only. Analysis only: upload -> reconcile -> analyze -> dashboard -> executive report (PDF/Excel).
+fact_targets: [aramex_invoice, aramex_shipment]
+contains_personal_data: true
+# Documentation of the canonical shipment fact (aramex_shipment). Files are read by dedicated parsers
+# (invoice.py, shipments.py), not by the generic column mapper.

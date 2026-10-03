@@ -1,0 +1,5 @@
+# Contract rate card used ONLY to check that billed base charges follow the card (reference; never changes invoice figures).
+# Real prices are company data and are not shipped: an admin enters them through PUT /api/settings/aramex.rates.
+# Rule used by the check: base = first_kg price + additional_kg price x (ceil(billed kg) - 1), billed kg rounded up to a whole kg, minimum 1.
+first_kg: []
+additional_kg: []

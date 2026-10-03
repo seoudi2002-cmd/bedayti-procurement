@@ -106,6 +106,20 @@ class EntityResolver:
             self._index[entity_type] = (exact, comp)
         return self._index[entity_type]
 
+    def lookup(self, entity_type: str, raw: object) -> int | None:
+        """Read-only confirmed match: approved alias, identical name, or identical name ignoring spaces. Never creates review
+        items, never fuzzy-matches; None when the register does not confirm the name."""
+        norm = normalize_text(raw)
+        if not norm:
+            return None
+        alias = self._alias(entity_type, norm)
+        if alias and alias.status == "approved" and alias.entity_id:
+            return alias.entity_id
+        exact, comp = self._names(entity_type)
+        if norm in exact:
+            return exact[norm]
+        return comp.get(compact(str(raw)))
+
     def invalidate(self, entity_type: str | None = None) -> None:
         for key in ([entity_type] if entity_type else list(self._index)):
             self._index.pop(key, None)

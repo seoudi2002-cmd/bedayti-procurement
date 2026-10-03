@@ -1,0 +1,6 @@
+# Who is Head Office. Matching is by identical normalised text (no fuzzy matching). Company-sensitive lists are NOT shipped:
+# `head_office_contacts` (staff names, personal data) is entered by an admin through PUT /api/settings/aramex.parties.
+head_office_locations: [Agouza, Dokki, Giza, Mohandisee, العجوزة, الدقي, الجيزة, المهندسين]   # Aramex city names or Arabic spellings
+head_office_labels: [المركز الرئيسي]                       # a party label containing this phrase is Head Office
+head_office_contacts: []                                  # exact contact / person names that mark Head Office
+branch_label_prefixes: [شركة بدايتي فرع, بدايتي فرع]        # "<prefix> X": X is the branch named in the label

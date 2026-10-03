@@ -1,0 +1,9 @@
+# Documentation of the canonical shipment fact (aramex_shipment). Files are read by dedicated parsers (invoice.py, shipments.py).
+fields:
+  - {name: awb, label: Airway bill number, type: text, required: true}
+  - {name: pickup_on, label: Pick-up date (invoice PDF), type: date}
+  - {name: origin, label: Origin city, type: text}
+  - {name: destination, label: Destination city, type: text}
+  - {name: base, label: Base charge, type: number}
+  - {name: other, label: Other charges, type: number}
+  - {name: tax, label: Tax amount, type: number}

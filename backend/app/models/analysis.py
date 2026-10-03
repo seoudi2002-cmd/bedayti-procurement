@@ -186,3 +186,50 @@ class CopierPaperRow(Base, IdMixin):
     department: Mapped[str | None] = mapped_column(String(200))  # head-office department as written after "المركز الرئيسي"
     distributed_on: Mapped[date | None] = mapped_column(Date)
     flags: Mapped[list] = mapped_column(JsonType, default=list)
+
+
+class AramexInvoice(Base, IdMixin):
+    """One Aramex invoice (bill document). Its PDF (dates, products) and Excel (parties, weights) are separate datasets that
+    are linked here by the bill document number; either may arrive first."""
+    __tablename__ = "aramex_invoice"
+
+    bill_doc: Mapped[str] = mapped_column(String(40), unique=True)
+    invoice_no: Mapped[str | None] = mapped_column(String(60))
+    doc_date: Mapped[date | None] = mapped_column(Date)
+    due_date: Mapped[date | None] = mapped_column(Date)
+    customer_no: Mapped[str | None] = mapped_column(String(40))
+    currency: Mapped[str | None] = mapped_column(String(8))
+    pdf_dataset_id: Mapped[int | None] = mapped_column(ForeignKey("analysis_dataset.id", ondelete="SET NULL"))
+    xlsx_dataset_id: Mapped[int | None] = mapped_column(ForeignKey("analysis_dataset.id", ondelete="SET NULL"))
+    pdf_totals: Mapped[dict] = mapped_column(JsonType, default=dict)    # the invoice's own stated totals (strings)
+    xlsx_totals: Mapped[dict] = mapped_column(JsonType, default=dict)   # the sheet's total row and its rounding adjustment (strings)
+
+
+class AramexShipment(Base, IdMixin):
+    """A shipment line as one source states it (source = pdf | xlsx). The two sources are merged by AWB at analysis time;
+    nothing is overwritten. Free-text addresses are not stored (the original files are kept untouched)."""
+    __tablename__ = "aramex_shipment"
+    __table_args__ = (UniqueConstraint("invoice_id", "source", "awb", name="uq_aramex_shipment_source"),
+                      Index("ix_aramex_shipment_invoice", "invoice_id", "source"))
+
+    invoice_id: Mapped[int] = mapped_column(ForeignKey("aramex_invoice.id", ondelete="CASCADE"))
+    source: Mapped[str] = mapped_column(String(8))
+    awb: Mapped[str] = mapped_column(String(40))
+    seq: Mapped[int | None] = mapped_column(Integer)
+    pickup_on: Mapped[date | None] = mapped_column(Date)
+    route_text: Mapped[str | None] = mapped_column(String(300))       # pdf: "origin destination" as printed
+    origin: Mapped[str | None] = mapped_column(String(120))
+    destination: Mapped[str | None] = mapped_column(String(120))
+    product: Mapped[str | None] = mapped_column(String(12))
+    pcs: Mapped[int | None] = mapped_column(Integer)
+    weight: Mapped[Decimal | None] = mapped_column(Numeric(12, 3))   # billed (chargeable) weight, kg
+    actual_weight: Mapped[Decimal | None] = mapped_column(Numeric(12, 3))
+    base: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    other: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    net: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))       # pdf: line "Net Amount" (pre-tax)
+    tax: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    gross: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))     # xlsx "Net Value" (it includes tax)
+    shipper_name: Mapped[str | None] = mapped_column(String(300))
+    sent_by: Mapped[str | None] = mapped_column(String(300))
+    consignee_name: Mapped[str | None] = mapped_column(String(300))
+    attention: Mapped[str | None] = mapped_column(String(300))

@@ -14,7 +14,7 @@ from app.core.auth import Principal, require
 from app.core.reporting.excel import ExcelExporter
 from app.core.reporting.pdf import PdfExporter
 from app.core.settings_store import (
-    KNOWN_KEYS, default_thresholds, effective_paper, effective_thresholds, get_setting, set_setting, validate_thresholds,
+    KNOWN_KEYS, default_thresholds, effective_paper, effective_struct, effective_thresholds, struct_defaults, get_setting, set_setting, validate_thresholds,
 )
 from app.db import get_session
 
@@ -197,3 +197,40 @@ def put_paper_params(values: dict, session: Session = Depends(get_session), prin
     set_setting(session, "copier.paper", merged, principal.name)
     eff, origin = effective_paper(session)
     return {"effective": eff, "origin": origin}
+
+
+def _struct_get(key: str, session):
+    eff, origin = effective_struct(session, key)
+    return {"effective": eff, "origin": origin, "defaults": struct_defaults(key)}
+
+
+def _struct_put(key: str, values: dict, validate, session, principal):
+    try:
+        merged = {**(get_setting(session, key, {}) or {}), **validate(values)}
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    set_setting(session, key, merged, principal.name)
+    eff, origin = effective_struct(session, key)
+    return {"effective": eff, "origin": origin}
+
+
+@settings_router.get("/aramex.parties")
+def get_aramex_parties(session: Session = Depends(get_session), principal: Principal = Depends(require("admin"))):   # contains staff names
+    return _struct_get("aramex.parties", session)
+
+
+@settings_router.put("/aramex.parties")
+def put_aramex_parties(values: dict, session: Session = Depends(get_session), principal: Principal = Depends(require("admin"))):
+    from app.modules.aramex_analysis.settings import validate_parties
+    return _struct_put("aramex.parties", values, validate_parties, session, principal)
+
+
+@settings_router.get("/aramex.rates")
+def get_aramex_rates(session: Session = Depends(get_session), principal: Principal = Depends(require("viewer"))):
+    return _struct_get("aramex.rates", session)
+
+
+@settings_router.put("/aramex.rates")
+def put_aramex_rates(values: dict, session: Session = Depends(get_session), principal: Principal = Depends(require("admin"))):
+    from app.modules.aramex_analysis.settings import validate_rates
+    return _struct_put("aramex.rates", values, validate_rates, session, principal)

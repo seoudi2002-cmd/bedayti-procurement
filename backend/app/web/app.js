@@ -18,7 +18,7 @@
       uploaded: "تم رفع الملف وتحليله", layout: "نوع الملف", issues: "ملاحظات جودة", duplicate: "هذا الملف مرفوع من قبل — تم فتحه.",
       failed: "تعذر التنفيذ", unauthorized: "غير مصرح — أدخل رمز الدخول", filtered: "عرض مفلتر", noDatasets: "لا توجد ملفات بعد",
       layouts: { gl_settlement_lines: "قيود تسوية العهد المؤقتة", monthly_branch_expense: "مصروفات الفروع", monthly_custodian_expense: "مصروفات المركز الرئيسي" },
-      month: "الشهر (إن لم يكن في الملف)", processing: "جاري معالجة الملف…", files: "ملفات", roles: { statement: "الكشف (أساسي)", invoice: "الفاتورة (أساسي)", statement_word: "ملف Word (مساند)", evidence: "صور الطابعات (أدلة فقط)" },
+      month: "الشهر (إن لم يكن في الملف)", processing: "جاري معالجة الملف…", files: "ملفات", roles: { statement: "الكشف (أساسي)", invoice: "الفاتورة (أساسي)", statement_word: "ملف Word (مساند)", evidence: "صور الطابعات (أدلة فقط)", invoice_pdf: "فاتورة Aramex PDF (أساسي)", shipments_xlsx: "كشف الشحنات Excel (أساسي)", contract_reference: "ملحق العقد (مرجع فقط)", paper_distribution: "كشف توزيع الورق" },
       clickHint: "اضغط على عنصر لتصفية التحليل عليه" },
     en: { title: "Management Analytics", dataset: "Analysed file", upload: "Upload Excel", year: "Year (if not in the file)", drop: "or drop the file here",
       apply: "Apply", clear: "Clear", period: "Period", branch: "Branch", category: "Category", all: "All", none: "None", search: "Search…",
@@ -28,7 +28,7 @@
       uploaded: "File uploaded and analysed", layout: "File type", issues: "data-quality observations", duplicate: "This file was already uploaded — opened it.",
       failed: "Request failed", unauthorized: "Not authorised — enter the access token", filtered: "Filtered view", noDatasets: "No files yet",
       layouts: { gl_settlement_lines: "Temporary-custody settlement journal", monthly_branch_expense: "Branch expenses", monthly_custodian_expense: "Head Office expenses" },
-      month: "Month (if not in the file)", processing: "Processing the file…", files: "files", roles: { statement: "Statement (authoritative)", invoice: "Invoice (authoritative)", statement_word: "Word (supporting)", evidence: "Status pages (evidence only)" },
+      month: "Month (if not in the file)", processing: "Processing the file…", files: "files", roles: { statement: "Statement (authoritative)", invoice: "Invoice (authoritative)", statement_word: "Word (supporting)", evidence: "Status pages (evidence only)", invoice_pdf: "Aramex invoice PDF (authoritative)", shipments_xlsx: "Shipment sheet Excel (authoritative)", contract_reference: "Contract appendix (reference only)", paper_distribution: "Paper distribution statement" },
       clickHint: "Click an item to filter the analysis to it" },
   };
 
@@ -92,7 +92,7 @@
     $("#emptyTitle") && ($("#emptyTitle").textContent = t.emptyTitle); $("#emptyText") && ($("#emptyText").textContent = t.emptyText);
     renderModules();
     const mo = $("#monthInput"); if (mo) { mo.parentElement.querySelector("span").textContent = t.month; mo.parentElement.hidden = state.module !== "copiers"; }
-    $("#fileInput").setAttribute("accept", (mod().accepts || [".xlsx"]).join(",")); state.module === "copiers" ? $("#fileInput").setAttribute("multiple", "") : $("#fileInput").removeAttribute("multiple");
+    $("#fileInput").setAttribute("accept", (mod().accepts || [".xlsx"]).join(",")); state.module !== "custody" ? $("#fileInput").setAttribute("multiple", "") : $("#fileInput").removeAttribute("multiple");
     const hint = (mod().upload_hint || {})[state.lang]; $("#lblDrop").textContent = hint || t.drop;
     $("#tokenTitle").textContent = t.token; $("#tokenHint").textContent = t.tokenHint; $("#tokenSave").textContent = t.save;
   }

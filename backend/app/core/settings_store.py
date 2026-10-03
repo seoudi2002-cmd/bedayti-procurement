@@ -9,8 +9,12 @@ from app.models.analysis import AppSetting
 
 MODULES = Path(__file__).resolve().parents[1] / "modules"
 # threshold defaults shipped with each analysis module (initial values only; the effective ones live in app_setting)
-DEFAULTS_FILES = {"custody": MODULES / "custody_analysis" / "thresholds.yaml", "copier": MODULES / "copier_analysis" / "thresholds.yaml"}
-KNOWN_KEYS = {"custody.thresholds", "custody.display_taxonomy", "custody.branch_key", "copier.thresholds", "copier.paper"}
+DEFAULTS_FILES = {"custody": MODULES / "custody_analysis" / "thresholds.yaml", "copier": MODULES / "copier_analysis" / "thresholds.yaml",
+                  "aramex": MODULES / "aramex_analysis" / "thresholds.yaml"}
+STRUCT_DEFAULTS = {"copier.paper": MODULES / "copier_analysis" / "paper_defaults.yaml", "aramex.parties": MODULES / "aramex_analysis" / "parties_defaults.yaml",
+                   "aramex.rates": MODULES / "aramex_analysis" / "rates_defaults.yaml"}
+KNOWN_KEYS = {"custody.thresholds", "custody.display_taxonomy", "custody.branch_key", "copier.thresholds", "copier.paper", "aramex.thresholds",
+              "aramex.parties", "aramex.rates"}
 
 
 def default_thresholds(module: str = "custody") -> dict:
@@ -61,3 +65,15 @@ def effective_paper(session: Session) -> tuple[dict, dict]:
     custom = get_setting(session, "copier.paper", {}) or {}
     eff = {**defaults, **{k: v for k, v in custom.items() if k in defaults}}
     return eff, {k: ("custom" if k in custom and custom[k] != defaults[k] else "default") for k in defaults}
+
+
+def effective_struct(session: Session, key: str) -> tuple[dict, dict]:
+    """A structured (non-threshold) setting such as aramex.parties: (effective values, {name: 'default' | 'custom'})."""
+    defaults = yaml.safe_load(STRUCT_DEFAULTS[key].read_text(encoding="utf-8"))
+    custom = get_setting(session, key, {}) or {}
+    eff = {**defaults, **{k: v for k, v in custom.items() if k in defaults}}
+    return eff, {k: ("custom" if k in custom and custom[k] != defaults[k] else "default") for k in defaults}
+
+
+def struct_defaults(key: str) -> dict:
+    return yaml.safe_load(STRUCT_DEFAULTS[key].read_text(encoding="utf-8"))

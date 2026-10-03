@@ -6,9 +6,10 @@ _ADAPTERS: dict[str, AnalysisAdapter] | None = None
 def adapters() -> dict[str, AnalysisAdapter]:
     global _ADAPTERS
     if _ADAPTERS is None:
+        from app.modules.aramex_analysis.adapter import AramexAdapter
         from app.modules.copier_analysis.adapter import CopierAdapter
         from app.modules.custody_analysis.adapter import CustodyAdapter
-        _ADAPTERS = {a.info.key: a for a in (CustodyAdapter(), CopierAdapter())}
+        _ADAPTERS = {a.info.key: a for a in (CustodyAdapter(), CopierAdapter(), AramexAdapter())}
     return _ADAPTERS
 
 
