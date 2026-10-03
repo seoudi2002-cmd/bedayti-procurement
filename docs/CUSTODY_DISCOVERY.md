@@ -1,6 +1,6 @@
 # Financial Custody (العهد) — discovery, proposed model, decisions
 
-Status: **proposal only — no code written.** Built from 4 workbooks + 1 email. This document contains structure, counts and
+Status: discovery. **§3 (transaction model) and §6 (workflow) are PARKED** — the module was re-scoped to analysis and reporting, see `CUSTODY_ANALYTICS.md`. Built from 4 workbooks + 1 email. This document contains structure, counts and
 patterns only: no names, national IDs or amounts (real data is never committed).
 
 ## 1. Data profile

@@ -21,7 +21,7 @@ problems to `data_exception`.
 | 11 | Rentals / Leases | designed | `lease_contract` (start/end/escalation/area), rent → `fact_cost` | lease register |
 | 12 | Vehicles / Fleet | designed | `dim_asset(vehicle)`, fuel/maintenance/km → `fact_usage`/`fact_cost` | vehicle register, fuel & maintenance logs |
 | 13 | Aramex / Logistics | designed | shipments → `fact_usage`, charges → `fact_cost` (service memos already carry the monthly totals) | shipment statements |
-| 14 | **Financial Custody (العهد)** | designed below — core module | `custody_account`, `custody_movement`, derived balances/ageing | custody ledger sample + rules |
+| 14 | **Financial Custody (العهد)** | **analysis & reporting implemented** (`custody_analysis`, see `CUSTODY_ANALYTICS.md`); ledger design below is parked | `custody_account`, `custody_movement`, derived balances/ageing | custody ledger sample + rules |
 | 15 | Hotels / Accommodation | designed | `hotel_booking` (traveller→employee, nights, rate) → `fact_usage(room_nights)` + `fact_cost` | booking list/invoices |
 | 16 | Asset Register & Maintenance | designed | `dim_asset` (+typed columns), `maintenance_event` | asset list, maintenance tickets |
 | 17 | Savings & Cost Reduction | designed | `fact_savings`, quotation baselines | quotations / price comparison data |

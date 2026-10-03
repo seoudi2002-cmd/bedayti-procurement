@@ -1,0 +1,9 @@
+# Canonical analytical fact (documentation of analysis_fact). Files are read by layout parsers (layouts.py),
+# not by the generic column mapper, because the sources are pivots / multi-sheet reports.
+fields:
+  - {name: period_month, label: Month, type: integer}
+  - {name: scope, label: Scope (head_office / branch), type: text}
+  - {name: branch_label, label: Branch as written in the file, type: text}
+  - {name: category_source, label: Expense class as written in the file, type: text}
+  - {name: item_source, label: Sub-item as written in the file, type: text}
+  - {name: amount, label: Amount, type: number, required: true}

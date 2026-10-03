@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
+from app.api.analysis import router as analysis_router
+from app.api.analysis import settings_router
 from app.api.extraction import router as extraction_router
 from app.api.masterdata import router as masterdata_router
 from app.api.procurement import router as procurement_router
@@ -26,3 +28,5 @@ app.include_router(router, prefix="/api")
 app.include_router(procurement_router, prefix="/api")
 app.include_router(masterdata_router, prefix="/api")
 app.include_router(extraction_router, prefix="/api")
+app.include_router(analysis_router, prefix="/api")
+app.include_router(settings_router, prefix="/api")

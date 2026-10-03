@@ -1,0 +1,11 @@
+id: custody_analysis
+name: Financial Custody Analytics
+version: 0.1.0
+category: administration
+description: >
+  Management analysis and reporting of custody expenditure files (temporary-custody settlement journal,
+  branch expense analysis, head-office expense analysis). Analysis only: no request/approval/settlement workflow.
+  Upload Excel -> validate -> analyze -> KPIs, tables, charts, executive summary (PDF/Excel).
+fact_targets: [analysis_fact]
+# custodian names (people) appear in the source; they are shown to admins only
+contains_personal_data: true

@@ -1,0 +1,15 @@
+# INITIAL VALUES — awaiting the owner's confirmation. They are defaults only: the effective values live in the
+# system setting `custody.thresholds` (editable through PUT /api/settings/custody.thresholds, no code change) and
+# every report states which values it used and whether they are still the defaults.
+mom_pct: 30                 # month-on-month change (%) that makes a category/branch/scope movement "significant"
+mom_abs: 50000              # ...and the absolute change (EGP) must also exceed this
+iqr_k: 1.5                  # branch total above Q3 + k*IQR of all branches is an outlier
+min_branches_for_iqr: 8     # statistical rule needs at least this many branches
+line_share_of_category_pct: 40   # one line representing more than this % of its category total
+min_line_amount: 20000      # ...only lines above this amount are considered
+month_vs_avg_pct: 50        # month total vs the average of the other months
+min_months_for_trend: 4     # fewer months: trend statements are shown as indicative
+repeat_amount_min_count: 4  # the same amount repeated this many times in one category (rounded values)
+repeat_amount_min_value: 1000
+top_n: 10                   # rows in "top" tables and charts
+dormant_new_min_amount: 5000
