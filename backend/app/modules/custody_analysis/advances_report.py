@@ -17,6 +17,7 @@ T = {
         "c_count": "العدد", "c_examples": "أمثلة", "c_stated": "المعلن في السجل", "c_computed": "المحسوب", "c_diff": "الفرق", "c_other": "الرقم الثاني المعلن (غير موضّح المعنى)", "c_bal": "المفتوح آخر الشهر (محسوب بالتواريخ)", "c_obd": "الفرق (الرقم الثاني − المحسوب)",
         "x_second": "الرقم الثاني المكتوب يدويًا في صفوف «اقفال الشهر» (معناه غير مذكور) يساوي المفتوح آخر الشهر المحسوب بالتواريخ في {m} من {n} شهور؛ للمقارنة فقط ولا يُعتمد.", "c_name": "الإعداد", "c_origin": "المصدر",
         "c_status": "الحالة",
+        "lag_n": "عدد السلف المسوّاة بتاريخ مقروء", "lag_median": "الوسيط (يوم)", "lag_mean": "المتوسط (يوم)", "lag_p90": "المئين 90 (يوم)", "lag_max": "الأقصى (يوم)",
         "t_months": "المؤشرات حسب الشهر", "t_branches": "السلف حسب الفرع / الجهة", "t_ageing": "أعمار السلف المفتوحة", "t_lag": "مدة التسوية", "t_exc": "ملخص الاستثناءات", "t_largest": "أكبر السلف",
         "t_open": "السلف المفتوحة الأقدم", "t_repeat": "فروع تكررت لها السلف", "t_controls": "ضبط إجماليات «اقفال الشهر» في السجل", "t_issues": "ملاحظات جودة البيانات", "t_settings": "الإعدادات المستخدمة",
         "ch_month": "المصروف والمسوّى شهريًا", "ch_branch": "أعلى الفروع صرفًا",
@@ -49,6 +50,7 @@ T = {
         "c_count": "Count", "c_examples": "Examples", "c_stated": "Stated in the register", "c_computed": "Computed", "c_diff": "Difference", "c_other": "Second stated figure (meaning not documented)", "c_bal": "Open at month end (computed from the dates)", "c_obd": "Difference (second figure − computed)",
         "x_second": "The second hand-typed figure on the «month closing» rows (meaning not stated) equals the dated month-end open balance in {m} of {n} months; shown for comparison only, not relied on.", "c_name": "Setting", "c_origin": "Origin",
         "c_status": "Status",
+        "lag_n": "Advances settled with a readable date", "lag_median": "Median (days)", "lag_mean": "Mean (days)", "lag_p90": "90th percentile (days)", "lag_max": "Maximum (days)",
         "t_months": "Indicators by month", "t_branches": "Advances by branch / unit", "t_ageing": "Age of open advances", "t_lag": "Settlement time", "t_exc": "Exception summary", "t_largest": "Largest advances",
         "t_open": "Oldest open advances", "t_repeat": "Branches with repeated advances", "t_controls": "Control of the register's «month closing» totals", "t_issues": "Data-quality notes", "t_settings": "Settings used",
         "ch_month": "Issued and settled by month", "ch_branch": "Top units by amount issued",
@@ -177,7 +179,7 @@ def build_report(ds, a: dict, all_rows: list[dict], lang: str, admin: bool, th: 
     sec.tables.append({"key": "ageing", "title": c.t("t_ageing"), "columns": [col("band", c.t("c_band")), col("n", c.t("c_n"), "int"), col("amount", c.t("c_amount"), "money")],
                        "rows": [{"band": band(w), "n": w["n"], "amount": w["amount"]} for w in a["ageing"]]})
     sec.tables.append({"key": "lag", "title": c.t("t_lag"), "columns": [col("k", c.t("c_key")), col("v", c.t("c_val"), "num")], "rows": [
-        {"k": "n", "v": lag["n"]}, {"k": "median", "v": lag["median"]}, {"k": "mean", "v": lag["mean"]}, {"k": "p90", "v": lag["p90"]}, {"k": "max", "v": lag["max"]}]})
+        {"k": c.t("lag_" + k), "v": lag[k]} for k in ("n", "median", "mean", "p90", "max")]})
     sec.tables.append({"key": "exc_summary", "title": c.t("t_exc"), "columns": [col("f", c.t("c_flag")), col("n", c.t("c_n"), "int"), col("amount", c.t("c_amount"), "money")],
                        "rows": [{"f": c.t("ex_" + k), "n": len(v), "amount": sum((x["amount"] for x in v), 0)} for k, v in ex.items() if v]})
     ocols = [col("b", c.t("c_branch")), col("d", c.t("c_date")), col("amount", c.t("c_amount"), "money"), col("age", c.t("c_age"), "int"), col("p", c.t("c_purpose"))] + ([col("h", c.t("c_holder"))] if admin else [])
