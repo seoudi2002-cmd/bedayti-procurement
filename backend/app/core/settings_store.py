@@ -7,14 +7,18 @@ from sqlalchemy.orm import Session
 
 from app.models.analysis import AppSetting
 
-CUSTODY_DEFAULTS_FILE = Path(__file__).resolve().parents[1] / "modules" / "custody_analysis" / "thresholds.yaml"
+MODULES = Path(__file__).resolve().parents[1] / "modules"
+# threshold defaults shipped with each analysis module (initial values only; the effective ones live in app_setting)
+DEFAULTS_FILES = {"custody": MODULES / "custody_analysis" / "thresholds.yaml", "copier": MODULES / "copier_analysis" / "thresholds.yaml"}
+KNOWN_KEYS = {"custody.thresholds", "custody.display_taxonomy", "custody.branch_key", "copier.thresholds"}
 
-# key -> (default factory, validator)
-KNOWN_KEYS = {"custody.thresholds", "custody.display_taxonomy", "custody.branch_key"}
+
+def default_thresholds(module: str = "custody") -> dict:
+    return yaml.safe_load(DEFAULTS_FILES[module].read_text(encoding="utf-8"))
 
 
-def custody_default_thresholds() -> dict:
-    return yaml.safe_load(CUSTODY_DEFAULTS_FILE.read_text(encoding="utf-8"))
+def custody_default_thresholds() -> dict:  # kept for existing callers
+    return default_thresholds("custody")
 
 
 def get_setting(session: Session, key: str, default=None):
@@ -31,16 +35,16 @@ def set_setting(session: Session, key: str, value, user: str | None) -> None:
     session.commit()
 
 
-def effective_thresholds(session: Session) -> tuple[dict, dict]:
+def effective_thresholds(session: Session, module: str = "custody") -> tuple[dict, dict]:
     """(effective values, {name: 'default' | 'custom'})."""
-    defaults = custody_default_thresholds()
-    custom = get_setting(session, "custody.thresholds", {}) or {}
+    defaults = default_thresholds(module)
+    custom = get_setting(session, f"{module}.thresholds", {}) or {}
     eff = {**defaults, **{k: v for k, v in custom.items() if k in defaults}}
     return eff, {k: ("custom" if k in custom and k in defaults and custom[k] != defaults[k] else "default") for k in defaults}
 
 
-def validate_thresholds(values: dict) -> dict:
-    defaults = custody_default_thresholds()
+def validate_thresholds(values: dict, module: str = "custody") -> dict:
+    defaults = default_thresholds(module)
     unknown = [k for k in values if k not in defaults]
     if unknown:
         raise ValueError(f"Unknown threshold(s): {', '.join(unknown)}")

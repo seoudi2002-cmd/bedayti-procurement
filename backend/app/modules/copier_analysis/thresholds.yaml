@@ -1,0 +1,9 @@
+# INITIAL VALUES — awaiting the owner's confirmation. The effective values live in the system setting
+# `copier.thresholds` (PUT /api/settings/copier.thresholds, admin, no code change); every report states the values used.
+low_utilization_pct: 25        # a machine using less than this % of its included package is "under-utilised"
+very_low_utilization_pct: 5    # ...and "almost unused" below this
+high_excess_pct: 50            # additional copies above this % of the package = "heavily over its package"
+top_n: 10                      # rows in "top" tables and charts
+mom_change_pct: 25             # month-on-month change (%) worth noting when several months exist
+min_months_for_trend: 3        # fewer months: trend statements are shown as indicative
+reconcile_tolerance: 0.01      # money difference (EGP) tolerated between expected and invoiced amounts

@@ -10,7 +10,7 @@
                   set: (k, v) => { try { sessionStorage.setItem(k, v); } catch (e) { /* storage may be blocked */ } } };
 
   const UI = {
-    ar: { title: "تحليل العهد", dataset: "الملف المحلل", upload: "رفع ملف Excel", year: "السنة (إن لم تكن في الملف)", drop: "أو اسحب الملف هنا",
+    ar: { title: "منصة التحليل الإداري", dataset: "الملف المحلل", upload: "رفع ملف Excel", year: "السنة (إن لم تكن في الملف)", drop: "أو اسحب الملف هنا",
       apply: "تطبيق", clear: "مسح", period: "الفترة", branch: "الفرع", category: "البند", all: "الكل", none: "لا شيء", search: "بحث…",
       selected: "محدد", emptyTitle: "ارفع ملف Excel لبدء التحليل",
       emptyText: "يدعم النظام ثلاثة أنواع: قيود تسوية العهد المؤقتة، تحليل مصروفات الفروع، وتحليل مصروفات المركز الرئيسي. كل نوع يُحلل منفصلًا.",
@@ -18,8 +18,9 @@
       uploaded: "تم رفع الملف وتحليله", layout: "نوع الملف", issues: "ملاحظات جودة", duplicate: "هذا الملف مرفوع من قبل — تم فتحه.",
       failed: "تعذر التنفيذ", unauthorized: "غير مصرح — أدخل رمز الدخول", filtered: "عرض مفلتر", noDatasets: "لا توجد ملفات بعد",
       layouts: { gl_settlement_lines: "قيود تسوية العهد المؤقتة", monthly_branch_expense: "مصروفات الفروع", monthly_custodian_expense: "مصروفات المركز الرئيسي" },
+      month: "الشهر (إن لم يكن في الملف)", processing: "جاري معالجة الملف…", files: "ملفات", roles: { statement: "الكشف (أساسي)", invoice: "الفاتورة (أساسي)", statement_word: "ملف Word (مساند)", evidence: "صور الطابعات (أدلة فقط)" },
       clickHint: "اضغط على عنصر لتصفية التحليل عليه" },
-    en: { title: "Custody Analytics", dataset: "Analysed file", upload: "Upload Excel", year: "Year (if not in the file)", drop: "or drop the file here",
+    en: { title: "Management Analytics", dataset: "Analysed file", upload: "Upload Excel", year: "Year (if not in the file)", drop: "or drop the file here",
       apply: "Apply", clear: "Clear", period: "Period", branch: "Branch", category: "Category", all: "All", none: "None", search: "Search…",
       selected: "selected", emptyTitle: "Upload an Excel file to start",
       emptyText: "Three file types are supported: temporary-custody settlement journal, branch expense analysis and Head Office expense analysis. Each is analysed separately.",
@@ -27,11 +28,15 @@
       uploaded: "File uploaded and analysed", layout: "File type", issues: "data-quality observations", duplicate: "This file was already uploaded — opened it.",
       failed: "Request failed", unauthorized: "Not authorised — enter the access token", filtered: "Filtered view", noDatasets: "No files yet",
       layouts: { gl_settlement_lines: "Temporary-custody settlement journal", monthly_branch_expense: "Branch expenses", monthly_custodian_expense: "Head Office expenses" },
+      month: "Month (if not in the file)", processing: "Processing the file…", files: "files", roles: { statement: "Statement (authoritative)", invoice: "Invoice (authoritative)", statement_word: "Word (supporting)", evidence: "Status pages (evidence only)" },
       clickHint: "Click an item to filter the analysis to it" },
   };
 
-  const state = { lang: store.get("lang") || "ar", token: store.get("token") || "", datasets: [], dsId: Number(store.get("ds")) || null,
-                  report: null, filters: { periods: [], branches: [], categories: [] }, tab: "summary", charts: [] };
+  const state = { lang: store.get("lang") || "ar", token: store.get("token") || "", datasets: [], dsId: store.get("ds") || null,
+                  report: null, filters: {}, tab: "summary", charts: [], modules: [], module: store.get("module") || "custody", poll: null };
+  const mod = () => state.modules.find((m) => m.key === state.module) || { key: state.module, label: {}, accepts: [".xlsx"], upload_hint: {}, filters: {} };
+  const base = () => `/api/analysis/${state.module}/datasets`;
+  const resetFilters = () => { state.filters = {}; };
   const T = () => UI[state.lang];
 
   // ------------------------------------------------------------------ helpers
@@ -51,6 +56,9 @@
     const loc = (x, d = 0) => x.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
     if (kind === "money") return loc(Math.round(n));
     if (kind === "smoney") return (n > 0 ? "+" : "") + loc(Math.round(n));
+    if (kind === "money3") return loc(n, 3);
+    if (kind === "num") return loc(n, 2);
+    if (kind === "snum") return (n > 0 ? "+" : "") + loc(n, 2);
     if (kind === "pct") return loc(n, 1) + "%";
     if (kind === "spct") return (n > 0 ? "+" : "") + loc(n, 1) + "%";
     if (kind === "int") return loc(n);
@@ -82,71 +90,96 @@
     $("#lblDataset").textContent = t.dataset; $("#lblUpload").textContent = t.upload; $("#lblYear").textContent = t.year; $("#lblDrop").textContent = t.drop;
     $("#applyBtn").textContent = t.apply; $("#clearBtn").textContent = t.clear;
     $("#emptyTitle") && ($("#emptyTitle").textContent = t.emptyTitle); $("#emptyText") && ($("#emptyText").textContent = t.emptyText);
+    renderModules();
+    const mo = $("#monthInput"); if (mo) { mo.parentElement.querySelector("span").textContent = t.month; mo.parentElement.hidden = state.module !== "copiers"; }
+    $("#fileInput").setAttribute("accept", (mod().accepts || [".xlsx"]).join(",")); state.module === "copiers" ? $("#fileInput").setAttribute("multiple", "") : $("#fileInput").removeAttribute("multiple");
+    const hint = (mod().upload_hint || {})[state.lang]; $("#lblDrop").textContent = hint || t.drop;
     $("#tokenTitle").textContent = t.token; $("#tokenHint").textContent = t.tokenHint; $("#tokenSave").textContent = t.save;
+  }
+
+  function renderModules() {
+    const bar = $("#moduleTabs"); if (!bar) return; bar.innerHTML = "";
+    state.modules.forEach((m) => bar.append(el("button", { class: "mtab" + (m.key === state.module ? " on" : ""), onclick: () => switchModule(m.key) }, m.label[state.lang] || m.key)));
+  }
+  async function switchModule(key) {
+    state.module = key; store.set("module", key); state.dsId = null; store.set("ds", ""); resetFilters(); state.tab = "summary"; notice(""); applyLang(); await init();
   }
 
   // ------------------------------------------------------------------ datasets
   async function loadDatasets(select) {
-    state.datasets = await api("/api/analysis/custody/datasets");
+    state.datasets = await api(base());
     const sel = $("#datasetSelect");
     sel.innerHTML = "";
     if (!state.datasets.length) sel.append(el("option", { value: "" }, T().noDatasets));
     for (const d of state.datasets) {
-      sel.append(el("option", { value: d.id }, `#${d.id} · ${d.file_name} · ${T().layouts[d.layout] || d.layout}`));
+      sel.append(el("option", { value: d.id }, d.label || `#${d.id} · ${d.file_name} · ${T().layouts[d.layout] || d.layout}`));
     }
-    if (select) state.dsId = select;
-    if (!state.datasets.find((d) => d.id === state.dsId)) state.dsId = state.datasets.length ? state.datasets[0].id : null;
+    if (select !== undefined && select !== null) state.dsId = String(select);
+    if (!state.datasets.find((d) => String(d.id) === String(state.dsId))) state.dsId = state.datasets.length ? String(state.datasets[0].id) : null;
     sel.value = state.dsId || "";
   }
 
-  async function upload(file) {
-    if (!file) return;
-    const fd = new FormData(); fd.append("file", file);
-    const y = $("#yearInput").value; if (y) fd.append("year", y);
+  async function upload(files) {
+    files = [...(files || [])]; if (!files.length) return;
+    // authoritative files first (statement, invoice), supporting ones after, so the evidence has its period
+    const rank = (f) => (/\.(xlsx|xlsm)$/i.test(f.name) ? 0 : /\.(docx?)$/i.test(f.name) ? 2 : 1);
+    files.sort((a, b) => rank(a) - rank(b));
     busy(true); notice("");
+    let last = null, msgs = [];
+    for (const file of files) {
+      const fd = new FormData(); fd.append("file", file);
+      const y = $("#yearInput").value; if (y) fd.append("year", y);
+      const mo = $("#monthInput") && $("#monthInput").value; if (mo && state.module === "copiers") fd.append("month", mo);
+      try {
+        const meta = await api(base(), { method: "POST", body: fd });
+        last = meta.id; resetFilters();
+        const role = meta.uploaded ? (T().roles[meta.uploaded.role] || meta.uploaded.role) : (T().layouts[meta.layout] || meta.layout);
+        msgs.push(`✔ ${file.name} → ${role}${meta.issues ? " · " + meta.issues.length + " " + T().issues : ""}`);
+      } catch (e) {
+        if (e.status === 409 && e.detail && e.detail.dataset_id) { last = e.detail.dataset_id; msgs.push(`↺ ${file.name}: ${e.detail.message || T().duplicate}`); }
+        else msgs.push(`✖ ${file.name}: ${e.message}`);
+      }
+    }
     try {
-      const meta = await api("/api/analysis/custody/datasets", { method: "POST", body: fd });
-      state.filters = { periods: [], branches: [], categories: [] };
-      await loadDatasets(meta.id);
-      store.set("ds", state.dsId);
-      await loadReport();
-      notice(`${T().uploaded} — ${T().layout}: ${T().layouts[meta.layout] || meta.layout} · ${meta.issues.length} ${T().issues}`, "ok");
-    } catch (e) {
-      if (e.status === 409 && e.detail && e.detail.dataset_id) {
-        state.filters = { periods: [], branches: [], categories: [] };
-        await loadDatasets(e.detail.dataset_id); store.set("ds", state.dsId); await loadReport(); notice(T().duplicate, "warn");
-      } else notice(`${T().failed}: ${e.message}`, "err");
+      if (last !== null) { await loadDatasets(last); store.set("ds", state.dsId); await loadReport(); }
+      notice(msgs.join("   |   "), msgs.some((m) => m.startsWith("✖")) ? "err" : "ok");
     } finally { busy(false); $("#fileInput").value = ""; }
   }
 
   // ------------------------------------------------------------------ report
+  const dims = () => (state.report && state.report.meta.filters.dimensions) || [];
   function query() {
     const p = new URLSearchParams({ lang: state.lang });
-    state.filters.periods.forEach((x) => p.append("period", x));
-    state.filters.branches.forEach((x) => p.append("branch", x));
-    state.filters.categories.forEach((x) => p.append("category", x));
+    dims().forEach((d) => (state.filters[d.key] || []).forEach((x) => p.append(d.param, x)));
     return p.toString();
   }
   async function loadReport() {
     if (!state.dsId) { state.report = null; render(); return; }
     busy(true);
     try {
-      const j = await api(`/api/analysis/custody/datasets/${state.dsId}/report?${query()}`);
+      const j = await api(`${base()}/${state.dsId}/report?${query()}`);
       state.report = j.report;
       render();
+      watchProcessing();
     } catch (e) { notice(`${T().failed}: ${e.message}`, "err"); } finally { busy(false); }
   }
 
   async function download(kind) {
     busy(true);
     try {
-      const res = await api(`/api/analysis/custody/datasets/${state.dsId}/report.${kind}?${query()}`, { blob: true });
-      const blob = await res.blob(); const a = el("a", { href: URL.createObjectURL(blob), download: `custody_analysis_${state.dsId}_${state.lang}.${kind}` });
+      const res = await api(`${base()}/${state.dsId}/report.${kind}?${query()}`, { blob: true });
+      const blob = await res.blob(); const a = el("a", { href: URL.createObjectURL(blob), download: `${state.module}_analysis_${state.dsId}_${state.lang}.${kind}` });
       document.body.append(a); a.click(); a.remove();
     } catch (e) { notice(`${T().failed}: ${e.message}`, "err"); } finally { busy(false); }
   }
 
   // ------------------------------------------------------------------ render
+  function watchProcessing() {  // background OCR of the evidence pages: poll until the item is ready, then reload
+    clearTimeout(state.poll);
+    if (state.module !== "copiers" || state.dsId === "all") return;
+    api(`${base()}/${state.dsId}`).then((m) => { if (m.status === "processing") { state.pollNotice = true; notice(T().processing, "warn"); state.poll = setTimeout(loadReport, 4000); } else if (state.pollNotice) { state.pollNotice = false; notice(""); } }).catch(() => {});
+  }
+
   function render() {
     state.charts.forEach((c) => c.destroy()); state.charts = [];
     const r = state.report, content = $("#content");
@@ -213,32 +246,35 @@
   }
   document.addEventListener("click", () => document.querySelectorAll(".dd .panel").forEach((p) => (p.hidden = true)));
 
-  let pending = null;  // selections being edited before "Apply"
+  let pending = {};
   function renderFilters() {
-    const opts = state.report.meta.filters.options || {};
-    const f = $("#filters"); f.hidden = false;
-    pending = { periods: new Set(state.filters.periods), branches: new Set(state.filters.branches), categories: new Set(state.filters.categories) };
-    dropdown($("#ddPeriod"), T().period, (opts.periods || []).map((p) => ({ id: p.id, label: p.label })), pending.periods, false);
-    dropdown($("#ddBranch"), T().branch, (opts.branches || []).map((b) => ({ id: b.key, label: b.label })), pending.branches, true);
-    dropdown($("#ddCategory"), T().category, (opts.categories || []).map((c) => ({ id: c, label: c })), pending.categories, true);
+    const ds = dims();
+    const f = $("#filters"); f.hidden = !ds.length;
+    pending = {};
+    ["#ddPeriod", "#ddBranch", "#ddCategory"].forEach((id) => { $(id).innerHTML = ""; });
+    const slots = ["#ddPeriod", "#ddBranch", "#ddCategory"];
+    ds.forEach((d, i) => {
+      pending[d.key] = new Set(state.filters[d.key] || []);
+      const root = $(slots[i]); if (!root) return;
+      dropdown(root, d.label, d.items, pending[d.key], d.searchable);
+    });
     const chips = $("#chips"); chips.innerHTML = "";
-    const add = (kind, label, id) => chips.append(el("span", { class: "chip" }, label, el("b", { onclick: () => { state.filters[kind] = state.filters[kind].filter((x) => x !== id); loadReport(); } }, "×")));
-    state.filters.periods.forEach((id) => add("periods", ((opts.periods || []).find((p) => p.id === id) || {}).label || id, id));
-    state.filters.branches.forEach((id) => add("branches", ((opts.branches || []).find((b) => b.key === id) || {}).label || id, id));
-    state.filters.categories.forEach((id) => add("categories", id, id));
+    ds.forEach((d) => (state.filters[d.key] || []).forEach((id) => chips.append(el("span", { class: "chip" }, `${d.label}: ${((d.items.find((x) => x.id === id)) || {}).label || id}`,
+      el("b", { onclick: () => { state.filters[d.key] = state.filters[d.key].filter((x) => x !== id); loadReport(); } }, "×")))));
   }
   function applyFilters() {
-    state.filters = { periods: [...pending.periods], branches: [...pending.branches], categories: [...pending.categories] };
-    loadReport();
+    const next = {}; dims().forEach((d) => { next[d.key] = [...(pending[d.key] || [])]; });
+    state.filters = next; loadReport();
   }
-  function drill(kind, id) {  // click-through from a chart or heatmap
-    if (!id) return;
-    const list = state.filters[kind]; if (!list.includes(id)) list.push(id);
+  function drill(kind, id) {  // click-through from a chart or heatmap (only for dimensions this module has)
+    if (!id || !dims().some((d) => d.key === kind)) return;
+    const list = (state.filters[kind] = state.filters[kind] || []); if (!list.includes(id)) list.push(id);
     loadReport();
   }
   function branchKeyByLabel(label) {
-    const m = (state.report.meta.filters.options.branches || []).filter((b) => b.label === label);
-    return m.length === 1 ? m[0].key : null;
+    const d = dims().find((x) => x.key === "branches"); if (!d) return null;
+    const m = d.items.filter((b) => b.label === label);
+    return m.length === 1 ? m[0].id : null;
   }
 
   // ------------------------------------------------------------------ tables
@@ -353,19 +389,22 @@
     $("#tokenBtn").onclick = () => { $("#tokenInput").value = state.token; $("#tokenDlg").showModal(); };
     $("#tokenDlg").addEventListener("close", async () => { if ($("#tokenDlg").returnValue === "ok") { state.token = $("#tokenInput").value.trim(); store.set("token", state.token); await init(); } });
     $("#uploadBtn").onclick = () => $("#fileInput").click();
-    $("#fileInput").onchange = (e) => upload(e.target.files[0]);
+    $("#fileInput").onchange = (e) => upload(e.target.files);
     const dz = $("#dropzone");
     ["dragenter", "dragover"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("over"); }));
     ["dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("over"); }));
-    dz.addEventListener("drop", (e) => upload(e.dataTransfer.files[0]));
-    $("#datasetSelect").onchange = (e) => { state.dsId = Number(e.target.value) || null; store.set("ds", state.dsId); state.filters = { periods: [], branches: [], categories: [] }; state.tab = "summary"; loadReport(); };
+    dz.addEventListener("drop", (e) => upload(e.dataTransfer.files));
+    $("#datasetSelect").onchange = (e) => { state.dsId = e.target.value || null; store.set("ds", state.dsId || ""); resetFilters(); state.tab = "summary"; loadReport(); };
     $("#applyBtn").onclick = applyFilters;
-    $("#clearBtn").onclick = () => { state.filters = { periods: [], branches: [], categories: [] }; loadReport(); };
+    $("#clearBtn").onclick = () => { resetFilters(); loadReport(); };
     $("#pdfBtn").onclick = () => download("pdf"); $("#xlsxBtn").onclick = () => download("xlsx");
     init();
   }
   async function init() {
-    try { await loadDatasets(); await loadReport(); notice(""); } catch (e) { notice(`${T().failed}: ${e.message}`, "err"); }
+    try {
+      if (!state.modules.length) { state.modules = await api("/api/analysis"); if (!state.modules.find((m) => m.key === state.module)) state.module = state.modules[0].key; applyLang(); }
+      await loadDatasets(); await loadReport();
+    } catch (e) { notice(`${T().failed}: ${e.message}`, "err"); }
   }
   boot();
 })();

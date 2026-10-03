@@ -3,19 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Custody Analytics</title>
+<title>Management Analytics</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%232a78d6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="top">
-  <div class="brand"><span class="logo" aria-hidden="true"></span><h1 id="appTitle">تحليل العهد</h1></div>
+  <div class="brand"><span class="logo" aria-hidden="true"></span><h1 id="appTitle">منصة التحليل الإداري</h1></div>
   <div class="top-actions">
     <button id="langBtn" class="btn ghost" title="Language">EN</button>
     <button id="tokenBtn" class="btn ghost" title="Access token">🔑</button>
   </div>
 </header>
 
+<nav class="mtabs" id="moduleTabs" aria-label="modules"></nav>
 <section class="bar" id="datasetBar">
   <label class="field"><span id="lblDataset">الملف المحلل</span>
     <select id="datasetSelect"></select></label>
@@ -24,6 +25,8 @@
     <button class="btn primary" id="uploadBtn">⬆ <span id="lblUpload">رفع ملف Excel</span></button>
     <label class="field small"><span id="lblYear">السنة (إن لم تكن في الملف)</span>
       <input type="number" id="yearInput" min="2000" max="2100" placeholder="2026"></label>
+    <label class="field small" hidden><span id="lblMonth">الشهر</span>
+      <input type="number" id="monthInput" min="1" max="12" placeholder="7"></label>
     <span class="hint" id="lblDrop">أو اسحب الملف هنا</span>
   </div>
   <div class="exports">

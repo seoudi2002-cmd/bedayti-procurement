@@ -209,7 +209,14 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
                "year": dataset.period_year, "year_source": dataset.year_source}
 
     filters = filters or {}
-    rm.meta["filters"] = {"active": filters, "options": options or {}}
+    opts = options or {}
+    rm.meta["filters"] = {"active": filters, "options": opts, "dimensions": [
+        {"key": "periods", "param": "period", "label": c.t("f_period"), "searchable": False,
+         "items": [{"id": o["id"], "label": o["label"]} for o in opts.get("periods", [])]},
+        {"key": "branches", "param": "branch", "label": c.t("f_branch"), "searchable": True,
+         "items": [{"id": o["key"], "label": o["label"]} for o in opts.get("branches", [])]},
+        {"key": "categories", "param": "category", "label": c.t("f_category"), "searchable": True,
+         "items": [{"id": o, "label": o} for o in opts.get("categories", [])]}]}
     if filters:
         sel = []
         if filters.get("periods"):

@@ -98,7 +98,8 @@ def _bar(spec, lang):
         if len(series) == 1 and n <= 14:
             for i, v in enumerate(series[0]["values"]):
                 ax.text(i, v, _k(v), ha="center", va="bottom", fontsize=7.5, color=INK2)
-        ax.set_xticks(range(n), x, rotation=0 if n <= 8 else 45, ha="center" if n <= 8 else "right", fontsize=8)
+        rot = n > 8 or max((len(v) for v in x), default=0) > 11
+        ax.set_xticks(range(n), x, rotation=30 if rot else 0, ha="right" if rot else "center", fontsize=8)
         ax.grid(axis="x", visible=False)
         ax.yaxis.set_major_formatter(lambda v, _: _k(v))
     if len(series) > 1:

@@ -1,0 +1,8 @@
+# Documentation of the canonical machine fact (copier_machine). Files are read by dedicated parsers
+# (statement.py, invoice.py, evidence.py), not by the generic column mapper.
+fields:
+  - {name: branch, label: Branch as written, type: text}
+  - {name: class_key, label: Machine class / package, type: text, required: true}
+  - {name: prev_reading, label: Previous reading, type: integer}
+  - {name: cur_reading, label: Current reading, type: integer}
+  - {name: consumption, label: Consumption, type: integer}

@@ -1,0 +1,10 @@
+id: copier_analysis
+name: Copier / Printing-machine Analytics
+version: 0.1.0
+category: administration
+description: >
+  Management analysis of the monthly copier consumption statement (primary operational source) reconciled to the
+  supplier's electronic invoice (primary financial source). Scanned printer status pages are supporting evidence only.
+  Analysis only: upload -> validate -> analyze -> dashboard -> executive report (PDF/Excel).
+fact_targets: [copier_machine, copier_invoice, copier_invoice_line, copier_evidence]
+contains_personal_data: false

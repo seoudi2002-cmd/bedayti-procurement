@@ -41,6 +41,10 @@ class AnalysisDataset(Base, IdMixin, TimestampMixin):
     summary: Mapped[dict] = mapped_column(JsonType, default=dict)  # presence rows, control totals, issues, labels
     created_by: Mapped[str | None] = mapped_column(String(200))
     contains_personal_data: Mapped[bool] = mapped_column(Boolean, default=False)
+    # multi-file modules: the cycle (period) this file belongs to, its role there and its processing state
+    cycle_id: Mapped[int | None] = mapped_column(ForeignKey("analysis_cycle.id"))
+    role: Mapped[str | None] = mapped_column(String(24))  # statement | statement_word | invoice | evidence
+    status: Mapped[str] = mapped_column(String(12), default="ready", server_default="ready")  # ready | processing | failed
 
 
 class AnalysisFact(Base, IdMixin):
@@ -65,3 +69,100 @@ class AnalysisFact(Base, IdMixin):
     description_raw: Mapped[str | None] = mapped_column(Text)  # personal data: admin only
     amount: Mapped[Decimal] = mapped_column(Numeric(18, 4))
     flags: Mapped[list] = mapped_column(JsonType, default=list)
+
+
+class AnalysisCycle(Base, IdMixin, TimestampMixin):
+    """One reporting period of a module whose sources arrive as several files (e.g. a copier consumption statement,
+    its supplier invoice and supporting documents). Files of the same period are attached to one cycle."""
+
+    __tablename__ = "analysis_cycle"
+    __table_args__ = (UniqueConstraint("module_id", "period_year", "period_month", name="uq_analysis_cycle_period"),)
+
+    module_id: Mapped[str] = mapped_column(String(64))
+    period_year: Mapped[int] = mapped_column(Integer)
+    period_month: Mapped[int] = mapped_column(Integer)
+    label: Mapped[str | None] = mapped_column(String(200))
+
+
+class CopierMachine(Base, IdMixin):
+    """One machine row of the Part 1 consumption statement (primary operational source)."""
+
+    __tablename__ = "copier_machine"
+    __table_args__ = (Index("ix_copier_machine_dataset", "dataset_id"),)
+
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("analysis_dataset.id", ondelete="CASCADE"))
+    source_ref: Mapped[str] = mapped_column(String(80))
+    class_key: Mapped[str] = mapped_column(String(40))
+    package: Mapped[int | None] = mapped_column(Integer)
+    branch_source: Mapped[str] = mapped_column(String(300))  # as written
+    branch_display: Mapped[str] = mapped_column(String(300))  # presentation only (stray marker removed)
+    branch_key: Mapped[str] = mapped_column(String(300))
+    branch_id: Mapped[int | None] = mapped_column(ForeignKey("dim_branch.id"))  # only when resolved via entity_alias
+    seq: Mapped[int | None] = mapped_column(Integer)
+    prev_reading: Mapped[int | None] = mapped_column(Integer)
+    cur_reading: Mapped[int | None] = mapped_column(Integer)
+    consumption: Mapped[int | None] = mapped_column(Integer)
+    excess_stated: Mapped[int | None] = mapped_column(Integer)
+    location_group: Mapped[str | None] = mapped_column(String(120))  # from Part 2 / Word (supporting)
+    group_kind: Mapped[str | None] = mapped_column(String(20))
+    rent_detail: Mapped[int | None] = mapped_column(Integer)  # rental value written in Part 2 (supporting)
+    detail_sources: Mapped[list] = mapped_column(JsonType, default=list)
+    flags: Mapped[list] = mapped_column(JsonType, default=list)
+
+
+class CopierInvoice(Base, IdMixin):
+    __tablename__ = "copier_invoice"
+
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("analysis_dataset.id", ondelete="CASCADE"), unique=True)
+    internal_no: Mapped[str | None] = mapped_column(String(40))
+    electronic_id: Mapped[str | None] = mapped_column(String(60))
+    issued_on: Mapped[date | None] = mapped_column(Date)
+    status: Mapped[str | None] = mapped_column(String(40))
+    seller_reg: Mapped[str | None] = mapped_column(String(40))
+    buyer_reg: Mapped[str | None] = mapped_column(String(40))
+    seller_name: Mapped[str | None] = mapped_column(String(300))
+    buyer_name: Mapped[str | None] = mapped_column(String(300))
+    totals: Mapped[dict] = mapped_column(JsonType, default=dict)  # as stated on the invoice
+    issues: Mapped[list] = mapped_column(JsonType, default=list)
+
+
+class CopierInvoiceLine(Base, IdMixin):
+    __tablename__ = "copier_invoice_line"
+
+    invoice_id: Mapped[int] = mapped_column(ForeignKey("copier_invoice.id", ondelete="CASCADE"))
+    line_no: Mapped[int] = mapped_column(Integer)
+    page: Mapped[int] = mapped_column(Integer)
+    description: Mapped[str] = mapped_column(Text)
+    kind: Mapped[str] = mapped_column(String(10))  # rent | excess | other
+    packages: Mapped[list] = mapped_column(JsonType, default=list)
+    color: Mapped[bool] = mapped_column(Boolean, default=False)
+    a3: Mapped[bool] = mapped_column(Boolean, default=False)
+    printers: Mapped[bool] = mapped_column(Boolean, default=False)
+    qty: Mapped[Decimal | None] = mapped_column(Numeric(18, 5))
+    unit_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 5))
+    sales_total: Mapped[Decimal | None] = mapped_column(Numeric(18, 5))
+    net_total: Mapped[Decimal | None] = mapped_column(Numeric(18, 5))
+    vat_value: Mapped[Decimal | None] = mapped_column(Numeric(18, 5))
+    vat_rate: Mapped[Decimal | None] = mapped_column(Numeric(8, 3))
+    wht_value: Mapped[Decimal | None] = mapped_column(Numeric(18, 5))
+    wht_rate: Mapped[Decimal | None] = mapped_column(Numeric(8, 3))
+    total: Mapped[Decimal | None] = mapped_column(Numeric(18, 5))
+    period_from: Mapped[date | None] = mapped_column(Date)
+    period_to: Mapped[date | None] = mapped_column(Date)
+    flags: Mapped[list] = mapped_column(JsonType, default=list)
+
+
+class CopierEvidence(Base, IdMixin):
+    """A scanned printer status page: SUPPORTING EVIDENCE ONLY. Never an input to KPIs, costs or totals."""
+
+    __tablename__ = "copier_evidence"
+
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("analysis_dataset.id", ondelete="CASCADE"))
+    page_no: Mapped[int] = mapped_column(Integer)
+    counter_value: Mapped[int | None] = mapped_column(Integer)
+    counter_raw: Mapped[str | None] = mapped_column(String(40))
+    printed_at_text: Mapped[str | None] = mapped_column(String(40))
+    confidence: Mapped[float | None] = mapped_column(Numeric(5, 2))
+    status: Mapped[str] = mapped_column(String(16), default="unreadable")  # matched | no_match | unreadable | duplicate | ambiguous
+    matched_machine_ref: Mapped[str | None] = mapped_column(String(80))
+    note: Mapped[str | None] = mapped_column(String(300))

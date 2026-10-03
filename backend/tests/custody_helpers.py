@@ -1,4 +1,5 @@
 """Synthetic workbooks that mimic the structure of the custody report files (no real data)."""
+import functools
 import io
 
 from openpyxl import Workbook
@@ -48,6 +49,7 @@ def gl_workbook(lines, with_year_title=True, pivot_total_wrong=False) -> bytes:
     return _save(wb)
 
 
+@functools.lru_cache(maxsize=None)  # same bytes every call: saved workbooks embed a timestamp, which would break duplicate-upload tests
 def standard_gl() -> bytes:
     rows = [
         (100000, 51080000, "Governmental Fees", 3401, "Head Office ", DESC.format(n=1), "JE301", 1),

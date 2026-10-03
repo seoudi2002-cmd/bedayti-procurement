@@ -12,7 +12,7 @@ from openpyxl.utils import get_column_letter
 from app.core.reporting.base import ReportModel
 from app.core.reporting.charts import render_chart
 
-FORMATS = {"money": "#,##0.00", "smoney": "+#,##0.00;-#,##0.00;0.00", "pct": '0.0"%"', "spct": '+0.0"%";-0.0"%"', "int": "#,##0"}
+FORMATS = {"money": "#,##0.00", "smoney": "+#,##0.00;-#,##0.00;0.00", "pct": '0.0"%"', "spct": '+0.0"%";-0.0"%"', "int": "#,##0", "money3": "#,##0.000", "num": "#,##0.00", "snum": "+#,##0.00;-#,##0.00;0.00"}
 HEAD = PatternFill("solid", fgColor="2A78D6")
 CARD = PatternFill("solid", fgColor="F4F6FA")
 

@@ -42,6 +42,12 @@ def fmt(v, kind: str) -> str:
             return f"{Decimal(str(v)):,.0f}"
         if kind == "smoney":
             return f"{Decimal(str(v)):+,.0f}"
+        if kind == "money3":
+            return f"{Decimal(str(v)):,.3f}"
+        if kind == "num":
+            return f"{Decimal(str(v)):,.2f}"
+        if kind == "snum":
+            return f"{Decimal(str(v)):+,.2f}"
         if kind == "pct":
             return f"{float(v):.1f}%"
         if kind == "spct":
@@ -195,6 +201,8 @@ class PdfExporter:
         cols = tb["columns"]
         if tb.get("pdf_cols") and len(cols) > tb["pdf_cols"] + 2:  # keep the label, the first N value columns and the total
             cols = cols[: tb["pdf_cols"] + 1] + cols[-1:]
+        if tb.get("pdf_skip"):  # columns kept for Excel/the dashboard but left out of the printed page
+            cols = [x for x in cols if x["key"] not in tb["pdf_skip"]]
         rows = tb["rows"][: tb.get("pdf_rows", 15)]
         if not rows:
             return []

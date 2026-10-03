@@ -13,4 +13,6 @@ from app.models.quality import DataException  # noqa: F401
 from app.models.registers import FinanceHandover, Requisition  # noqa: F401
 from app.models.extraction import ExtractedDocument, ExtractedLine, ExtractedPage, ExtractionJob, PoLineAllocation  # noqa: F401
 from app.models.overrides import DataOverride  # noqa: F401
-from app.models.analysis import AnalysisDataset, AnalysisFact, AppSetting  # noqa: F401
+from app.models.analysis import (  # noqa: F401
+    AnalysisCycle, AnalysisDataset, AnalysisFact, AppSetting, CopierEvidence, CopierInvoice, CopierInvoiceLine, CopierMachine,
+)

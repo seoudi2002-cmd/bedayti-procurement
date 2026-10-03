@@ -44,7 +44,7 @@ purchase orders (header-level register + line-level), finance handover**, entity
 `data_exception` workflow, auditable branch attribution, procurement document graph, KPI engine, role-based API
 (viewer/analyst/admin; personal data admin-only).
 
-**Custody analytics dashboard:** open `/app/` on the API (see `docs/CUSTODY_ANALYTICS.md`). **Custody analytics:** see `docs/CUSTODY_ANALYTICS.md`. **Document extraction:** see `docs/DOCUMENT_EXTRACTION.md`. **Not yet:** payment ledger, other modules (see `docs/MODULE_CATALOG.md`, incl. Financial Custody
+**Copier analytics:** see `docs/COPIER_ANALYTICS.md` (dashboard module tab "Copiers"). **Custody analytics dashboard:** open `/app/` on the API (see `docs/CUSTODY_ANALYTICS.md`). **Custody analytics:** see `docs/CUSTODY_ANALYTICS.md`. **Document extraction:** see `docs/DOCUMENT_EXTRACTION.md`. **Not yet:** payment ledger, other modules (see `docs/MODULE_CATALOG.md`, incl. Financial Custody
 design), dashboards/frontend, insight engine, report exports, AI assistant, SSO.
 
 Docs: `docs/ARCHITECTURE.md` · `docs/SCHEMA_PROPOSAL_v3.md` · `docs/MODULE_CATALOG.md` · `docs/DOCUMENT_INTAKE.md` ·

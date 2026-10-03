@@ -1,32 +1,32 @@
-"""Analysis & reporting API (custody analytics first). Upload a management Excel file, get the validated analysis
-as JSON, PDF or Excel. Analysis only: no transaction workflow. Holder names are personal data: admin only."""
+"""Generic analysis & reporting API: /api/analysis/<module>/... for every analysis module registered in
+app.core.analysis.registry (custody, copiers, ...). Upload a management file, get the validated analysis as JSON, PDF or
+Excel. Analysis only: no transaction workflow. Personal data is admin-only (decided inside each module's report)."""
 from dataclasses import asdict
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
-from sqlalchemy import select
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.core.analysis import AnalysisError
+from app.core.analysis.registry import adapters, get_adapter
 from app.core.auth import Principal, require
 from app.core.reporting.excel import ExcelExporter
 from app.core.reporting.pdf import PdfExporter
 from app.core.settings_store import (
-    custody_default_thresholds, effective_thresholds, get_setting, set_setting, validate_thresholds,
+    KNOWN_KEYS, default_thresholds, effective_thresholds, get_setting, set_setting, validate_thresholds,
 )
 from app.db import get_session
-from app.models import AnalysisDataset
-from app.modules.custody_analysis import layouts, service
 
-router = APIRouter(prefix="/analysis/custody")
+router = APIRouter(prefix="/analysis")
 settings_router = APIRouter(prefix="/settings")
 
 
-def _dataset(session: Session, dataset_id: int) -> AnalysisDataset:
-    ds = session.get(AnalysisDataset, dataset_id)
-    if ds is None:
-        raise HTTPException(404, "Dataset not found")
-    return ds
+def _adapter(key: str):
+    try:
+        return get_adapter(key)
+    except AnalysisError as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
 
 
 def _jsonable(o):
@@ -34,118 +34,116 @@ def _jsonable(o):
         return float(o)
     if isinstance(o, dict):
         return {str(k): _jsonable(v) for k, v in o.items()}
-    if isinstance(o, (list, tuple)):
+    if isinstance(o, (list, tuple, set)):
         return [_jsonable(v) for v in o]
     return o
 
 
-def _meta(ds: AnalysisDataset, admin: bool) -> dict:
-    s = ds.summary or {}
-    return {"id": ds.id, "layout": ds.layout, "scope": ds.scope_label, "file_name": ds.file_name, "title": ds.title,
-            "year": ds.period_year, "year_source": ds.year_source, "facts": ds.facts_count, "months": s.get("months", []),
-            "sheets": s.get("sheets", []), "skipped_sheets": s.get("skipped_sheets", []), "issues": s.get("issues", []),
-            "controls": s.get("controls", []), "suggested_groups": s.get("suggested_groups", []),
-            "created_by": ds.created_by, "created_at": ds.created_at}
+@router.get("")
+def modules(principal: Principal = Depends(require("viewer"))):
+    return [{"key": a.info.key, "label": a.info.label, "accepts": list(a.info.accepts), "upload_hint": a.info.upload_hint,
+             "filters": a.info.filters} for a in adapters().values()]
 
 
-@router.post("/datasets", status_code=201)
-async def upload(file: UploadFile = File(...), year: int | None = Form(None), layout: str | None = Form(None),
-                 scope: str | None = Form(None), session: Session = Depends(get_session),
-                 principal: Principal = Depends(require("analyst"))):
+@router.post("/{key}/datasets", status_code=201)
+async def upload(key: str, background: BackgroundTasks, response: Response, file: UploadFile = File(...),
+                 year: int | None = Form(None), layout: str | None = Form(None), scope: str | None = Form(None),
+                 session: Session = Depends(get_session), principal: Principal = Depends(require("analyst"))):
+    ad = _adapter(key)
     content = await file.read()
     if len(content) > get_settings().max_upload_mb * 1024 * 1024:
         raise HTTPException(413, "File too large")
-    if not (file.filename or "").lower().endswith((".xlsx", ".xlsm")):
-        raise HTTPException(400, "Only Excel workbooks (.xlsx) are supported for custody analytics")
     try:
-        ds = service.ingest(session, content, file.filename or "upload.xlsx", principal.name, year, layout, scope)
-    except service.DuplicateDataset as exc:
-        raise HTTPException(409, {"message": str(exc), "dataset_id": exc.dataset_id}) from exc
-    except layouts.UnrecognisedLayout as exc:
-        raise HTTPException(422, str(exc)) from exc
-    except Exception as exc:  # an unreadable workbook must not become a 500
-        if exc.__class__.__name__ in ("BadZipFile", "InvalidFileException"):
-            raise HTTPException(400, "The file is not a readable Excel workbook") from exc
-        raise
-    return _meta(ds, principal.at_least("admin"))
+        res = ad.ingest(session, content, file.filename or "upload", principal.name, {"year": year, "layout": layout, "scope": scope})
+    except AnalysisError as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
+    if res.background:
+        background.add_task(res.background)
+    response.status_code = res.status
+    return res.meta
 
 
-@router.get("/datasets")
-def list_datasets(session: Session = Depends(get_session), principal: Principal = Depends(require("viewer"))):
-    rows = session.scalars(select(AnalysisDataset).order_by(AnalysisDataset.id.desc())).all()
-    return [{"id": d.id, "layout": d.layout, "scope": d.scope_label, "file_name": d.file_name, "facts": d.facts_count,
-             "months": (d.summary or {}).get("months", []), "year": d.period_year, "created_at": d.created_at} for d in rows]
+@router.get("/{key}/datasets")
+def list_items(key: str, session: Session = Depends(get_session), principal: Principal = Depends(require("viewer"))):
+    return _jsonable(_adapter(key).list_items(session))
 
 
-@router.get("/datasets/{dataset_id}")
-def dataset(dataset_id: int, session: Session = Depends(get_session), principal: Principal = Depends(require("viewer"))):
-    return _meta(_dataset(session, dataset_id), principal.at_least("admin"))
+@router.get("/{key}/datasets/{item_id}")
+def item(key: str, item_id: str, session: Session = Depends(get_session), principal: Principal = Depends(require("viewer"))):
+    try:
+        return _jsonable(_adapter(key).item_meta(session, item_id, principal.at_least("admin")))
+    except AnalysisError as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
 
 
-@router.delete("/datasets/{dataset_id}", status_code=204)
-def delete(dataset_id: int, session: Session = Depends(get_session), principal: Principal = Depends(require("admin"))):
-    _dataset(session, dataset_id)
-    service.delete_dataset(session, dataset_id)
+@router.delete("/{key}/datasets/{item_id}", status_code=204)
+def delete(key: str, item_id: str, session: Session = Depends(get_session), principal: Principal = Depends(require("admin"))):
+    try:
+        _adapter(key).delete_item(session, item_id)
+    except AnalysisError as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
 
 
-def _report(session, dataset_id: int, lang: str, principal: Principal, period=None, branch=None, category=None):
+def _report(request: Request, key: str, item_id: str, lang: str, session: Session, principal: Principal):
     if lang not in ("ar", "en"):
         raise HTTPException(422, "lang must be 'ar' or 'en'")
-    ds = _dataset(session, dataset_id)
-    filters = {"periods": period or [], "branches": branch or [], "categories": category or []}
-    return service.build(session, ds, lang, principal.at_least("admin"), filters)
+    ad = _adapter(key)
+    filters = {fk: request.query_params.getlist(param) for fk, param in ad.info.filters.items()}
+    try:
+        rm, a = ad.build(session, item_id, lang, principal.at_least("admin"), filters)
+    except AnalysisError as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
+    return ad, rm, a
 
 
-# the same three filters drive the dashboard and both downloads, so an export is exactly what is on screen
-Period = Query(None, description="period id(s) like 2026-03 (repeatable)")
-Branch = Query(None, description="branch key(s) from the filter options (repeatable)")
-Category = Query(None, description="category name(s) as written in the file (repeatable)")
-
-
-@router.get("/datasets/{dataset_id}/report")
-def report_json(dataset_id: int, lang: str = "ar", period: list[str] | None = Period, branch: list[str] | None = Branch,
-                category: list[str] | None = Category, session: Session = Depends(get_session),
+@router.get("/{key}/datasets/{item_id}/report")
+def report_json(request: Request, key: str, item_id: str, lang: str = "ar", session: Session = Depends(get_session),
                 principal: Principal = Depends(require("viewer"))):
-    rm, a = _report(session, dataset_id, lang, principal, period, branch, category)
-    return _jsonable({"report": asdict(rm), "analysis": {k: a[k] for k in (
-        "total", "capabilities", "periods", "by_category", "by_scope", "by_branch", "by_group", "outliers", "variance",
-        "unsupported", "thresholds", "thresholds_origin")}})
+    ad, rm, a = _report(request, key, item_id, lang, session, principal)
+    return _jsonable({"report": asdict(rm), "analysis": ad.api_analysis(a)})
 
 
-@router.get("/datasets/{dataset_id}/report.pdf")
-def report_pdf(dataset_id: int, lang: str = "ar", period: list[str] | None = Period, branch: list[str] | None = Branch,
-               category: list[str] | None = Category, session: Session = Depends(get_session),
+@router.get("/{key}/datasets/{item_id}/report.pdf")
+def report_pdf(request: Request, key: str, item_id: str, lang: str = "ar", session: Session = Depends(get_session),
                principal: Principal = Depends(require("viewer"))):
-    rm, _ = _report(session, dataset_id, lang, principal, period, branch, category)
+    _, rm, _a = _report(request, key, item_id, lang, session, principal)
     return Response(PdfExporter().render(rm), media_type="application/pdf",
-                    headers={"Content-Disposition": f'attachment; filename="custody_analysis_{dataset_id}_{lang}.pdf"'})
+                    headers={"Content-Disposition": f'attachment; filename="{key}_analysis_{item_id}_{lang}.pdf"'})
 
 
-@router.get("/datasets/{dataset_id}/report.xlsx")
-def report_xlsx(dataset_id: int, lang: str = "ar", period: list[str] | None = Period, branch: list[str] | None = Branch,
-                category: list[str] | None = Category, session: Session = Depends(get_session),
+@router.get("/{key}/datasets/{item_id}/report.xlsx")
+def report_xlsx(request: Request, key: str, item_id: str, lang: str = "ar", session: Session = Depends(get_session),
                 principal: Principal = Depends(require("viewer"))):
-    rm, _ = _report(session, dataset_id, lang, principal, period, branch, category)
+    _, rm, _a = _report(request, key, item_id, lang, session, principal)
     return Response(ExcelExporter().render(rm),
                     media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    headers={"Content-Disposition": f'attachment; filename="custody_analysis_{dataset_id}_{lang}.xlsx"'})
+                    headers={"Content-Disposition": f'attachment; filename="{key}_analysis_{item_id}_{lang}.xlsx"'})
 
 
 # ------------------------------------------------------------------ settings (admin; no code change needed)
-@settings_router.get("/custody.thresholds")
-def get_thresholds(session: Session = Depends(get_session), principal: Principal = Depends(require("viewer"))):
-    eff, origin = effective_thresholds(session)
-    return {"effective": eff, "origin": origin, "defaults": custody_default_thresholds()}
+def _threshold_module(name: str) -> str:
+    module = name.split(".")[0]
+    if name != f"{module}.thresholds" or name not in KNOWN_KEYS:
+        raise HTTPException(404, "Unknown setting")
+    return module
 
 
-@settings_router.put("/custody.thresholds")
-def put_thresholds(values: dict, session: Session = Depends(get_session), principal: Principal = Depends(require("admin"))):
+@settings_router.get("/{name}.thresholds")
+def get_thresholds(name: str, session: Session = Depends(get_session), principal: Principal = Depends(require("viewer"))):
+    module = _threshold_module(f"{name}.thresholds")
+    eff, origin = effective_thresholds(session, module)
+    return {"effective": eff, "origin": origin, "defaults": default_thresholds(module)}
+
+
+@settings_router.put("/{name}.thresholds")
+def put_thresholds(name: str, values: dict, session: Session = Depends(get_session), principal: Principal = Depends(require("admin"))):
+    module = _threshold_module(f"{name}.thresholds")
     try:
-        merged = {**(get_setting(session, "custody.thresholds", {}) or {}), **validate_thresholds(values)}
+        merged = {**(get_setting(session, f"{module}.thresholds", {}) or {}), **validate_thresholds(values, module)}
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
-    set_setting(session, "custody.thresholds", merged, principal.name)
-    eff, origin = effective_thresholds(session)
+    set_setting(session, f"{module}.thresholds", merged, principal.name)
+    eff, origin = effective_thresholds(session, module)
     return {"effective": eff, "origin": origin}
 
 

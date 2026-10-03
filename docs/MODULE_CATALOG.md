@@ -16,7 +16,7 @@ problems to `data_exception`.
 | 6 | Payments | designed | `payment` (bank date, reference, amount, handover_id) | payment ledger |
 | 7 | Branches & Regions | **built** | `dim_region`, `dim_branch`, `branch_contact` | codes, area m², regional offices |
 | 8 | Employees | **built** (freshness-flagged) | `dim_employee` | as-of date, department/manager source |
-| 9 | Printing / Copiers | designed | `dim_asset(copier)`, meter readings → `fact_usage`, rental invoices → `fact_cost` | machine register, meter reads, rental invoices |
+| 9 | Printing / Copiers | **analysis & reporting implemented** (`copier_analysis`, see `COPIER_ANALYTICS.md`) | `dim_asset(copier)`, meter readings → `fact_usage`, rental invoices → `fact_cost` | machine register, meter reads, rental invoices |
 | 10 | Paper consumption | designed | `fact_usage(reams)`, allocations per branch | distribution/allocation list (the `الفروع الجديدة` sheet?) |
 | 11 | Rentals / Leases | designed | `lease_contract` (start/end/escalation/area), rent → `fact_cost` | lease register |
 | 12 | Vehicles / Fleet | designed | `dim_asset(vehicle)`, fuel/maintenance/km → `fact_usage`/`fact_cost` | vehicle register, fuel & maintenance logs |

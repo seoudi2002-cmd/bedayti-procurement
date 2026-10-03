@@ -78,3 +78,7 @@ dialog input{width:100%;padding:8px;margin:8px 0;border:1px solid var(--axis);bo
 .chart.wide{grid-column:1/-1}
 .heat .ch{white-space:normal;font-size:10.5px;line-height:1.2;max-width:none;overflow:visible}
 .heat .rh{white-space:normal;overflow:hidden}
+
+.mtabs{display:flex;gap:6px;padding:10px 20px 0;background:var(--surface)}
+.mtab{padding:7px 16px;border:1px solid var(--axis);border-radius:999px;background:var(--card);color:var(--ink2);cursor:pointer;font:inherit}
+.mtab.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
