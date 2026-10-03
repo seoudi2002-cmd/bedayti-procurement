@@ -172,6 +172,13 @@ def test_reports_match_the_invoices_and_the_primary_table(session):
     assert [c["key"] for c in table["columns"]] == ["branch", "sent_n", "sent_c", "recv_n", "recv_c", "tot_n", "tot_c", "avg"]
     assert table["rows"][-1]["sent_c"] == table["rows"][-1]["recv_c"] == a["totals"]["net"]
     assert any(t["key"] == "pm_c" for t in rm.sections[2].tables)                                      # party x month matrix with 2+ months
+    det = next(t for t in rm.sections[2].tables if t["key"] == "branch_by_month")["rows"]               # the primary table, for every month
+    fay8, fay9 = (next(d for d in det if d["month"].startswith(m) and d["branch"] == "الفيوم") for m in ("Aug", "Sep"))
+    assert (fay8["sent_n"], fay8["recv_n"], fay9["sent_n"], fay9["recv_n"]) == (2, 1, 2, 1)
+    assert fay8["dc"] is None and fay9["dc"] == fay9["tot_c"] - fay8["tot_c"]
+    for mm in ("Aug", "Sep"):                                                                           # each month's Σ sent = Σ received
+        rr = [d for d in det if d["month"].startswith(mm)]
+        assert sum(d["sent_c"] for d in rr) == sum(d["recv_c"] for d in rr) and sum(d["sent_n"] for d in rr) == sum(d["recv_n"] for d in rr)
     for iid in (1, 2):
         _rm, ai = ad.build(session, f"inv:{iid}", "ar", True, {})
         assert ai["totals"]["net"] == Decimal(inv_net[iid]) and ai["recons"][iid]["summary"]["diff"] == 0

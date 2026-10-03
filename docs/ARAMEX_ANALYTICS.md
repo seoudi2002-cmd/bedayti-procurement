@@ -34,7 +34,7 @@ Controls: Σ sent cost = Σ received cost = scope total; Σ counts likewise; no 
 Because a shipment between two parties is attributed to both, the branches' «total» columns count it twice (stated in the report).
 
 ## Items
-`all` (every complete invoice, with a party × month matrix) · `m:YYYY-MM` (one month vs the previous month; a month the uploaded invoices do not fully cover is marked *partial*;
+`all` (every complete invoice, with the main table repeated **for every month** — sent / received count and cost, total, average, change in total cost vs the party's previous month — and a party × month matrix) · `m:YYYY-MM` (one month vs the previous month; a month the uploaded invoices do not fully cover is marked *partial*;
 if the previous month is not uploaded the comparison is «not available», never zeros) · `inv:<id>` (one invoice with its full reconciliation). Month = pick-up date.
 Filters: party, service, city. With filters the invoice controls are not shown.
 

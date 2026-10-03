@@ -15,6 +15,7 @@ T = {
         "k_n": "الشحنات", "k_net": "التكلفة قبل الضريبة", "k_gross": "الإجمالي شامل الضريبة", "k_avg": "متوسط تكلفة الشحنة", "k_branches": "فروع لها حركة",
         "k_conf": "شحنات مربوطة بيقين (الطرفان)", "k_unalloc": "Unallocated / يحتاج مراجعة", "k_kg": "الوزن المحاسبي", "egp": "ج.م", "kg": "كجم", "ship": "شحنة",
         "hq": "المركز الرئيسي (Head Office)", "unalloc": "Unallocated / يحتاج مراجعة", "total": "الإجمالي",
+        "t_detail": "الجدول الرئيسي لكل شهر: الصادر والوارد لكل فرع", "c_dtc": "تغير الإجمالي عن الشهر السابق", "c_dtcp": "تغير الإجمالي %",
         "c_branch": "الفرع", "c_sent_n": "شحنات صادرة", "c_sent_c": "تكلفة الصادر", "c_recv_n": "شحنات واردة", "c_recv_c": "تكلفة الوارد", "c_tot_n": "إجمالي الشحنات",
         "c_tot_c": "إجمالي التكلفة", "c_avg": "متوسط تكلفة الشحنة", "c_month": "الشهر", "c_n": "الشحنات", "c_net": "قبل الضريبة", "c_gross": "شامل الضريبة", "c_d": "التغير",
         "c_dpct": "التغير %", "c_cur_n": "شحنات الشهر", "c_prev_n": "الشهر السابق", "c_cur_c": "تكلفة الشهر", "c_prev_c": "تكلفة السابق", "c_dn": "تغير العدد",
@@ -71,6 +72,7 @@ T = {
         "k_n": "Shipments", "k_net": "Cost before tax", "k_gross": "Total incl. tax", "k_avg": "Average cost per shipment", "k_branches": "Branches with activity",
         "k_conf": "Confirmed on both sides", "k_unalloc": "Unallocated / needs review", "k_kg": "Billed weight", "egp": "EGP", "kg": "kg", "ship": "shipments",
         "hq": "Head Office", "unalloc": "Unallocated / needs review", "total": "Total",
+        "t_detail": "Main table for every month: sent and received per branch", "c_dtc": "Total cost change vs previous month", "c_dtcp": "Total cost change %",
         "c_branch": "Branch", "c_sent_n": "Shipments sent", "c_sent_c": "Cost sent", "c_recv_n": "Shipments received", "c_recv_c": "Cost received", "c_tot_n": "Total shipments",
         "c_tot_c": "Total cost", "c_avg": "Avg cost per shipment", "c_month": "Month", "c_n": "Shipments", "c_net": "Before tax", "c_gross": "Incl. tax", "c_d": "Change",
         "c_dpct": "Change %", "c_cur_n": "Shipments this month", "c_prev_n": "Previous month", "c_cur_c": "Cost this month", "c_prev_c": "Previous cost", "c_dn": "Change in count",
@@ -248,7 +250,15 @@ def build_report(scope: dict, a: dict, invoices: list[dict], recons: dict, merge
                           "dc": r["d_cost"], "dcp": r["d_cost_pct"]} for r in mom["rows"]], "pdf_rows": 60})
         else:
             sec.insights.append({"severity": "info", "text": c.t("prev_missing")})
-    elif len(months) >= 2:
+    if scope["kind"] != "month" and months:
+        sec.tables.append({"key": "branch_by_month", "title": c.t("t_detail"), "columns": [
+            col("month", c.t("c_month")), col("branch", c.t("c_branch")), col("sent_n", c.t("c_sent_n"), "int"), col("sent_c", c.t("c_sent_c"), "money"), col("recv_n", c.t("c_recv_n"), "int"),
+            col("recv_c", c.t("c_recv_c"), "money"), col("tot_n", c.t("c_tot_n"), "int"), col("tot_c", c.t("c_tot_c"), "money"), col("avg", c.t("c_avg"), "money"),
+            col("dc", c.t("c_dtc"), "smoney"), col("dcp", c.t("c_dtcp"), "spct")],
+            "rows": [{"month": _fmt_month(lang, d["period"]), "branch": c.party(d), "sent_n": d["sent_n"], "sent_c": d["sent_cost"], "recv_n": d["recv_n"], "recv_c": d["recv_cost"],
+                      "tot_n": d["total_n"], "tot_c": d["total_cost"], "avg": d["avg_cost"], "dc": d.get("d_cost"), "dcp": d.get("d_cost_pct")} for d in a["party_month_detail"]],
+            "pdf_rows": 70})
+    if scope["kind"] != "month" and len(months) >= 2:
         pm = a["party_months"]
         ms = [m["period"] for m in months]
         order = [p for p in parties]

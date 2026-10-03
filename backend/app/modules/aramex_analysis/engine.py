@@ -114,6 +114,33 @@ def party_months(rows: list[dict]) -> dict[str, dict]:
     return out
 
 
+def party_month_detail(rows: list[dict]) -> list[dict]:
+    """The primary table per month: one row per (month, party) with sent / received shipments and cost, plus the change in total cost
+    against the same party's previous calendar month (None when that month is not uploaded)."""
+    by: dict[tuple, dict] = {}
+    for r in rows:
+        m = month_of(r)
+        if m is None:
+            continue
+        for side, pre in (("sender", "sent"), ("receiver", "recv")):
+            p = r[side]
+            c = by.setdefault((m, p["key"]), {"period": m, "key": p["key"], "kind": p["kind"], "name": p["display"], "sent_n": 0, "sent_cost": ZERO, "recv_n": 0, "recv_cost": ZERO})
+            c[pre + "_n"] += 1
+            c[pre + "_cost"] += r["net"]
+    months = {m for m, _ in by}
+    for (m, k), c in by.items():
+        c["total_n"], c["total_cost"] = c["sent_n"] + c["recv_n"], c["sent_cost"] + c["recv_cost"]
+        c["avg_cost"] = c["total_cost"] / c["total_n"]
+        prev = by.get((_prev_month(m), k))
+        if prev is not None:
+            c["d_cost"] = c["total_cost"] - prev["sent_cost"] - prev["recv_cost"]
+            c["d_cost_pct"] = _pct(c["d_cost"], prev["sent_cost"] + prev["recv_cost"])
+        elif _prev_month(m) in months:
+            c["d_cost"], c["d_cost_pct"] = c["total_cost"], None       # present this month, absent last month
+    order = {"branch": 0, "head_office": 1, "unallocated": 2}
+    return sorted(by.values(), key=lambda c: (c["period"], order[c["kind"]], -c["total_cost"], c["name"] or ""))
+
+
 def months_table(rows: list[dict], coverage: tuple[date, date] | None) -> list[dict]:
     by: dict[tuple, dict] = {}
     for r in rows:
@@ -251,7 +278,7 @@ def analyze(all_rows: list[dict], scope_rows: list[dict], th: dict, rates: dict,
     ctrl["ok"] = ctrl["sent_n"] == ctrl["recv_n"] == totals["n"] and ctrl["sent_cost"] == ctrl["recv_cost"] == net
     ids = [r["awb"] for r in scope_rows]
     ctrl["duplicate_awb"] = len(ids) - len(set(ids))
-    a = {"totals": totals, "parties": parties, "controls": ctrl, "months": months_table(all_rows, coverage), "party_months": party_months(all_rows),
+    a = {"totals": totals, "parties": parties, "controls": ctrl, "months": months_table(all_rows, coverage), "party_months": party_months(all_rows), "party_month_detail": party_month_detail(all_rows),
          "allocation": allocation_quality(scope_rows), "support": support(scope_rows, th, rates), "month": month, "filtered": filtered,
          "thresholds": th}
     if month:
