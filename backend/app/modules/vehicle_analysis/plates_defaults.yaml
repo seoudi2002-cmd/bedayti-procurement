@@ -1,0 +1,3 @@
+# Approved plate aliases: two spellings of the same vehicle in different files, written "variant=canonical" (the canonical one is shown).
+# Empty by default: spellings are linked only by an exact match or by a digits-only source with a unique number, never by guessing.
+aliases: []

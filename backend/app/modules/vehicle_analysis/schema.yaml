@@ -1,0 +1,6 @@
+# Documentation of the stored records (op_record kinds vehicle_cost, vehicle_usage, vehicle_service, vehicle_claim). Files are read by dedicated readers.
+fields:
+  - {name: plate, label: Vehicle plate as written, type: text, required: true}
+  - {name: period, label: Month, type: text, required: true}
+  - {name: grand_total, label: Total cost of the month as stated, type: number}
+  - {name: km, label: Distance as stated, type: number}

@@ -1,0 +1,8 @@
+# INITIAL VALUES — awaiting the owner's confirmation. Effective values live in the system setting `vehicles.thresholds`
+# (PUT /api/settings/vehicles.thresholds, admin, no code change); every report states the values used.
+top_n: 10                  # rows in "top" tables and charts
+mom_change_pct: 25         # a month-on-month change in the total above this is remarked
+outlier_factor: 3          # a vehicle-month total above this multiple of the vehicle's own median month is listed
+min_outlier_months: 3      # months of figures a vehicle needs before the above is judged
+service_due_km: 1000       # a service item with this many km (or fewer) remaining is listed as due soon
+partial_month_share: 0.5   # a month in which fewer than this share of the usual number of vehicles have a non-zero cost is flagged as probably incomplete

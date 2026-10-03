@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from functools import lru_cache
 
 import pytest
 
@@ -19,7 +20,8 @@ from tests.test_procurement_registers import (
 )
 
 
-def register_book(extra_sheet=False):
+@lru_cache(maxsize=None)
+def register_book(extra_sheet=False):   # cached: a re-saved workbook embeds a timestamp, which made the same-file-twice assertions flaky
     reqs = [req_row(1, "1/2026", datetime(2026, 1, 5), "IT"), req_row(2, "2/2026", datetime(2026, 1, 6), "Admin"),
             req_row(3, "3/2026", datetime(2026, 2, 3), "IT"), req_row(4, "4/2026", datetime(2026, 2, 4), "Admin")]
     pos = [po_row(1, "1/2026", datetime(2026, 1, 12), "Alpha Co", 1, "x", "1/2026", 1000, 1000, status="مكتمل وتم السداد"),

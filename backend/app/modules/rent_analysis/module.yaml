@@ -1,0 +1,10 @@
+id: rent_analysis
+name: Rent Contracts Analytics
+version: 0.1.0
+category: administration
+description: >
+  Management analysis of the branch / Head Office rent contracts: recorded rent per month, per governorate and per branch; the annual
+  increases and other changes; contracts approaching their end date. Values change over time, so every uploaded file is kept as a version
+  and the value in any month, and how it changed between files, is preserved. Analysis only: upload -> validate -> analyze -> dashboard -> executive report (PDF/Excel).
+fact_targets: [op_record]
+contains_personal_data: true

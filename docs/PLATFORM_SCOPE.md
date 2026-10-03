@@ -15,7 +15,7 @@ Files, regulations and reports the owner supplies are **kept as versioned source
 Implemented: `docs/REFERENCE_LIBRARY.md` (versioned reference sources — asset register stored; documents stored with their page text).
 
 ## Built (see each module's document)
-Financial custody (F1–F4, incl. the temporary-advance register) · Copiers / printing machines (+ paper distribution and consumption) · Aramex shipping (per branch: sent / received, monthly) · Procurement registers (POs, requisitions, suppliers, finance handover) · master data (branches, employees, suppliers) · PO document extraction.
+Financial custody (F1–F4, incl. the temporary-advance register) · Copiers / printing machines (+ paper distribution and consumption) · Aramex shipping (per branch: sent / received, monthly) · Procurement registers (POs, requisitions, suppliers, finance handover) · Rent contracts, vehicle fleet and overtime — operating data kept as versioned history (`docs/OPERATING_MODULES.md`) · master data (branches, employees, suppliers) · PO document extraction.
 
 ## Next phase (in this order; nothing else starts before it is reported)
 1. **Asset register** — recorded as core **reference master data**, as received (even if it is not up to date to the end of 2024); no edits, no guessing of missing fields; the updated file later becomes a new version and earlier versions are kept.

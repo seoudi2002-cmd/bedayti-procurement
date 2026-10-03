@@ -1,0 +1,7 @@
+# Documentation of the stored records (op_record, kind overtime). The workbook is read by a dedicated reader (workbook.py).
+fields:
+  - {name: employee_code, label: Employee code (names are personal data, admin-only), type: text, required: true}
+  - {name: period, label: Month (from the sheet title), type: text, required: true}
+  - {name: day_hours, label: Day overtime hours as stated, type: number}
+  - {name: night_hours, label: Night overtime hours as stated, type: number}
+  - {name: weighted_total, label: Weighted total as stated by the statement, type: number}

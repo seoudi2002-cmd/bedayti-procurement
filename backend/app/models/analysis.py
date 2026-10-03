@@ -324,3 +324,23 @@ class AssetRegisterRow(Base, IdMixin):
     net_book_value: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
     monthly_depreciation: Mapped[dict] = mapped_column(JsonType, default=dict)   # {"jan": "0", ... "dec": "0"} as stated
     flags: Mapped[list] = mapped_column(JsonType, default=list)
+
+
+class OpRecord(Base, IdMixin):
+    """One value (or set of values) a file states for an entity in a period, for the time-varying operating modules (rent, vehicles,
+    overtime). Append-only: a new file adds records tied to its own dataset (the version); older versions are never overwritten, so
+    the value in any month and how it changed between files stays answerable. `values` holds the numbers as written (None = not
+    stated, never 0); `personal` holds admin-only fields (employee / landlord names)."""
+    __tablename__ = "op_record"
+    __table_args__ = (Index("ix_op_record_lookup", "module_id", "kind", "entity_key", "period"), Index("ix_op_record_dataset", "dataset_id"))
+
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("analysis_dataset.id", ondelete="CASCADE"))
+    module_id: Mapped[str] = mapped_column(String(32))
+    kind: Mapped[str] = mapped_column(String(24))           # rent_contract | rent_value | vehicle_cost | vehicle_usage | vehicle_service | vehicle_claim | overtime
+    entity_key: Mapped[str] = mapped_column(String(300))
+    entity_label: Mapped[str | None] = mapped_column(String(300))
+    period: Mapped[str | None] = mapped_column(String(7))   # YYYY-MM; NULL for attributes of the entity itself
+    source_ref: Mapped[str | None] = mapped_column(String(80))
+    values: Mapped[dict] = mapped_column(JsonType, default=dict)
+    personal: Mapped[dict | None] = mapped_column(JsonType)
+    flags: Mapped[list] = mapped_column(JsonType, default=list)

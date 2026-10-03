@@ -17,7 +17,7 @@
       token: "رمز الدخول", tokenHint: "يلزم عند تفعيل المصادقة على الخادم (Bearer token).", save: "حفظ", showAll: "عرض الكل", rows: "سطر",
       uploaded: "تم رفع الملف وتحليله", layout: "نوع الملف", issues: "ملاحظات جودة", duplicate: "هذا الملف مرفوع من قبل — تم فتحه.",
       failed: "تعذر التنفيذ", unauthorized: "غير مصرح — أدخل رمز الدخول", filtered: "عرض مفلتر", noDatasets: "لا توجد ملفات بعد",
-      layouts: { advance_register: "سجل السلف المؤقتة", gl_settlement_lines: "قيود تسوية العهد المؤقتة", monthly_branch_expense: "مصروفات الفروع", monthly_custodian_expense: "مصروفات المركز الرئيسي" },
+      layouts: { rent_register: "سجل عقود الإيجار", repairs_statement: "بيان إصلاحات السيارات", usage_report: "تقرير استخدام سيارة", maintenance_card: "كارت صيانة السيارات", overtime_monthly: "بيان الأجر الإضافي", advance_register: "سجل السلف المؤقتة", gl_settlement_lines: "قيود تسوية العهد المؤقتة", monthly_branch_expense: "مصروفات الفروع", monthly_custodian_expense: "مصروفات المركز الرئيسي" },
       month: "الشهر (إن لم يكن في الملف)", processing: "جاري معالجة الملف…", files: "ملفات", roles: { statement: "الكشف (أساسي)", invoice: "الفاتورة (أساسي)", statement_word: "ملف Word (مساند)", evidence: "صور الطابعات (أدلة فقط)", invoice_pdf: "فاتورة Aramex PDF (أساسي)", shipments_xlsx: "كشف الشحنات Excel (أساسي)", contract_reference: "ملحق العقد (مرجع فقط)", paper_distribution: "كشف توزيع الورق" },
       clickHint: "اضغط على عنصر لتصفية التحليل عليه" },
     en: { title: "Management Analytics", dataset: "Analysed file", upload: "Upload Excel", year: "Year (if not in the file)", drop: "or drop the file here",
@@ -27,7 +27,7 @@
       token: "Access token", tokenHint: "Needed when the server has authentication enabled (Bearer token).", save: "Save", showAll: "Show all", rows: "rows",
       uploaded: "File uploaded and analysed", layout: "File type", issues: "data-quality observations", duplicate: "This file was already uploaded — opened it.",
       failed: "Request failed", unauthorized: "Not authorised — enter the access token", filtered: "Filtered view", noDatasets: "No files yet",
-      layouts: { advance_register: "Temporary-advance register", gl_settlement_lines: "Temporary-custody settlement journal", monthly_branch_expense: "Branch expenses", monthly_custodian_expense: "Head Office expenses" },
+      layouts: { rent_register: "Rent contract register", repairs_statement: "Vehicle repairs statement", usage_report: "Vehicle usage report", maintenance_card: "Vehicle maintenance card", overtime_monthly: "Monthly overtime statement", advance_register: "Temporary-advance register", gl_settlement_lines: "Temporary-custody settlement journal", monthly_branch_expense: "Branch expenses", monthly_custodian_expense: "Head Office expenses" },
       month: "Month (if not in the file)", processing: "Processing the file…", files: "files", roles: { statement: "Statement (authoritative)", invoice: "Invoice (authoritative)", statement_word: "Word (supporting)", evidence: "Status pages (evidence only)", invoice_pdf: "Aramex invoice PDF (authoritative)", shipments_xlsx: "Shipment sheet Excel (authoritative)", contract_reference: "Contract appendix (reference only)", paper_distribution: "Paper distribution statement" },
       clickHint: "Click an item to filter the analysis to it" },
   };

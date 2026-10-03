@@ -9,8 +9,11 @@ def adapters() -> dict[str, AnalysisAdapter]:
         from app.modules.aramex_analysis.adapter import AramexAdapter
         from app.modules.copier_analysis.adapter import CopierAdapter
         from app.modules.procurement_analysis.adapter import ProcurementAdapter
+        from app.modules.rent_analysis.adapter import RentAdapter
+        from app.modules.overtime_analysis.adapter import OvertimeAdapter
+        from app.modules.vehicle_analysis.adapter import VehicleAdapter
         from app.modules.custody_analysis.adapter import CustodyAdapter
-        _ADAPTERS = {a.info.key: a for a in (CustodyAdapter(), CopierAdapter(), AramexAdapter(), ProcurementAdapter())}
+        _ADAPTERS = {a.info.key: a for a in (CustodyAdapter(), CopierAdapter(), AramexAdapter(), ProcurementAdapter(), RentAdapter(), VehicleAdapter(), OvertimeAdapter())}
     return _ADAPTERS
 
 

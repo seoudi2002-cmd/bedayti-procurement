@@ -1,0 +1,6 @@
+# Documentation of the stored records (op_record). The workbook is read by a dedicated reader (workbook.py), not by the generic column mapper.
+fields:
+  - {name: contract, label: Contract (branch name + start date), type: text, required: true}
+  - {name: governorate, label: Governorate (from the governorate sheet whose total adds the contract up, else the name), type: text}
+  - {name: period, label: Month, type: text, required: true}
+  - {name: rent, label: Monthly rent as recorded (blank = not recorded, never 0), type: number}

@@ -1,0 +1,10 @@
+# INITIAL VALUES — awaiting the owner's confirmation. Effective values live in the system setting `rent.thresholds`
+# (PUT /api/settings/rent.thresholds, admin, no code change); every report states the values used.
+top_n: 10                       # rows in "top" tables and charts
+matrix_months: 12               # months shown in the governorate x month table
+mom_change_pct: 10              # a month-on-month change in the total above this is remarked
+large_step_pct: 50              # a change in one contract's recorded rent above this is listed as large (a partial month or an amendment cannot be told apart from the file)
+expiry_window_months: 6         # contracts ending within this many months after the last month with data
+expiry_window_months_long: 12   # the wider look-ahead
+periodic_min_blank_months: 2    # contracts with at least this many «no payment» months are shown as periodic payers
+partial_coverage_share: 0.5    # a month in which fewer than this share of the usual number of contracts have an entry is shown as partial and left out of comparisons

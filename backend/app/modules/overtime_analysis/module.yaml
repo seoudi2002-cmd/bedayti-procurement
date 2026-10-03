@@ -1,0 +1,11 @@
+id: overtime_analysis
+name: Overtime Analytics
+version: 0.1.0
+category: administration
+description: >
+  Management analysis of the monthly overtime statement: overtime hours (day / night, weighted as the statement states), missions and meals,
+  per employee and month, with the annual cumulative. Hours only: the file has no amounts, salary or attendance data, so nothing is converted to
+  money and no attendance analysis is attempted. Each file is kept as a version; a corrected month never erases the earlier figures.
+  Analysis only: upload -> validate -> analyze -> dashboard -> executive report (PDF/Excel).
+fact_targets: [op_record]
+contains_personal_data: true

@@ -1,0 +1,7 @@
+# INITIAL VALUES — awaiting the owner's confirmation. Effective values live in the system setting `overtime.thresholds`
+# (PUT /api/settings/overtime.thresholds, admin, no code change); every report states the values used.
+top_n: 10                  # rows in "top" tables and charts
+concentration_top_n: 5     # "the top N employees account for X% of the overtime"
+mom_change_pct: 25         # a month-on-month change in the total above this is remarked
+high_month_factor: 2       # an employee-month above this multiple of the employee's own monthly average is listed
+min_entry_months: 3        # months of entries an employee needs before the above is judged

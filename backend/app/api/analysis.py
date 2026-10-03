@@ -234,3 +234,14 @@ def get_aramex_rates(session: Session = Depends(get_session), principal: Princip
 def put_aramex_rates(values: dict, session: Session = Depends(get_session), principal: Principal = Depends(require("admin"))):
     from app.modules.aramex_analysis.settings import validate_rates
     return _struct_put("aramex.rates", values, validate_rates, session, principal)
+
+
+@settings_router.get("/vehicles.plates")
+def get_vehicle_plates(session: Session = Depends(get_session), principal: Principal = Depends(require("viewer"))):
+    return _struct_get("vehicles.plates", session)
+
+
+@settings_router.put("/vehicles.plates")
+def put_vehicle_plates(values: dict, session: Session = Depends(get_session), principal: Principal = Depends(require("admin"))):
+    from app.modules.vehicle_analysis.settings import validate_plates
+    return _struct_put("vehicles.plates", values, validate_plates, session, principal)

@@ -1,0 +1,12 @@
+id: vehicle_analysis
+name: Vehicle Fleet Analytics
+version: 0.1.0
+category: administration
+description: >
+  Management analysis of the vehicle fleet from the monthly repairs statement (maintenance, fuel, total cost, distance per vehicle),
+  the per-vehicle usage report (daily odometer, fuel taken) and the maintenance card (odometer and service due readings). A vehicle is a stable
+  entity; its monthly cost and usage are history — every uploaded file is kept as a version and a corrected file adds a new version and shows the
+  differences. There is no vehicle register (model year, chassis, licence or insurance dates), so none is shown.
+  Analysis only: upload -> validate -> analyze -> dashboard -> executive report (PDF/Excel).
+fact_targets: [op_record]
+contains_personal_data: true
