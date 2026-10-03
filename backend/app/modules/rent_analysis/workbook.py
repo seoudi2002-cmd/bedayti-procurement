@@ -181,7 +181,7 @@ def parse(content: bytes) -> Parsed:
             elif "نهايه العقد" in t:
                 k = "end"
             elif "القيمه الايجاريه" in t:
-                k = "current" if "الحاليه" in t else "contract"
+                k = "current" if ("الحاليه" in t or "الفعليه" in t) else "contract"
             if k is None:
                 continue
             if k in cols:     # a structural header repeated further right (typically inside the month region): not a second field
