@@ -1,0 +1,5 @@
+# Documentation only: registers are loaded by the existing module loaders (suppliers, requisitions, purchase_orders[register], finance_handover, branches).
+fields:
+  - {name: po_number, label: PO number as written (number/year), type: text, required: true}
+  - {name: po_date, label: PO date, type: date}
+  - {name: total_amount, label: PO total as stated (never 0 when missing), type: number}

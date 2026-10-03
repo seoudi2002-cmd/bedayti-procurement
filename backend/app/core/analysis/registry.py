@@ -8,8 +8,9 @@ def adapters() -> dict[str, AnalysisAdapter]:
     if _ADAPTERS is None:
         from app.modules.aramex_analysis.adapter import AramexAdapter
         from app.modules.copier_analysis.adapter import CopierAdapter
+        from app.modules.procurement_analysis.adapter import ProcurementAdapter
         from app.modules.custody_analysis.adapter import CustodyAdapter
-        _ADAPTERS = {a.info.key: a for a in (CustodyAdapter(), CopierAdapter(), AramexAdapter())}
+        _ADAPTERS = {a.info.key: a for a in (CustodyAdapter(), CopierAdapter(), AramexAdapter(), ProcurementAdapter())}
     return _ADAPTERS
 
 

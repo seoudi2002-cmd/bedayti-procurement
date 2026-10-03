@@ -1,0 +1,11 @@
+id: procurement_analysis
+name: Procurement Register Analytics
+version: 0.1.0
+category: procurement
+description: >
+  Management analysis of the procurement registers (suppliers, requisitions, purchase orders, finance handover memos):
+  spend and PO volume by month, supplier, category and requesting department; requisition -> PO -> finance-handover pipeline;
+  attribution quality and exceptions. Loading reuses the existing register loaders; this module only analyses what they hold.
+  Analysis only: upload -> validate -> analyze -> dashboard -> executive report (PDF/Excel).
+fact_targets: [po_header, requisition, finance_handover]
+contains_personal_data: false

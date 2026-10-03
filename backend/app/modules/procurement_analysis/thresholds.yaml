@@ -1,0 +1,7 @@
+# INITIAL VALUES — awaiting the owner's confirmation. Effective values live in the system setting `procurement.thresholds`
+# (PUT /api/settings/procurement.thresholds, admin, no code change); every report states the values used.
+top_n: 10                      # rows in "top" tables and charts
+concentration_top_n: 5         # "the top N suppliers account for X% of spend"
+mom_change_pct: 25             # month-on-month change (%) worth a remark
+long_lead_days: 30             # a requisition-to-PO or PO-to-finance lag above this is listed
+reconcile_tolerance: 0.01      # money difference (EGP) tolerated when comparing handed-over amount with the PO total

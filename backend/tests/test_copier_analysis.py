@@ -229,7 +229,7 @@ def auth(role):
 
 def test_generic_api_serves_both_modules_and_exports(api):
     mods = api.get("/api/analysis", headers=auth("viewer")).json()
-    assert {m["key"] for m in mods} == {"custody", "copiers", "aramex"}
+    assert {m["key"] for m in mods} == {"custody", "copiers", "aramex", "procurement"}
     base = "/api/analysis/copiers/datasets"
     assert api.post(base, files={"file": ("s.xlsx", statement_workbook())}, headers=auth("viewer")).status_code == 403
     r = api.post(base, files={"file": ("s.xlsx", statement_workbook())}, headers=auth("analyst"))
