@@ -47,6 +47,8 @@ purchase orders (header-level register + line-level), finance handover**, entity
 **Procurement analytics:** `docs/PROCUREMENT_ANALYTICS.md`. **Aramex analytics:** `docs/ARAMEX_ANALYTICS.md`. **Copier analytics (incl. paper):** see `docs/COPIER_ANALYTICS.md` (dashboard module tab "Copiers"). **Custody analytics dashboard:** open `/app/` on the API (see `docs/CUSTODY_ANALYTICS.md`). **Custody analytics:** see `docs/CUSTODY_ANALYTICS.md`. **Document extraction:** see `docs/DOCUMENT_EXTRACTION.md`. **Not yet:** payment ledger, other modules (see `docs/MODULE_CATALOG.md`, incl. Financial Custody
 design), dashboards/frontend, insight engine, report exports, AI assistant, SSO.
 
+Scope and roadmap: `docs/PLATFORM_SCOPE.md`.
+
 Docs: `docs/ARCHITECTURE.md` · `docs/SCHEMA_PROPOSAL_v3.md` · `docs/MODULE_CATALOG.md` · `docs/DOCUMENT_INTAKE.md` ·
 `docs/PO_WORKFLOW.md` · `docs/DATA_SOURCES.md`.
 
