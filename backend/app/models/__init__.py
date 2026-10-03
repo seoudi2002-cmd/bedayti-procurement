@@ -15,5 +15,5 @@ from app.models.extraction import ExtractedDocument, ExtractedLine, ExtractedPag
 from app.models.overrides import DataOverride  # noqa: F401
 from app.models.analysis import (  # noqa: F401
     AnalysisCycle, AnalysisDataset, AnalysisFact, AppSetting, CopierEvidence, CopierInvoice, CopierInvoiceLine, CopierMachine, CopierPaperRow,
-    AramexInvoice, AramexShipment, CustodyAdvance,
+    AramexInvoice, AramexShipment, CustodyAdvance, ReferenceSource, AssetRegisterRow,
 )

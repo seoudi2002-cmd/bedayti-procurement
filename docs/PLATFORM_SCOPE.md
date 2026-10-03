@@ -12,6 +12,8 @@ It is **not** an ERP, a document-flow or a purchasing/custody workflow system. E
 ## Files are reference sources, not one-off inputs
 Files, regulations and reports the owner supplies are **kept as versioned sources/reference** for later use by the system (analysis, annual report, assistant) — not analysed once and discarded. A newer version of a source is added as a new version; earlier versions stay.
 
+Implemented: `docs/REFERENCE_LIBRARY.md` (versioned reference sources — asset register stored; documents stored with their page text).
+
 ## Built (see each module's document)
 Financial custody (F1–F4, incl. the temporary-advance register) · Copiers / printing machines (+ paper distribution and consumption) · Aramex shipping (per branch: sent / received, monthly) · Procurement registers (POs, requisitions, suppliers, finance handover) · master data (branches, employees, suppliers) · PO document extraction.
 

@@ -12,6 +12,7 @@ from app.api.analysis import settings_router
 from app.api.extraction import router as extraction_router
 from app.api.masterdata import router as masterdata_router
 from app.api.procurement import router as procurement_router
+from app.api.reference import router as reference_router
 from app.api.routes import router
 from app.core.modules.registry import get_registry
 from app.core.system_seed import ensure_system_branches
@@ -34,6 +35,7 @@ app.include_router(masterdata_router, prefix="/api")
 app.include_router(extraction_router, prefix="/api")
 app.include_router(analysis_router, prefix="/api")
 app.include_router(settings_router, prefix="/api")
+app.include_router(reference_router, prefix="/api")
 
 # interim web UI (no build step): the dashboard consumes the same /api the PDF/Excel exports use
 app.mount("/app", StaticFiles(directory=Path(__file__).parent / "web", html=True), name="web")

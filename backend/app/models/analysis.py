@@ -256,3 +256,71 @@ class CustodyAdvance(Base, IdMixin):
     state: Mapped[str] = mapped_column(String(24))                       # open | settled | settled_date_unreadable | refunded_note
     status_note: Mapped[str | None] = mapped_column(Text)
     flags: Mapped[list] = mapped_column(JsonType, default=list)
+
+
+class ReferenceSource(Base, IdMixin, TimestampMixin):
+    """A file kept as reference for the whole system (asset register, regulations, annual report ...), by version.
+    A new version of the same series never replaces an earlier one: earlier versions stay stored and queryable."""
+    __tablename__ = "reference_source"
+    __table_args__ = (UniqueConstraint("kind", "file_hash", name="uq_reference_source_file"), Index("ix_reference_source_series", "series_key", "version_no"))
+
+    kind: Mapped[str] = mapped_column(String(24))              # asset_register | regulation | annual_report | other
+    series_key: Mapped[str] = mapped_column(String(80))        # versions of the same thing share it, e.g. asset_register
+    title: Mapped[str | None] = mapped_column(String(300))
+    version_no: Mapped[int] = mapped_column(Integer)
+    as_of_date: Mapped[date | None] = mapped_column(Date)      # the date the content is current to
+    as_of_source: Mapped[str | None] = mapped_column(String(16))   # file | uploader | none
+    file_name: Mapped[str] = mapped_column(String(500))
+    file_hash: Mapped[str] = mapped_column(String(64))
+    storage_path: Mapped[str | None] = mapped_column(String(1000))
+    file_id: Mapped[int | None] = mapped_column(ForeignKey("document_file.id"))            # documents: the stored scan / PDF
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("extraction_job.id"))            # documents: the OCR / text job
+    is_current: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(12), default="ready", server_default="ready")   # ready | processing | failed
+    rows_count: Mapped[int] = mapped_column(Integer, default=0)
+    uploaded_by: Mapped[str | None] = mapped_column(String(200))
+    notes: Mapped[str | None] = mapped_column(Text)
+    summary: Mapped[dict] = mapped_column(JsonType, default=dict)                          # what the system understood: profile, issues, diff vs the previous version
+    contains_personal_data: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class AssetRegisterRow(Base, IdMixin):
+    """One asset exactly as the register states it (typed copies of the source cells; text kept where the source is text).
+    Missing cells stay NULL; nothing is filled in or corrected. The original workbook is stored untouched."""
+    __tablename__ = "asset_register_row"
+    __table_args__ = (Index("ix_asset_register_row_source", "source_id", "asset_number"), Index("ix_asset_register_row_loc", "source_id", "location_text"))
+
+    source_id: Mapped[int] = mapped_column(ForeignKey("reference_source.id", ondelete="CASCADE"))
+    row_no: Mapped[int] = mapped_column(Integer)
+    asset_book: Mapped[str | None] = mapped_column(String(100))
+    asset_number: Mapped[str] = mapped_column(String(40))
+    description: Mapped[str | None] = mapped_column(Text)
+    tag_number: Mapped[str | None] = mapped_column(String(100))
+    serial_number: Mapped[str | None] = mapped_column(String(100))
+    location_text: Mapped[str | None] = mapped_column(String(300))        # as written: "Governorate-City-Office-"
+    location_governorate: Mapped[str | None] = mapped_column(String(120))  # split from the text on '-' only when it has exactly three parts
+    location_city: Mapped[str | None] = mapped_column(String(120))
+    location_office: Mapped[str | None] = mapped_column(String(120))
+    major_category: Mapped[str | None] = mapped_column(String(120))
+    category_segment: Mapped[str | None] = mapped_column(String(120))
+    accounting_date: Mapped[date | None] = mapped_column(Date)
+    in_service_date: Mapped[date | None] = mapped_column(Date)
+    in_service_raw: Mapped[str | None] = mapped_column(String(40))        # kept when the source cell is text instead of a date
+    prorate_date: Mapped[date | None] = mapped_column(Date)
+    prorate_convention: Mapped[str | None] = mapped_column(String(40))
+    deprn_start_date: Mapped[date | None] = mapped_column(Date)
+    date_retired: Mapped[date | None] = mapped_column(Date)
+    asset_type: Mapped[str | None] = mapped_column(String(40))
+    method_code: Mapped[str | None] = mapped_column(String(40))
+    life_raw: Mapped[str | None] = mapped_column(String(40))              # as written (e.g. a YY.MM-style text); not converted
+    current_units: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    current_period: Mapped[date | None] = mapped_column(Date)
+    original_cost: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    adjusted_cost: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    recoverable_cost: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    cost: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    ytd_depreciation: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    accumulated_depreciation: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    net_book_value: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    monthly_depreciation: Mapped[dict] = mapped_column(JsonType, default=dict)   # {"jan": "0", ... "dec": "0"} as stated
+    flags: Mapped[list] = mapped_column(JsonType, default=list)
