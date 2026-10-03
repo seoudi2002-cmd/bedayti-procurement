@@ -233,3 +233,26 @@ class AramexShipment(Base, IdMixin):
     sent_by: Mapped[str | None] = mapped_column(String(300))
     consignee_name: Mapped[str | None] = mapped_column(String(300))
     attention: Mapped[str | None] = mapped_column(String(300))
+
+
+class CustodyAdvance(Base, IdMixin):
+    """One temporary advance as the register states it (analysis only: no approval or disbursement state is kept).
+    Settlement is stated by the register only as text; the parsed date is NULL when the text carries none or an unreadable one."""
+    __tablename__ = "custody_advance"
+    __table_args__ = (Index("ix_custody_advance_dataset", "dataset_id", "advance_on"),)
+
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("analysis_dataset.id", ondelete="CASCADE"))
+    source_ref: Mapped[str] = mapped_column(String(80))
+    holder_text: Mapped[str | None] = mapped_column(String(300))        # personal data: admin-only
+    branch_label: Mapped[str | None] = mapped_column(String(300))
+    branch_kind: Mapped[str | None] = mapped_column(String(20))        # branch | group | head_office
+    branch_key: Mapped[str | None] = mapped_column(String(300))
+    branch_id: Mapped[int | None] = mapped_column(Integer)
+    advance_on: Mapped[date | None] = mapped_column(Date)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    purpose: Mapped[str | None] = mapped_column(Text)
+    settlement_text: Mapped[str | None] = mapped_column(Text)
+    settled_on: Mapped[date | None] = mapped_column(Date)
+    state: Mapped[str] = mapped_column(String(24))                       # open | settled | settled_date_unreadable | refunded_note
+    status_note: Mapped[str | None] = mapped_column(Text)
+    flags: Mapped[list] = mapped_column(JsonType, default=list)

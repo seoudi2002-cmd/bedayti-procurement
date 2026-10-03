@@ -9,7 +9,7 @@ Analysis and reporting only — no request/approval/disbursement/settlement work
 | `gl_settlement_lines` | F3 – temporary-custody settlement journal | temporary custody (Head Office + branches via cost-centre/branch) | year read from the file's own title (or supplied at upload) |
 | `monthly_branch_expense` | F2 – branch expense analysis | branches | Arabic wide sheets (group + sub-item headers) and English pivot sheets |
 | `monthly_custodian_expense` | F1 – Head Office expense analysis | head office | custodian × category pivots, and the transposed variant |
-| `advance_register` | F4 – advances register | — | recognised, analysis not implemented yet (HTTP 422 with an explicit message) |
+| `advance_register` | F4 – temporary-advance register | `custody_advance` (one row per advance) | **implemented** (see «Advance register» below) |
 
 An unrecognised workbook is refused, never guessed. Files are never combined automatically: F1, F2 and F3 are three separate analyses
 until the owner confirms two files cover the same scope.
@@ -59,5 +59,15 @@ Run locally: `alembic upgrade head && uvicorn app.main:app --reload` → open <h
 consume the same API.
 
 ## Not yet
-PowerPoint export; advance-register analysis (F4, deliberately not started); combined reports (needs the owner's confirmation); a branch alias-mapping screen
+PowerPoint export; combined reports (needs the owner's confirmation); a branch alias-mapping screen
 (F2 February's English branch names stay flagged for review — no mapping is guessed).
+
+
+## Advance register (F4) — analysis only
+Upload the temporary-advance workbook to the custody module (layout detected by its «مبلغ السلفة» column). One `custody_advance` row per advance; no approval / disbursement workflow.
+* **State** is read only from the register's «عهد تحت التسوية» text: a settlement date = settled; no text = open **up to the latest date in the register** (ages are not computed to today); a settlement text without a readable date,
+  or a status note that says the amount was returned, is **closed, date not stated** — never guessed.
+* **Outputs:** advances issued / settled / open by month (month-end open balance from fully dated rows), by branch / unit (branch groups such as «<province> branches» stay groups, Head Office stays Head Office),
+  ageing of open advances, settlement time (median, p90, max, above the limit), largest advances, branches with repeated advances, exceptions (large vs median, long settlement, settled before the advance date, closed without a date, undated).
+* **Control:** the file's monthly «اقفال» rows are recomputed and compared; the second hand-typed figure (meaning not stated) is compared with the dated month-end open balance and reported as an observation only.
+* **Personal data:** holder names appear only for admins; filters: advance month, branch/unit, state (open / closed). Settings: `custody_advances.thresholds` (ageing bands, long-settlement days, large-advance multiple, repeat count, top N, MoM %).

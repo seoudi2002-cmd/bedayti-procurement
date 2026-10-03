@@ -169,6 +169,15 @@ def sheet_kind(ws) -> str:
     return "unknown"
 
 
+def detect_layout(content: bytes) -> str | None:
+    """Layout name by sheet kinds (None when unknown: parse_workbook then reports it)."""
+    wb = load_workbook(io.BytesIO(content), data_only=True)
+    present = {sheet_kind(ws) for ws in wb}
+    if "gl" in present:
+        return "gl_settlement_lines"
+    return "advance_register" if "advances" in present else None
+
+
 # ---------------------------------------------------------------------------- entry point
 def parse_workbook(content: bytes, filename: str = "", year: int | None = None, layout: str | None = None,
                    scope_hint: str | None = None) -> Parsed:
@@ -188,7 +197,7 @@ def parse_workbook(content: bytes, filename: str = "", year: int | None = None, 
             raise UnrecognisedLayout("This workbook does not match a known custody report layout "
                                      f"(sheet kinds: {sorted(present)})")
     if layout == "advance_register":
-        raise UnrecognisedLayout("Advance-register analysis is not implemented yet (layout recognised)")
+        raise UnrecognisedLayout("Advance registers are read by advances.parse_advances (handled by the service)")
     if layout == "gl_settlement_lines":
         return _parse_gl(wb, kinds, year)
     if layout == "monthly_branch_expense":

@@ -11,10 +11,11 @@ MODULES = Path(__file__).resolve().parents[1] / "modules"
 # threshold defaults shipped with each analysis module (initial values only; the effective ones live in app_setting)
 DEFAULTS_FILES = {"custody": MODULES / "custody_analysis" / "thresholds.yaml", "copier": MODULES / "copier_analysis" / "thresholds.yaml",
                   "aramex": MODULES / "aramex_analysis" / "thresholds.yaml",
-                  "procurement": MODULES / "procurement_analysis" / "thresholds.yaml"}
+                  "procurement": MODULES / "procurement_analysis" / "thresholds.yaml",
+                  "custody_advances": MODULES / "custody_analysis" / "advances_thresholds.yaml"}
 STRUCT_DEFAULTS = {"copier.paper": MODULES / "copier_analysis" / "paper_defaults.yaml", "aramex.parties": MODULES / "aramex_analysis" / "parties_defaults.yaml",
                    "aramex.rates": MODULES / "aramex_analysis" / "rates_defaults.yaml"}
-KNOWN_KEYS = {"custody.thresholds", "custody.display_taxonomy", "custody.branch_key", "copier.thresholds", "copier.paper", "aramex.thresholds", "procurement.thresholds",
+KNOWN_KEYS = {"custody.thresholds", "custody.display_taxonomy", "custody.branch_key", "copier.thresholds", "copier.paper", "aramex.thresholds", "procurement.thresholds", "custody_advances.thresholds",
               "aramex.parties", "aramex.rates"}
 
 

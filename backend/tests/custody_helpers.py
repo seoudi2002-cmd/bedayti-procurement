@@ -131,3 +131,28 @@ def monthly_custodian_workbook() -> bytes:
     ws2.append(["(  شخص ب  )", 300, 2000, 2300])
     ws2.append(["Total", 1000, 2000, 3000])
     return _save(wb)
+
+
+@functools.lru_cache(maxsize=None)
+def advance_register_workbook(break_closing: bool = True) -> bytes:
+    """Temporary-advance register (synthetic): free-text settlement, monthly 'اقفال' rows with a hard-coded second figure."""
+    from datetime import datetime
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "سلف"
+    ws.append(["الإسم", "الفرع", "تاريخ السلفة", "مبلغ السلفة", "الغرض من السلفة", "عهد تحت التسوية", "الموقف"])
+    rows = [("Holder A", "فرع ألف", datetime(2026, 1, 4), 10000, "purpose one", "تم التسوية بتاريخ 16/4/2026", None),
+            ("Holder B", "فرع باء", datetime(2026, 1, 10), 20000, "purpose two", "تم التسوية بتاريخ 9/1/2026", None),         # settled before the advance
+            ("Holder C", "فروع الغربية", datetime(2026, 1, 20), 50000, "training", None, None),                                # open, a group
+            ("Holder D", "المركز الرئيسي", datetime(2026, 2, 3), 30000, "purpose four", "تم التسوية بتاريخ 11/3/20261", None),  # unreadable date
+            ("Holder E", "فرع ألف", datetime(2026, 2, 5), 5000, "purpose five", None, "تم استرجاع المبلغ كاملا"),              # closed by a note only
+            ("Holder F", "فرع جيم", datetime(2026, 2, 20), 200000, "big purchase", "تم التسوية بتاريخ 25/2/2026", None)]
+    for r in rows[:3]:
+        ws.append(list(r))
+    ws.append(["اقفال شهر يناير", None, None, 80000, None, 60000, None])
+    for r in rows[3:]:
+        ws.append(list(r))
+    ws.append(["اقفال شهر فبراير", None, None, 999 if break_closing else 235000, None, 1, None])
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()

@@ -10,9 +10,9 @@ from app.modules.custody_analysis import layouts, service
 class CustodyAdapter:
     info = ModuleInfo(
         key="custody", module_id="custody_analysis", label={"ar": "العهد المالية", "en": "Financial custody"},
-        accepts=(".xlsx", ".xlsm"), filters={"periods": "period", "branches": "branch", "categories": "category"},
-        upload_hint={"ar": "ملف Excel: قيود تسوية العهد المؤقتة، أو تحليل مصروفات الفروع، أو المركز الرئيسي",
-                     "en": "Excel: temporary-custody settlement journal, branch expenses or Head Office expenses"},
+        accepts=(".xlsx", ".xlsm"), filters={"periods": "period", "branches": "branch", "categories": "category", "states": "state"},
+        upload_hint={"ar": "ملف Excel: قيود تسوية العهد المؤقتة، أو تحليل مصروفات الفروع، أو المركز الرئيسي، أو سجل السلف المؤقتة",
+                     "en": "Excel: temporary-custody settlement journal, branch expenses, Head Office expenses or the temporary-advance register"},
         thresholds_key="custody.thresholds")
 
     def _ds(self, session: Session, item_id) -> AnalysisDataset:
@@ -60,8 +60,14 @@ class CustodyAdapter:
 
     def build(self, session, item_id, lang, admin, filters):
         ds = self._ds(session, item_id)
+        if ds.layout == "advance_register":
+            from app.modules.custody_analysis import advances
+            return advances.build(session, ds, lang, admin, filters)
         return service.build(session, ds, lang, admin, filters)
 
     def api_analysis(self, a: dict) -> dict:
+        if "ageing" in a:
+            return {"totals": a["totals"], "months": a["months"], "branches": a["branches"], "ageing": a["ageing"], "lag": a["lag"], "as_of": a["as_of"], "thresholds": a["thresholds"],
+                    "thresholds_origin": a["thresholds_origin"]}
         return {k: a[k] for k in ("total", "capabilities", "periods", "by_category", "by_scope", "by_branch", "by_group",
                                   "outliers", "variance", "unsupported", "thresholds", "thresholds_origin")}

@@ -56,10 +56,16 @@ def ingest(session: Session, content: bytes, filename: str, created_by: str | No
     dup = session.scalar(select(AnalysisDataset).where(AnalysisDataset.module_id == MODULE_ID, AnalysisDataset.file_hash == digest))
     if dup:
         raise DuplicateDataset(dup.id)
-    parsed = layouts.parse_workbook(content, filename, year, layout, scope_hint)
+    kind = layout or layouts.detect_layout(content)
     store_dir = Path(get_settings().upload_dir) / MODULE_ID
     store_dir.mkdir(parents=True, exist_ok=True)
     path = store_dir / f"{digest[:16]}{Path(filename).suffix.lower()}"
+    if kind == "advance_register":
+        from app.modules.custody_analysis import advances
+        ds = advances.store(session, content, filename, created_by, digest, str(path))
+        path.write_bytes(content)
+        return ds
+    parsed = layouts.parse_workbook(content, filename, year, layout, scope_hint)
     path.write_bytes(content)
 
     mode = get_setting(session, "custody.branch_key", {"mode": "cost_center"}).get("mode", "cost_center")
@@ -119,6 +125,11 @@ def ingest(session: Session, content: bytes, filename: str, created_by: str | No
 
 
 def delete_dataset(session: Session, dataset_id: int) -> None:
+    ds = session.get(AnalysisDataset, dataset_id)
+    if ds is not None and ds.layout == "advance_register":
+        from app.modules.custody_analysis import advances
+        advances.delete(session, dataset_id)
+        return
     session.execute(delete(AnalysisFact).where(AnalysisFact.dataset_id == dataset_id))
     session.execute(delete(AnalysisDataset).where(AnalysisDataset.id == dataset_id))
     session.commit()

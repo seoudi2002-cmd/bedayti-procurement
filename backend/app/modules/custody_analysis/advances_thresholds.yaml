@@ -1,0 +1,10 @@
+# INITIAL VALUES — awaiting the owner's confirmation. Effective values live in the system setting `custody_advances.thresholds`
+# (PUT /api/settings/custody_advances.thresholds, admin, no code change); every report states the values used.
+ageing_days_1: 30             # open advances are aged from their advance date into: up to this many days,
+ageing_days_2: 60             # up to this,
+ageing_days_3: 90             # up to this, and older
+long_settlement_days: 60      # a settled advance whose settlement took longer than this is listed
+large_advance_multiple: 3     # an advance above this multiple of the median advance is listed
+repeat_advances: 3            # a branch with at least this many advances is listed as repeating
+top_n: 10                     # rows in "top" tables and charts
+mom_change_pct: 30            # month-on-month change (%) worth a remark
