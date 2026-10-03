@@ -10,7 +10,7 @@ from app.models.analysis import AppSetting
 MODULES = Path(__file__).resolve().parents[1] / "modules"
 # threshold defaults shipped with each analysis module (initial values only; the effective ones live in app_setting)
 DEFAULTS_FILES = {"custody": MODULES / "custody_analysis" / "thresholds.yaml", "copier": MODULES / "copier_analysis" / "thresholds.yaml"}
-KNOWN_KEYS = {"custody.thresholds", "custody.display_taxonomy", "custody.branch_key", "copier.thresholds"}
+KNOWN_KEYS = {"custody.thresholds", "custody.display_taxonomy", "custody.branch_key", "copier.thresholds", "copier.paper"}
 
 
 def default_thresholds(module: str = "custody") -> dict:
@@ -52,3 +52,12 @@ def validate_thresholds(values: dict, module: str = "custody") -> dict:
         if isinstance(v, bool) or not isinstance(v, (int, float)) or v < 0:
             raise ValueError(f"Threshold '{k}' must be a non-negative number")
     return values
+
+
+def effective_paper(session: Session) -> tuple[dict, dict]:
+    """Paper parameters (carton size, sheets per page, price windows): (effective values, {name: 'default' | 'custom'})."""
+    from app.modules.copier_analysis.paper import default_paper_params
+    defaults = default_paper_params()
+    custom = get_setting(session, "copier.paper", {}) or {}
+    eff = {**defaults, **{k: v for k, v in custom.items() if k in defaults}}
+    return eff, {k: ("custom" if k in custom and custom[k] != defaults[k] else "default") for k in defaults}

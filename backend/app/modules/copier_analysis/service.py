@@ -2,6 +2,7 @@
 the Word statement and the scanned status pages of that month are attached to it. Files are stored untouched."""
 import hashlib
 import re
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -12,10 +13,11 @@ from app.config import get_settings
 from app.core.analysis import AnalysisError
 from app.core.entities import EntityResolver
 from app.models import (
-    AnalysisCycle, AnalysisDataset, CopierEvidence, CopierInvoice, CopierInvoiceLine, CopierMachine,
+    AnalysisCycle, AnalysisDataset, CopierEvidence, CopierInvoice, CopierInvoiceLine, CopierMachine, CopierPaperRow,
 )
 from app.modules.copier_analysis import evidence as ev
 from app.modules.copier_analysis import invoice as inv_mod
+from app.modules.copier_analysis import paper as paper_mod
 from app.modules.copier_analysis import statement as st_mod
 
 MODULE_ID = "copier_analysis"
@@ -68,6 +70,8 @@ def _need_period(options: dict, found: tuple[int, int] | None, what: str) -> tup
 def ingest(session: Session, content: bytes, filename: str, user: str | None, options: dict):
     name = filename.lower()
     if name.endswith((".xlsx", ".xlsm")):
+        if paper_mod.is_distribution_workbook(content):
+            return _ingest_paper(session, content, filename, user, options)
         return _ingest_statement(session, content, filename, user, options)
     if name.endswith((".doc", ".docx")):
         return _ingest_word(session, content, filename, user, options)
@@ -130,6 +134,40 @@ def _ingest_statement(session, content, filename, user, options):
     session.commit()
     _refresh_cycle(session, cycle.id)
     return _result(session, cycle, ds)
+
+
+def _ingest_paper(session, content, filename, user, options):
+    """Paper distribution statement of one purchase order. It spans several months, so it belongs to no cycle."""
+    digest, path = _store(content, filename)
+    _duplicate(session, digest)
+    try:
+        st = paper_mod.parse_distribution_xlsx(content)
+    except paper_mod.UnrecognisedPaperStatement as exc:
+        raise AnalysisError(422, str(exc)) from exc
+    if st.po_no:
+        for d in session.scalars(select(AnalysisDataset).where(AnalysisDataset.module_id == MODULE_ID, AnalysisDataset.role == "paper_distribution")):
+            if (d.summary or {}).get("po_no") == st.po_no:
+                raise AnalysisError(409, {"message": f"A distribution statement for purchase order {st.po_no} already exists; delete it first to replace it",
+                                          "dataset_id": f"paper:{d.id}"})
+    dates = [r.distributed_on for r in st.rows if r.distributed_on]
+    ds = AnalysisDataset(module_id=MODULE_ID, layout="copier_paper_distribution", scope_label="paper_distribution", file_name=Path(filename).name,
+                         file_hash=digest, storage_path=path, title=st.title, period_year=min(dates).year if dates else None, year_source="file",
+                         period_from=min(dates) if dates else None, period_to=max(dates) if dates else None, facts_count=len(st.rows),
+                         created_by=user, role="paper_distribution", status="ready")
+    session.add(ds)
+    session.flush()
+    for r in st.rows:
+        session.add(CopierPaperRow(dataset_id=ds.id, source_ref=r.source_ref, seq=r.seq, cartons=r.cartons, branch_source=r.branch_source,
+                                   branch_display=r.branch_display, branch_key=r.branch_key, is_head_office=r.is_head_office,
+                                   department=r.department, distributed_on=r.distributed_on, flags=r.flags))
+    ds.summary = {"po_no": st.po_no, "receipt_date": st.receipt_date.isoformat() if st.receipt_date else None,
+                  "received_cartons": str(st.received_cartons) if st.received_cartons is not None else None,
+                  "stated_total": str(st.stated_total) if st.stated_total is not None else None,
+                  "stated_months": {str(k): str(v) for k, v in st.stated_months.items()}, "issues": _issues(st.issues)}
+    session.commit()
+    from app.core.analysis import UploadResult
+    return UploadResult("paper", {"module": "copiers", "label": f"paper PO {st.po_no or ''}".strip(),
+                                  "uploaded": {"dataset_id": ds.id, "role": ds.role, "file_name": ds.file_name, "status": ds.status, "rows": len(st.rows)}}, 201)
 
 
 def _ingest_word(session, content, filename, user, options):
@@ -348,3 +386,49 @@ def delete_cycle(session: Session, cycle_id: int) -> None:
     session.execute(delete(AnalysisCycle).where(AnalysisCycle.id == cycle_id))
     session.commit()
 
+
+
+# ------------------------------------------------------------------------------------------------ paper
+def paper_datasets(session: Session, only: int | None = None) -> list[AnalysisDataset]:
+    q = select(AnalysisDataset).where(AnalysisDataset.module_id == MODULE_ID, AnalysisDataset.role == "paper_distribution").order_by(
+        AnalysisDataset.period_from, AnalysisDataset.id)
+    if only is not None:
+        q = q.where(AnalysisDataset.id == only)
+    return list(session.scalars(q).all())
+
+
+def load_paper(session: Session, only: int | None = None) -> list[dict]:
+    out = []
+    for d in paper_datasets(session, only):
+        rows = session.scalars(select(CopierPaperRow).where(CopierPaperRow.dataset_id == d.id).order_by(CopierPaperRow.id)).all()
+        sm = d.summary or {}
+        out.append({"dataset_id": d.id, "file_name": d.file_name, "po_no": sm.get("po_no"),
+                    "receipt_date": date.fromisoformat(sm["receipt_date"]) if sm.get("receipt_date") else None,
+                    "received_cartons": Decimal(sm["received_cartons"]) if sm.get("received_cartons") else None,
+                    "stated_total": Decimal(sm["stated_total"]) if sm.get("stated_total") else None, "issues": sm.get("issues", []),
+                    "rows": [{"source_ref": r.source_ref, "cartons": r.cartons, "branch_display": r.branch_display, "branch_key": r.branch_key,
+                              "is_head_office": r.is_head_office, "department": r.department, "distributed_on": r.distributed_on,
+                              "flags": r.flags or []} for r in rows]})
+    return out
+
+
+def pages_by_month(session: Session) -> dict[tuple[int, int], dict]:
+    """Pages per month (and per branch, by normalised name) from the monthly consumption statements: the machines' side of the comparison."""
+    out: dict[tuple[int, int], dict] = {}
+    for c in session.scalars(select(AnalysisCycle).where(AnalysisCycle.module_id == MODULE_ID)).all():
+        machines = load_machines(session, c.id)
+        if not machines:
+            continue
+        by_branch: dict[str, int] = {}
+        for m in machines:
+            k = st_mod.branch_key(m["branch_display"])
+            by_branch[k] = by_branch.get(k, 0) + (m["cons"] or 0)
+        out[(c.period_year, c.period_month)] = {"pages": sum(by_branch.values()), "by_branch": by_branch}
+    return out
+
+
+def delete_paper(session: Session, only: int | None = None) -> None:
+    for d in paper_datasets(session, only):
+        session.execute(delete(CopierPaperRow).where(CopierPaperRow.dataset_id == d.id))
+        session.delete(d)
+    session.commit()

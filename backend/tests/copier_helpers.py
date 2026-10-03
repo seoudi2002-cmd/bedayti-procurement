@@ -161,3 +161,39 @@ def invoice_pdf(qty_5000: int = 3, qty_3000: int = 2, exc_5000: int = 3000, exc_
         y -= 12
     c.save()
     return buf.getvalue()
+
+
+@functools.lru_cache(maxsize=None)
+def paper_workbook(po: str = "35", received: int | None = 20, break_month: bool = False, with_dup: bool = True) -> bytes:
+    """Paper distribution statement (synthetic): title with PO/receipt, rows (م, عدد, فرع, تاريخ), monthly subtotals in E/F and a total."""
+    from datetime import datetime
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "الاستهلاك"
+    ws["A1"] = f"بيان توزيع ورق التصوير والطباعة أمر شراء رقم ({po}) من تاريخ 20 مايو 2026 (استلام {received} كرتونة)" if received is not None \
+        else f"بيان توزيع ورق التصوير والطباعة أمر شراء رقم ({po}) من تاريخ 20 مايو 2026"
+    for c, v in enumerate(["م", "العدد", "الفرع", "التاريخ", "العدد", "البيان - استلام / متبقي"], 1):
+        ws.cell(2, c, v)
+    rows = [(1, 4, "فرع ألف", datetime(2026, 7, 2)), (2, 4, "فرع باء", datetime(2026, 7, 2)), (3, 2, "المركز الرئيسي - الحفظ", datetime(2026, 7, 5)),
+            (4, 3, "المركز الرئيسي الحفظ", datetime(2026, 7, 9)), (5, 1, "المركز الرئيسي", datetime(2026, 7, 9)),
+            (7, 4, "فرع ألف", datetime(2026, 8, 3)), (8, 2, "المركز الرئيسي - HR", datetime(2026, 8, 3)), (9, 0.5, "فرع جيم", datetime(2026, 8, 10))]
+    if with_dup:
+        rows.insert(2, (10, 4, "فرع باء", datetime(2026, 7, 2)))      # same branch, same day, a second line
+    r = 3
+    for seq, cartons, br, d in rows:
+        ws.cell(r, 1, seq)
+        ws.cell(r, 2, cartons)
+        ws.cell(r, 3, br)
+        ws.cell(r, 4, d)
+        r += 1
+    jul = sum(x[1] for x in rows if x[3].month == 7)
+    aug = sum(x[1] for x in rows if x[3].month == 8)
+    ws.cell(5, 5, jul + (1 if break_month else 0))
+    ws.cell(5, 6, "استهلاك شهر يوليو")
+    ws.cell(r - 1, 5, aug)
+    ws.cell(r - 1, 6, "استهلاك شهر اغسطس")
+    ws.cell(r + 1, 1, "العدد الاجمالى")
+    ws.cell(r + 1, 2, jul + aug)
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()

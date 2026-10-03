@@ -25,6 +25,22 @@ uploader's year/month or the latest cycle. The original files are stored untouch
 * **Trend** (item "Σ" appears when ≥ 2 months are uploaded): per-month machines, consumption, utilisation, additional copies, cost, invoice total, MoM; reading continuity
   (a machine's previous reading must equal last month's current reading).
 
+## Paper consumption (distribution statement)
+**Source:** the paper distribution statement (`.xlsx`, one purchase order; detected by its title, not by its name). It spans several months, so it belongs to no monthly cycle: item id `paper`
+(all purchase orders) or `paper:<dataset>` (one). **Definition (owner):** distribution = consumption; cost = cartons × the carton price of the purchase window; paper is VAT-exempt, so the price is final.
+A carton = 5 reams × 500 = 2,500 sheets (A4 80 g). The **need implied by the machines** is a separate estimate (machine pages ÷ pages-per-sheet ÷ sheets-per-carton) and never replaces the distributed consumption.
+
+**Reader:** title → PO number, receipt date, cartons received; rows (م / عدد / فرع / تاريخ); the file's own monthly subtotals and grand total. Controls: lines vs stated monthly subtotals, vs stated total, vs cartons received in the title.
+Flagged, never fixed: gaps / out-of-order running numbers, same branch twice on the same day (kept), head-office label spelling variants, dates before the receipt date, missing dates.
+**Head Office:** any label starting with «المركز الرئيسي» is a head-office unit; each department (text after the prefix) is reported separately, spelling variants grouped by that text.
+
+**Outputs:** KPIs (cartons, sheets, cost, units, head-office share, monthly average, PO control) · monthly cartons/cost/MoM · units × month tables (cartons and cost) with share and cumulative share · head-office departments × month ·
+monthly comparison with the machine pages of months that have a consumption statement (pages per distributed carton, paper cost per page, estimated need, distributed-vs-need) · unit-level comparison where the name matches
+(a branch only by identical normalised name; a head-office department also by a unique token-subset, marked "review") · PO table, issues and the settings used. Filters: month, unit. With filters the all-machines comparison is not shown.
+
+**Settings** `GET/PUT /api/settings/copier.paper` (admin): `sheets_per_carton`, `pages_per_sheet`, `prices_vat_exempt`, `prices` (date windows, ascending, non-overlapping). Shipped from `paper_defaults.yaml`: the carton size is the owner's figure; **real carton prices are not shipped** (company data) — an admin enters the owner's price windows through the settings API, and until then cost is "not calculated". **`pages_per_sheet` is an initial value (not stated by the owner) and is shown in every report as unconfirmed**. The window boundaries (mid-month) are assumed to fall on the 15th and are editable.
+A purchase order whose receipt date falls in no price window gets no cost (never zero).
+
 ## Not supported (stated in the report, no substitute figures)
 Cost without an invoice; governorate comparison without Part 2/Word; trend with one month; toner/maintenance/downtime; colour/mono split per machine; machine id/serial (identity = class + branch + readings);
 right-sizing savings (needs the contract price list).
@@ -45,4 +61,4 @@ A new module = parsers + engine + report builder + adapter registered in `app/co
 
 ## API
 `POST /api/analysis/copiers/datasets` (analyst; any of: statement `.xlsx`, Word, invoice PDF, scanned PDF; optional `year`, `month`) → the cycle's meta (202 while scans are OCR'd in the background) ·
-`GET …/datasets` (cycles + "all") · `GET …/datasets/{cycle|all}` · `…/report?lang=ar|en&governorate=…&branch=…&class=…` · `…/report.pdf` · `…/report.xlsx` · `DELETE …/{cycle}` (admin).
+`GET …/datasets` (cycles + "all" + "paper") · `GET …/datasets/{cycle|all}` · `…/report?lang=ar|en&governorate=…&branch=…&class=…` · `…/report.pdf` · `…/report.xlsx` · `DELETE …/{cycle}` (admin).

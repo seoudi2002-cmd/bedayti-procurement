@@ -14,7 +14,7 @@ from app.core.auth import Principal, require
 from app.core.reporting.excel import ExcelExporter
 from app.core.reporting.pdf import PdfExporter
 from app.core.settings_store import (
-    KNOWN_KEYS, default_thresholds, effective_thresholds, get_setting, set_setting, validate_thresholds,
+    KNOWN_KEYS, default_thresholds, effective_paper, effective_thresholds, get_setting, set_setting, validate_thresholds,
 )
 from app.db import get_session
 
@@ -178,3 +178,22 @@ def put_branch_key(value: dict, session: Session = Depends(get_session), princip
         raise HTTPException(422, "mode must be 'cost_center' or 'name'")
     set_setting(session, "custody.branch_key", {"mode": value["mode"]}, principal.name)
     return {"mode": value["mode"]}
+
+
+@settings_router.get("/copier.paper")
+def get_paper_params(session: Session = Depends(get_session), principal: Principal = Depends(require("viewer"))):
+    from app.modules.copier_analysis.paper import default_paper_params
+    eff, origin = effective_paper(session)
+    return {"effective": eff, "origin": origin, "defaults": default_paper_params()}
+
+
+@settings_router.put("/copier.paper")
+def put_paper_params(values: dict, session: Session = Depends(get_session), principal: Principal = Depends(require("admin"))):
+    from app.modules.copier_analysis.paper import validate_paper_params
+    try:
+        merged = {**(get_setting(session, "copier.paper", {}) or {}), **validate_paper_params(values)}
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    set_setting(session, "copier.paper", merged, principal.name)
+    eff, origin = effective_paper(session)
+    return {"effective": eff, "origin": origin}

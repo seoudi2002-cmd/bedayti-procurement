@@ -1,0 +1,7 @@
+# Initial paper parameters. Real carton prices are company data and are NOT shipped: an admin enters the price windows
+# through PUT /api/settings/copier.paper (list of {from, to, price_per_carton}, ascending, non-overlapping).
+# Until a window covers a purchase order's receipt date, its cost is reported as "not calculated" (never zero).
+sheets_per_carton: 2500   # owner: carton = 5 reams x 500 sheets (A4 80 g)
+pages_per_sheet: 1        # NOT stated by the owner: initial value awaiting confirmation (2 for duplex); shown in every report
+prices_vat_exempt: true   # owner: the paper is VAT-exempt, so the carton price is final
+prices: []

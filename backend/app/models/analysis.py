@@ -166,3 +166,23 @@ class CopierEvidence(Base, IdMixin):
     status: Mapped[str] = mapped_column(String(16), default="unreadable")  # matched | no_match | unreadable | duplicate | ambiguous
     matched_machine_ref: Mapped[str | None] = mapped_column(String(80))
     note: Mapped[str | None] = mapped_column(String(300))
+
+
+class CopierPaperRow(Base, IdMixin):
+    """One distribution line of a paper-distribution statement (cartons of copier paper given to a branch / HQ department).
+    Distribution = consumption, as the owner defines it. Priced from the purchase order's period price, not stored per row."""
+
+    __tablename__ = "copier_paper_row"
+    __table_args__ = (Index("ix_copier_paper_row_dataset", "dataset_id", "distributed_on"),)
+
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("analysis_dataset.id", ondelete="CASCADE"))
+    source_ref: Mapped[str] = mapped_column(String(80))
+    seq: Mapped[int | None] = mapped_column(Integer)
+    cartons: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    branch_source: Mapped[str] = mapped_column(String(300))
+    branch_display: Mapped[str] = mapped_column(String(300))
+    branch_key: Mapped[str] = mapped_column(String(300))
+    is_head_office: Mapped[bool] = mapped_column(Boolean, default=False)
+    department: Mapped[str | None] = mapped_column(String(200))  # head-office department as written after "المركز الرئيسي"
+    distributed_on: Mapped[date | None] = mapped_column(Date)
+    flags: Mapped[list] = mapped_column(JsonType, default=list)
