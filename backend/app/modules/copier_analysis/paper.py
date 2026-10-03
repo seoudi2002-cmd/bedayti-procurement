@@ -340,24 +340,13 @@ def analyze_paper(statements: list[dict], params: dict, pages_by_month: dict[tup
     return out
 
 
-def _tokens(key: str) -> set[str]:
-    return {t for t in key.split() if t and t not in ("ادارة", "اداره", "مكتب")}
-
-
 def match_unit(unit: dict, machine_branches: dict[str, str]) -> tuple[str | None, str]:
-    """Distribution unit -> consumption-statement branch key. A branch matches only by identical normalised name. A head-office
-    department (written differently in the two files) also matches a unique token-subset (e.g. 'الحفظ' inside 'اداره الحفظ'),
-    flagged for review; several candidates are never guessed between."""
-    key = unit["key"]
-    if not unit["hq"]:
-        return (key, "exact") if key in machine_branches else (None, "none")
-    tk = _tokens(normalize_text(unit["department"] or ""))
-    if not tk:
+    """Distribution unit -> consumption-statement branch. No guessing: both sides carry the official branch key when the branch
+    register knows the name (otherwise the normalised text), and a unit matches only when the keys are identical.
+    Head-office departments are not branches of the register and are never matched."""
+    if unit["hq"]:
         return None, "none"
-    cands = [k for k in machine_branches if tk <= _tokens(k)]
-    if len(cands) == 1:
-        return cands[0], "name_contains"
-    return None, "ambiguous" if cands else "none"
+    return (unit["key"], "exact") if unit["key"] in machine_branches else (None, "none")
 
 
 def _compare(rows: list[dict], pages_by_month: dict, spc: Decimal, pps: Decimal) -> list[dict]:

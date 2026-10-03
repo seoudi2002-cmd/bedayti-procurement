@@ -22,7 +22,7 @@ T = {
         "t_settings": "الإعدادات المستخدمة", "t_prices": "نوافذ أسعار الكرتونة", "ch_month": "الكراتين الموزعة شهريًا", "ch_cost": "تكلفة الورق شهريًا (ج.م)",
         "ch_top": "أعلى الجهات استهلاكًا (كراتين)", "ch_hq": "إدارات المركز الرئيسي (كراتين)",
         "hq": "المركز الرئيسي", "hq_general": "المركز الرئيسي (بدون تحديد إدارة)", "f_branches": "الجهة", "f_months": "الشهر",
-        "m_exact": "اسم مطابق", "m_name_contains": "مطابقة بالاسم (للمراجعة)", "m_ambiguous": "أكثر من احتمال", "m_none": "لا مطابقة",
+        "m_exact": "اسم مطابق", "m_ambiguous": "أكثر من احتمال", "m_none": "لا مطابقة",
         "sev_critical": "حرج", "sev_warning": "تنبيه", "sev_info": "للعلم",
         "x_total": "وُزّع {c} كرتونة ورق ({s} ورقة) على {u} جهة خلال {m} أشهر، بتكلفة {cost} ج.م (ورق معفى من الضريبة، بسعر نافذة الشراء).",
         "x_month": "أعلى شهر استهلاكًا {m} ({c} كرتونة، {cost} ج.م) وأقلها {lm} ({lc} كرتونة).",
@@ -37,7 +37,7 @@ T = {
         "i_filtered": "العرض الحالي مفلتر؛ مقارنة نسخ الماكينات الإجمالية لا تُعرض مع الفلاتر.",
         "i_nopages": "لا توجد كشوف استهلاك ماكينات للأشهر المعروضة؛ المقارنة بالاحتياج غير محسوبة (يلزم رفع الكشف الشهري).",
         "i_boundary": "حدود نوافذ الأسعار (منتصف الشهر) ثابتة في الإعدادات ويمكن تعديلها.",
-        "i_cmp_review": "المطابقة بين أسماء كشف التوزيع وكشف الماكينات بالاسم فقط؛ راجع الصفوف المعلَّمة قبل الاعتماد.",
+        "i_cmp_review": "الربط مع كشف الماكينات بسجل الفروع الرسمي، وعند عدم توفره باسم مطابق تمامًا؛ لا يوجد ربط تخميني، والجهات غير المربوطة (ومنها إدارات المركز الرئيسي) تظهر «لا مطابقة».",
         "i_hq_note": "تُعرض كل إدارة بالمركز الرئيسي منفصلة؛ التهجئات المختلفة لنفس الإدارة جُمعت بنص ما بعد «المركز الرئيسي».",
         "p_sheets_per_carton": "أوراق الكرتونة", "p_pages_per_sheet": "نسخ لكل ورقة", "p_prices_vat_exempt": "الأسعار معفاة من الضريبة", "yes": "نعم", "no": "لا",
     },
@@ -57,7 +57,7 @@ T = {
         "t_settings": "Settings used", "t_prices": "Carton price windows", "ch_month": "Cartons distributed per month", "ch_cost": "Paper cost per month (EGP)",
         "ch_top": "Top consuming units (cartons)", "ch_hq": "Head Office departments (cartons)",
         "hq": "Head Office", "hq_general": "Head Office (department not stated)", "f_branches": "Unit", "f_months": "Month",
-        "m_exact": "Same name", "m_name_contains": "Matched by name (review)", "m_ambiguous": "Several candidates", "m_none": "No match",
+        "m_exact": "Same name", "m_ambiguous": "Several candidates", "m_none": "No match",
         "sev_critical": "Critical", "sev_warning": "Warning", "sev_info": "Info",
         "x_total": "{c} cartons of paper ({s} sheets) were distributed to {u} units over {m} months, costing {cost} EGP (VAT-exempt paper, at the purchase window's price).",
         "x_month": "Highest month {m} ({c} cartons, {cost} EGP); lowest {lm} ({lc} cartons).",
@@ -72,7 +72,7 @@ T = {
         "i_filtered": "This view is filtered; the all-machines comparison is not shown with filters.",
         "i_nopages": "No machine consumption statement for the months shown; the need comparison is not calculated (upload the monthly statement).",
         "i_boundary": "Price-window boundaries (mid-month) are settings and can be edited.",
-        "i_cmp_review": "Distribution names are matched to machine-statement names by name only; review the flagged rows before relying on them.",
+        "i_cmp_review": "Units are linked to the machine statements through the official branch register, or by an identical name when the register does not know them; there is no fuzzy matching, and unlinked units (head-office departments included) show 'No match'.",
         "i_hq_note": "Each Head Office department is shown separately; different spellings of one department are grouped by the text after 'المركز الرئيسي'.",
         "p_sheets_per_carton": "Sheets per carton", "p_pages_per_sheet": "Pages per sheet", "p_prices_vat_exempt": "Prices are VAT-exempt", "yes": "Yes", "no": "No",
     },
@@ -194,7 +194,7 @@ def build_paper_report(a: dict, statements: list[dict], lang: str, origin: dict,
     if filters and any(a["compare"]):
         sec.insights.append({"severity": "info", "text": p.t("i_filtered")})
     if a["compare"]:
-        sec.insights.append({"severity": "warning", "text": p.t("i_cmp_review")})
+        sec.insights.append({"severity": "info", "text": p.t("i_cmp_review")})
         sec.tables.append({"key": "compare", "title": p.t("t_cmp"), "columns": [
             col("period", p.t("c_month")), col("unit", p.t("c_unit")), col("cartons", p.t("c_cartons"), "int"), col("pages", p.t("c_pages1"), "int"),
             col("ppc", p.t("c_ppc"), "int"), col("need", p.t("c_need"), "num"), col("gap", p.t("c_gap"), "snum"), col("match", p.t("c_match")), col("mb", p.t("c_mbranch"))],

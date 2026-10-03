@@ -156,10 +156,22 @@ def _ingest_paper(session, content, filename, user, options):
                          created_by=user, role="paper_distribution", status="ready")
     session.add(ds)
     session.flush()
+    resolver = EntityResolver(session, {"branch": "review"})
+    resolved: dict[str, int | None] = {}
     for r in st.rows:
+        bkey = r.branch_key
+        if not r.is_head_office:   # head-office departments are not branches of the register
+            if r.branch_key not in resolved:
+                res = resolver.resolve("branch", st_mod.display_branch(r.branch_source))
+                resolved[r.branch_key] = res.entity_id if res is not None and res.status == "resolved" else None
+            bkey = f"branch:{resolved[r.branch_key]}" if resolved[r.branch_key] else r.branch_key
         session.add(CopierPaperRow(dataset_id=ds.id, source_ref=r.source_ref, seq=r.seq, cartons=r.cartons, branch_source=r.branch_source,
-                                   branch_display=r.branch_display, branch_key=r.branch_key, is_head_office=r.is_head_office,
+                                   branch_display=r.branch_display, branch_key=bkey, is_head_office=r.is_head_office,
                                    department=r.department, distributed_on=r.distributed_on, flags=r.flags))
+    unknown = sorted({r.branch_display for r in st.rows if not r.is_head_office and not resolved.get(r.branch_key)})
+    if unknown:
+        st.issue("branch_not_in_master", "info", "Branch names not found in the branch register (kept as written; matched to the machine statements only by identical name)")
+        st.issues[-1].count, st.issues[-1].examples = len(unknown), unknown[:8]
     ds.summary = {"po_no": st.po_no, "receipt_date": st.receipt_date.isoformat() if st.receipt_date else None,
                   "received_cartons": str(st.received_cartons) if st.received_cartons is not None else None,
                   "stated_total": str(st.stated_total) if st.stated_total is not None else None,
@@ -421,7 +433,7 @@ def pages_by_month(session: Session) -> dict[tuple[int, int], dict]:
             continue
         by_branch: dict[str, int] = {}
         for m in machines:
-            k = st_mod.branch_key(m["branch_display"])
+            k = m["branch_key"]   # official branch key when the register knows it, else the normalised name
             by_branch[k] = by_branch.get(k, 0) + (m["cons"] or 0)
         out[(c.period_year, c.period_month)] = {"pages": sum(by_branch.values()), "by_branch": by_branch}
     return out

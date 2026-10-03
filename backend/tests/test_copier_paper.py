@@ -93,7 +93,7 @@ def test_no_price_window_leaves_cost_unset_never_zero():
 def test_estimated_need_is_separate_from_distributed_consumption():
     st = paper.parse_distribution_xlsx(paper_workbook())
     k = st_mod.branch_key        # the service keys machine branches the same way (normalised)
-    pages = {(2026, 7): {"pages": 50_000, "by_branch": {k("فرع ألف"): 30_000, k("إدارة الحفظ"): 5_000, k("فرع غير موجود"): 1}}}
+    pages = {(2026, 7): {"pages": 50_000, "by_branch": {k("فرع ألف"): 30_000, k("إدارة الحفظ"): 5_000, k("الحفظ"): 7, k("فرع غير موجود"): 1}}}
     a = _analyze(st, pages, params={**PARAMS, "pages_per_sheet": 2})
     jul = a["by_month"][0]
     assert jul["cartons"] == 18 and jul["pages"] == 50_000 and jul["pages_per_carton"] == pytest.approx(50_000 / 18)
@@ -103,8 +103,7 @@ def test_estimated_need_is_separate_from_distributed_consumption():
     assert a["totals"]["cartons"] == Decimal("24.5")                # the need never alters distributed consumption
     cmp = {(r["unit"]): r for r in a["compare"]}
     assert cmp["فرع ألف"]["match"] == "exact" and cmp["فرع ألف"]["need_cartons"] == Decimal(30_000) / 2 / 2500
-    hr = next(r for r in a["compare"] if r["hq"] and r["match"] != "none")
-    assert hr["machine_branch"] == k("إدارة الحفظ") and hr["match"] == "name_contains"       # unique token-subset, flagged for review
+    assert all(r["match"] == "none" and r["machine_branch"] is None for r in a["compare"] if r["hq"])   # no fuzzy matching, ever
     assert next(r for r in a["compare"] if r["unit"] == "فرع باء")["match"] == "none"
     assert _analyze(st, pages, filtered=True)["by_month"][0]["pages"] is None
 

@@ -35,8 +35,8 @@ Flagged, never fixed: gaps / out-of-order running numbers, same branch twice on 
 **Head Office:** any label starting with «المركز الرئيسي» is a head-office unit; each department (text after the prefix) is reported separately, spelling variants grouped by that text.
 
 **Outputs:** KPIs (cartons, sheets, cost, units, head-office share, monthly average, PO control) · monthly cartons/cost/MoM · units × month tables (cartons and cost) with share and cumulative share · head-office departments × month ·
-monthly comparison with the machine pages of months that have a consumption statement (pages per distributed carton, paper cost per page, estimated need, distributed-vs-need) · unit-level comparison where the name matches
-(a branch only by identical normalised name; a head-office department also by a unique token-subset, marked "review") · PO table, issues and the settings used. Filters: month, unit. With filters the all-machines comparison is not shown.
+monthly comparison with the machine pages of months that have a consumption statement (pages per distributed carton, paper cost per page, estimated need, distributed-vs-need) · unit-level comparison where the branch can be linked
+(through the official branch register when it knows the name, else an identical normalised name; **no fuzzy matching**, head-office departments are never matched) · PO table, issues and the settings used. Filters: month, unit. With filters the all-machines comparison is not shown.
 
 **Settings** `GET/PUT /api/settings/copier.paper` (admin): `sheets_per_carton`, `pages_per_sheet`, `prices_vat_exempt`, `prices` (date windows, ascending, non-overlapping). Shipped from `paper_defaults.yaml`: the carton size is the owner's figure; **real carton prices are not shipped** (company data) — an admin enters the owner's price windows through the settings API, and until then cost is "not calculated". **`pages_per_sheet` is an initial value (not stated by the owner) and is shown in every report as unconfirmed**. The window boundaries (mid-month) are assumed to fall on the 15th and are editable.
 A purchase order whose receipt date falls in no price window gets no cost (never zero).
