@@ -73,7 +73,8 @@ T = {
         "i_indicative": "عدد الشهور ({n}) قليل؛ تعد قراءة الاتجاه استرشادية.",
         "i_branch_names": "شهور ({p}) تستخدم أسماء فروع مختلفة عن باقي الشهور (مثل لغة الاسم)؛ استُبعدت من اختبارات التغير على مستوى الفرع، وتظهر أسماؤها كفروع منفصلة حتى تُربط بسجل الفروع.",
         "i_category_variants": "بنود ظهرت بتسميات مختلفة في الملف ({v}); لم تُدمج ولم تُقارن شهريًا (انظر مقترح التجميع للاعتماد).",
-        "k_findings": "أهم الملاحظات",
+        "other": "أخرى", "k_findings": "أهم الملاحظات", "f_period": "الفترة", "f_branch": "الفرع", "f_category": "البند", "f_filtered": "عرض مفلتر",
+        "i_filtered": "العرض الحالي مفلتر؛ مطابقة إجماليات الملف تخص الملف كله ولا تُعرض مع الفلاتر.",
         "x_total": "بلغ إجمالي الإنفاق {total} ج.م خلال {n} شهر ({span})، بمتوسط شهري {avg} ج.م.",
         "x_total_nomonth": "بلغ إجمالي الإنفاق {total} ج.م (الملف لا يحدد الشهور).",
         "x_topcats": "أعلى بند هو «{c1}» بنسبة {p1} من الإجمالي{more}؛ وأعلى {k} بنود تمثل {cum}.",
@@ -139,7 +140,8 @@ T = {
         "i_indicative": "Only {n} months of data: trend readings are indicative.",
         "i_branch_names": "Periods ({p}) use different branch names from the other periods (e.g. another language); they are excluded from branch-level change tests and their names appear as separate branches until mapped to the branch master.",
         "i_category_variants": "Categories written differently in the file ({v}) were not merged and not compared month to month (see the suggested grouping for approval).",
-        "k_findings": "Key observations",
+        "other": "Other", "k_findings": "Key observations", "f_period": "Period", "f_branch": "Branch", "f_category": "Category", "f_filtered": "Filtered view",
+        "i_filtered": "This view is filtered; the file's own control totals refer to the whole file and are not shown with filters.",
         "x_total": "Total expenditure was EGP {total} over {n} months ({span}), an average of EGP {avg} per month.",
         "x_total_nomonth": "Total expenditure was EGP {total} (the file does not state months).",
         "x_topcats": "The largest category is “{c1}” at {p1} of the total{more}; the top {k} categories make up {cum}.",
@@ -192,7 +194,7 @@ def col(key, label, fmt="text"):
 
 
 def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxonomy: dict | None = None,
-                 holder_rows: list[dict] | None = None) -> ReportModel:
+                 holder_rows: list[dict] | None = None, filters: dict | None = None, options: dict | None = None) -> ReportModel:
     c = Ctx(lang, dataset.period_year)
     periods = [p["key"] for p in a["periods"]]
     summ = dataset.summary
@@ -206,8 +208,22 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
                "scope_label": dataset.scope_label, "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
                "year": dataset.period_year, "year_source": dataset.year_source}
 
+    filters = filters or {}
+    rm.meta["filters"] = {"active": filters, "options": options or {}}
+    if filters:
+        sel = []
+        if filters.get("periods"):
+            sel.append(f"{c.t('f_period')}: " + ", ".join(
+                o["label"] for o in (options or {}).get("periods", []) if o["id"] in filters["periods"]))
+        if filters.get("branches"):
+            sel.append(f"{c.t('f_branch')}: " + ", ".join(
+                o["label"] for o in (options or {}).get("branches", []) if o["key"] in filters["branches"]))
+        if filters.get("categories"):
+            sel.append(f"{c.t('f_category')}: " + ", ".join(filters["categories"]))
+        rm.subtitle = (rm.subtitle or "") + " · " + c.t("f_filtered") + " — " + " | ".join(sel)
+
     # ------------------------------------------------------------------ quality inputs (used by the summary too)
-    controls = summ.get("controls", [])
+    controls = [] if filters else summ.get("controls", [])
     bad_ctrl = [x for x in controls if x["stated"] is None or abs(x["stated"] - x["computed"]) > 0.5]
     caveats: list[str] = []
     if cap["month"] and not cap["year"] and dataset.period_year is None:
@@ -216,7 +232,9 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
         caveats.append(c.t("i_year_uploader", year=dataset.period_year))
     if a["period_stats"] if a.get("period_stats") and a["period_stats"]["indicative"] else False:
         caveats.append(c.t("i_indicative", n=a["n_periods"]))
-    if bad_ctrl:
+    if filters:
+        caveats.append(c.t("i_filtered"))
+    elif bad_ctrl:
         caveats.append(c.t("i_ctrl_diff", n=len(bad_ctrl)))
     elif controls:
         caveats.append(c.t("i_ctrl_ok"))
@@ -269,7 +287,7 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
     rm.executive_summary = "\n".join("• " + i["text"] for i in items)
     rm.meta["summary_items"] = items
 
-    sec = ReportSection(c.t("s_summary"))
+    sec = ReportSection(c.t("s_summary"), "summary")
     sec.kpis = _kpis(a, c)
     sec.insights = [{"severity": "info" if i["metric"] != "caveat" else "warning", "text": i["text"], "metric": i["metric"]}
                     for i in items]
@@ -288,7 +306,7 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
     rm.sections.append(sec)
 
     # ------------------------------------------------------------------ 2. trend
-    sec = ReportSection(c.t("s_trend"))
+    sec = ReportSection(c.t("s_trend"), "trend")
     if periods:
         x = [c.short(k) for k in periods]
         sec.charts.append({"type": "bar", "title": c.t("ch_trend"), "x": x,
@@ -307,10 +325,10 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
     rm.sections.append(sec)
 
     # ------------------------------------------------------------------ 3. categories
-    sec = ReportSection(c.t("s_cat"))
+    sec = ReportSection(c.t("s_cat"), "categories")
     if cats:
         top = cats[: int(a["thresholds"]["top_n"]) + 5]
-        sec.charts.append({"type": "pareto", "title": c.t("ch_pareto"), "x": [r["name"] for r in top],
+        sec.charts.append({"type": "pareto", "drill": "category", "title": c.t("ch_pareto"), "x": [r["name"] for r in top],
                            "values": [float(r["total"]) for r in top], "cum": [r["cum_share"] for r in top]})
         sec.tables.append({"key": "categories", "title": c.t("t_cat"), "columns": [
             col("rank", c.t("c_rank"), "int"), col("name", c.t("c_cat")), col("label", c.t("c_label")),
@@ -320,7 +338,7 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
              "cum": r["cum_share"], "lines": r["n_lines"]} for r in cats]})
         if periods and len(periods) > 1:
             mc = cats[:12]
-            sec.charts.append({"type": "heatmap", "title": c.t("ch_heat"), "rows": [r["name"] for r in mc],
+            sec.charts.append({"type": "heatmap", "drill_rows": "category", "title": c.t("ch_heat"), "rows": [r["name"] for r in mc],
                                "cols": [c.short(k) for k in periods],
                                "values": [[float(r["by_month"].get(k, 0)) or None for k in periods] for r in mc]})
             sec.tables.append({"key": "category_month", "title": c.t("t_catm"), "columns": [col("name", c.t("c_cat"))] + [
@@ -353,7 +371,7 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
     rm.sections.append(sec)
 
     # ------------------------------------------------------------------ 4. head office vs branches
-    sec = ReportSection(c.t("s_scope"))
+    sec = ReportSection(c.t("s_scope"), "scope")
     if a.get("by_scope"):
         s = a["by_scope"]
         sec.tables.append({"key": "scope_month", "title": c.t("t_scope"), "columns": [
@@ -375,11 +393,11 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
     rm.sections.append(sec)
 
     # ------------------------------------------------------------------ 5. branches
-    sec = ReportSection(c.t("s_branch"))
+    sec = ReportSection(c.t("s_branch"), "branches")
     brs = a.get("by_branch", [])
     if brs:
         n = int(a["thresholds"]["top_n"])
-        sec.charts.append({"type": "bar", "horizontal": True, "title": c.t("ch_top"), "x": [r["name"] for r in brs[:n]],
+        sec.charts.append({"type": "bar", "horizontal": True, "drill": "branch", "title": c.t("ch_top"), "x": [r["name"] for r in brs[:n]],
                            "series": [{"name": c.t("c_total"), "values": [float(r["total"]) for r in brs[:n]]}]})
         sec.tables.append({"key": "branches", "title": c.t("t_branch"), "columns": [
             col("rank", c.t("c_rank"), "int"), col("name", c.t("c_branch")), col("total", c.t("c_total"), "money"),
@@ -388,7 +406,7 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
              "months": r["months_active"]} for r in brs], "pdf_rows": 20})
         bm = a["branch_category_matrix"]
         if bm["rows"] and bm["categories"]:
-            sec.charts.append({"type": "heatmap", "title": c.t("ch_bheat"), "rows": [r["name"] for r in bm["rows"]], "cols": bm["categories"],
+            sec.charts.append({"type": "heatmap", "drill_rows": "branch", "drill_cols": "category", "title": c.t("ch_bheat"), "rows": [r["name"] for r in bm["rows"]], "cols": bm["categories"],
                                "values": [[float(x) if x else None for x in r["cells"]] for r in bm["rows"]]})
             sec.tables.append({"key": "branch_category", "title": c.t("t_matrix"), "columns": [col("name", c.t("c_branch"))] + [
                 col(f"c{i}", cn_, "money") for i, cn_ in enumerate(bm["categories"])] + [col("total", c.t("c_total"), "money")],
@@ -412,13 +430,13 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
     rm.sections.append(sec)
 
     # ------------------------------------------------------------------ 6. variance
-    sec = ReportSection(c.t("s_var"))
+    sec = ReportSection(c.t("s_var"), "variance")
     if v:
         top = v["by_category"][:8]
         sec.charts.append({"type": "waterfall", "title": f"{c.t('ch_wf')} ({c.short(v['from'])} → {c.short(v['to'])})",
                            "start": (c.short(v["from"]), float(v["total"]["prev"])), "end": (c.short(v["to"]), float(v["total"]["cur"])),
                            "x": [r["name"] for r in top], "values": [float(r["abs"]) for r in top],
-                           "other": float(v["total"]["abs"] - sum((r["abs"] for r in top), Decimal(0)))})
+                           "other_label": c.t("other"), "other": float(v["total"]["abs"] - sum((r["abs"] for r in top), Decimal(0)))})
         cols = [col("name", ""), col("prev", c.short(v["from"]), "money"), col("cur", c.short(v["to"]), "money"),
                 col("abs", c.t("c_abs"), "smoney"), col("pct", c.t("c_mom_pct"), "spct")]
         sec.tables.append({"key": "var_category", "title": c.t("t_varc"), "columns": [{**cols[0], "label": c.t("c_cat")}] + cols[1:],
@@ -431,7 +449,7 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
     rm.sections.append(sec)
 
     # ------------------------------------------------------------------ 7. outliers
-    sec = ReportSection(c.t("s_out"))
+    sec = ReportSection(c.t("s_out"), "outliers")
     rows = []
     for o in a["outliers"]:
         rows.append({"sev": c.t("sev_" + o["severity"]), "note": _outlier_text(c, o), "period": c.period(o["period"]) if o["period"] else "",
@@ -443,7 +461,7 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
     rm.sections.append(sec)
 
     # ------------------------------------------------------------------ 8. quality
-    sec = ReportSection(c.t("s_quality"))
+    sec = ReportSection(c.t("s_quality"), "quality")
     sec.insights += [{"severity": "info", "text": x} for x in caveats]
     unsupported = [u for u in a["unsupported"]]
     if unsupported:
@@ -474,7 +492,7 @@ def build_report(dataset, a: dict, lang: str = "ar", admin: bool = False, taxono
 
     # ------------------------------------------------------------------ 9. custodians (admin only: personal data)
     if admin and holder_rows:
-        sec = ReportSection(c.t("s_holder"))
+        sec = ReportSection(c.t("s_holder"), "holders")
         sec.tables.append({"key": "holders", "title": c.t("t_holder"), "columns": [
             col("holder", c.t("c_holder")), col("total", c.t("c_total"), "money"), col("share", c.t("c_share"), "pct"),
             col("lines", c.t("c_lines"), "int")], "rows": holder_rows, "pdf_rows": 20})

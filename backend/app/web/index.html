@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Custody Analytics</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%232a78d6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo" aria-hidden="true"></span><h1 id="appTitle">تحليل العهد</h1></div>
+  <div class="top-actions">
+    <button id="langBtn" class="btn ghost" title="Language">EN</button>
+    <button id="tokenBtn" class="btn ghost" title="Access token">🔑</button>
+  </div>
+</header>
+
+<section class="bar" id="datasetBar">
+  <label class="field"><span id="lblDataset">الملف المحلل</span>
+    <select id="datasetSelect"></select></label>
+  <div class="upload" id="dropzone" tabindex="0">
+    <input type="file" id="fileInput" accept=".xlsx,.xlsm" hidden>
+    <button class="btn primary" id="uploadBtn">⬆ <span id="lblUpload">رفع ملف Excel</span></button>
+    <label class="field small"><span id="lblYear">السنة (إن لم تكن في الملف)</span>
+      <input type="number" id="yearInput" min="2000" max="2100" placeholder="2026"></label>
+    <span class="hint" id="lblDrop">أو اسحب الملف هنا</span>
+  </div>
+  <div class="exports">
+    <button class="btn" id="pdfBtn" disabled>PDF</button>
+    <button class="btn" id="xlsxBtn" disabled>Excel</button>
+  </div>
+</section>
+
+<div id="notice" class="notice" hidden></div>
+
+<section class="filters" id="filters" hidden>
+  <div class="dd" id="ddPeriod"></div>
+  <div class="dd" id="ddBranch"></div>
+  <div class="dd" id="ddCategory"></div>
+  <button class="btn primary" id="applyBtn">تطبيق</button>
+  <button class="btn ghost" id="clearBtn">مسح</button>
+  <div class="chips" id="chips"></div>
+</section>
+
+<nav class="tabs" id="tabs" role="tablist" hidden></nav>
+<main id="content"><div class="empty" id="emptyState">
+  <h2 id="emptyTitle">ارفع ملف Excel لبدء التحليل</h2>
+  <p id="emptyText">يدعم النظام ثلاثة أنواع: قيود تسوية العهد المؤقتة، تحليل مصروفات الفروع، وتحليل مصروفات المركز الرئيسي. كل نوع يُحلل منفصلًا.</p>
+</div></main>
+
+<dialog id="tokenDlg">
+  <form method="dialog">
+    <h3 id="tokenTitle">رمز الدخول</h3>
+    <p class="hint" id="tokenHint">يلزم عند تفعيل المصادقة على الخادم (Bearer token).</p>
+    <input type="password" id="tokenInput" autocomplete="off">
+    <div class="row"><button class="btn primary" value="ok" id="tokenSave">حفظ</button><button class="btn" value="cancel">إلغاء</button></div>
+  </form>
+</dialog>
+
+<div id="busy" class="busy" hidden><div class="spinner"></div></div>
+<script src="vendor/chart.umd.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

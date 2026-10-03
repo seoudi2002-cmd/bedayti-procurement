@@ -1,6 +1,10 @@
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from app.api.analysis import router as analysis_router
@@ -30,3 +34,11 @@ app.include_router(masterdata_router, prefix="/api")
 app.include_router(extraction_router, prefix="/api")
 app.include_router(analysis_router, prefix="/api")
 app.include_router(settings_router, prefix="/api")
+
+# interim web UI (no build step): the dashboard consumes the same /api the PDF/Excel exports use
+app.mount("/app", StaticFiles(directory=Path(__file__).parent / "web", html=True), name="web")
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse("/app/")

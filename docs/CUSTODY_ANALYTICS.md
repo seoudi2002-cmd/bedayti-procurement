@@ -44,6 +44,20 @@ variances (waterfall, change by category/branch) · unusual items · data qualit
 suggested groups, settings used) · custodians (admin only). Arabic (RTL) and English. Executive-summary sentences are generated from computed
 metrics only (each carries its metric id in `report.meta.summary_items`).
 
+## Web dashboard (interim UI, no build step)
+Served by the API at **`/app/`** (`backend/app/web`: plain HTML/JS, Chart.js vendored under `web/vendor`, so it works offline). It renders the same
+report model as the PDF/Excel exports, so the screen and the downloads always agree.
+* Upload an Excel file (button or drag-and-drop; optional year when the file does not state one) → analysed immediately; a file already uploaded is simply opened.
+* Tabs = report sections: summary (KPI cards, metric-bound statements, key observations, caveats) · trend · categories (Pareto, category×month heatmap, tables) ·
+  Head Office vs branches · branches (top-N, branch×category matrix, ranking, groups) · variances (waterfall) · unusual items · data quality (control totals, issues) · custodians (admin).
+* Filters: period, branch (searchable), category (searchable) — applied **on the server**, so every KPI, table, chart, PDF and Excel download reflects the current selection.
+  Click a category/branch in a chart or heatmap to drill into it; chips show and remove active filters. File control totals are whole-file only and are hidden while filtered.
+* Tables: sortable, searchable, "show all". AR/EN toggle (RTL/LTR). Token dialog for `API_TOKENS` deployments. Light/dark follows the system.
+* `GET .../report`, `.pdf`, `.xlsx` accept repeatable `period=2026-03`, `branch=<key>`, `category=<name as written>`.
+
+Run locally: `alembic upgrade head && uvicorn app.main:app --reload` → open <http://localhost:8000/app/>. The Next.js frontend planned for Phase 2 would replace this UI and
+consume the same API.
+
 ## Not yet
-PowerPoint export; advance-register analysis (F4); combined reports (needs the owner's confirmation); branch alias mapping UI; a web dashboard
-(the JSON report is the dashboard's data contract).
+PowerPoint export; advance-register analysis (F4, deliberately not started); combined reports (needs the owner's confirmation); a branch alias-mapping screen
+(F2 February's English branch names stay flagged for review — no mapping is guessed).

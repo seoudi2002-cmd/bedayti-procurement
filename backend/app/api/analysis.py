@@ -3,7 +3,7 @@ as JSON, PDF or Excel. Analysis only: no transaction workflow. Holder names are 
 from dataclasses import asdict
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -88,34 +88,44 @@ def delete(dataset_id: int, session: Session = Depends(get_session), principal: 
     service.delete_dataset(session, dataset_id)
 
 
-def _report(session, dataset_id: int, lang: str, principal: Principal):
+def _report(session, dataset_id: int, lang: str, principal: Principal, period=None, branch=None, category=None):
     if lang not in ("ar", "en"):
         raise HTTPException(422, "lang must be 'ar' or 'en'")
     ds = _dataset(session, dataset_id)
-    return service.build(session, ds, lang, principal.at_least("admin"))
+    filters = {"periods": period or [], "branches": branch or [], "categories": category or []}
+    return service.build(session, ds, lang, principal.at_least("admin"), filters)
+
+
+# the same three filters drive the dashboard and both downloads, so an export is exactly what is on screen
+Period = Query(None, description="period id(s) like 2026-03 (repeatable)")
+Branch = Query(None, description="branch key(s) from the filter options (repeatable)")
+Category = Query(None, description="category name(s) as written in the file (repeatable)")
 
 
 @router.get("/datasets/{dataset_id}/report")
-def report_json(dataset_id: int, lang: str = "ar", session: Session = Depends(get_session),
+def report_json(dataset_id: int, lang: str = "ar", period: list[str] | None = Period, branch: list[str] | None = Branch,
+                category: list[str] | None = Category, session: Session = Depends(get_session),
                 principal: Principal = Depends(require("viewer"))):
-    rm, a = _report(session, dataset_id, lang, principal)
+    rm, a = _report(session, dataset_id, lang, principal, period, branch, category)
     return _jsonable({"report": asdict(rm), "analysis": {k: a[k] for k in (
         "total", "capabilities", "periods", "by_category", "by_scope", "by_branch", "by_group", "outliers", "variance",
         "unsupported", "thresholds", "thresholds_origin")}})
 
 
 @router.get("/datasets/{dataset_id}/report.pdf")
-def report_pdf(dataset_id: int, lang: str = "ar", session: Session = Depends(get_session),
+def report_pdf(dataset_id: int, lang: str = "ar", period: list[str] | None = Period, branch: list[str] | None = Branch,
+               category: list[str] | None = Category, session: Session = Depends(get_session),
                principal: Principal = Depends(require("viewer"))):
-    rm, _ = _report(session, dataset_id, lang, principal)
+    rm, _ = _report(session, dataset_id, lang, principal, period, branch, category)
     return Response(PdfExporter().render(rm), media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="custody_analysis_{dataset_id}_{lang}.pdf"'})
 
 
 @router.get("/datasets/{dataset_id}/report.xlsx")
-def report_xlsx(dataset_id: int, lang: str = "ar", session: Session = Depends(get_session),
+def report_xlsx(dataset_id: int, lang: str = "ar", period: list[str] | None = Period, branch: list[str] | None = Branch,
+                category: list[str] | None = Category, session: Session = Depends(get_session),
                 principal: Principal = Depends(require("viewer"))):
-    rm, _ = _report(session, dataset_id, lang, principal)
+    rm, _ = _report(session, dataset_id, lang, principal, period, branch, category)
     return Response(ExcelExporter().render(rm),
                     media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     headers={"Content-Disposition": f'attachment; filename="custody_analysis_{dataset_id}_{lang}.xlsx"'})

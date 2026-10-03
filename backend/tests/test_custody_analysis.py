@@ -245,3 +245,38 @@ def test_api_thresholds_editable_without_code_change(api):
     # approving a display taxonomy: rejects a category listed in two groups
     bad = api.put("/api/settings/custody.display_taxonomy", json={"groups": {"a": ["X"], "b": ["X"]}}, headers=auth("admin"))
     assert bad.status_code == 422
+
+
+# ------------------------------------------------------------------ dashboard: filters, exports, static UI
+def test_filters_recompute_the_analysis_and_never_touch_source(session, ds):
+    rm_all, a_all = service.build(session, ds, "en", admin=False)
+    opts = rm_all.meta["filters"]["options"]
+    assert {"periods", "branches", "categories"} <= set(opts)
+    assert [p["id"] for p in opts["periods"]] == ["2026-01", "2026-02", "2026-03"]
+    assert "Governmental Fees" in opts["categories"] and any(b["kind"] == "head_office" for b in opts["branches"])
+    rm, a = service.build(session, ds, "en", admin=False, filters={"categories": ["Governmental Fees"], "periods": ["2026-01", "2026-02"]})
+    assert a["total"] == Decimal("660000")  # 100000 + 60000 + 500000 (the March -2500 reclass is outside the periods)
+    assert [c["name"] for c in a["by_category"]] == ["Governmental Fees"]
+    assert "Filtered view" in rm.subtitle
+    assert not any(t["key"] == "controls" and t["rows"] for s in rm.sections for t in s.tables)  # file controls are whole-file only
+    assert service.load_facts(session, ds.id) and sum(f.amount for f in service.load_facts(session, ds.id)) == Decimal("871500")
+    br = [b["key"] for b in opts["branches"] if b["kind"] == "head_office"]
+    _, a2 = service.build(session, ds, "en", admin=False, filters={"branches": br})
+    assert a2["total"] == Decimal("277500") and a2["by_scope"] is None  # Head Office only: no split to show
+
+
+def test_api_exports_follow_the_current_filters_and_ui_is_served(api):
+    did = api.post("/api/analysis/custody/datasets", files={"file": ("f3.xlsx", standard_gl())}, headers=auth("analyst")).json()["id"]
+    url = f"/api/analysis/custody/datasets/{did}/report"
+    full = api.get(f"{url}?lang=en", headers=auth("viewer")).json()
+    part = api.get(f"{url}?lang=en&period=2026-03&category=Public%20Relation", headers=auth("viewer")).json()
+    assert full["analysis"]["total"] == 871500 and part["analysis"]["total"] == 80000
+    assert part["report"]["meta"]["filters"]["active"]["categories"] == ["Public Relation"]
+    pdf = api.get(f"{url}.pdf?lang=en&period=2026-03", headers=auth("viewer"))
+    xl = api.get(f"{url}.xlsx?lang=en&period=2026-03", headers=auth("viewer"))
+    assert pdf.status_code == xl.status_code == 200
+    wb = load_workbook(io.BytesIO(xl.content))
+    months = next(w for w in wb.worksheets if w.title.startswith("Monthly expenditure"))
+    assert [r[0].value for r in months.iter_rows(min_row=4) if r[0].value] == ["Mar 2026"]  # exactly what the filtered view shows
+    page = api.get("/app/")
+    assert page.status_code == 200 and "app.js" in page.text and api.get("/app/vendor/chart.umd.js").status_code == 200

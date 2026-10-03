@@ -7,6 +7,7 @@ from typing import Protocol
 @dataclass
 class ReportSection:
     title: str
+    key: str = ""  # stable id (dashboards/tabs address sections by key, not by translated title)
     # kpi: {label, value (display text), sub, tone}; table: {title, columns[{key,label,fmt}], rows[dict], note, pdf_rows};
     # chart: {type: line|bar|heatmap|pareto|waterfall, title, ...}; insight: {severity, text}
     kpis: list[dict] = field(default_factory=list)

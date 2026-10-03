@@ -32,7 +32,7 @@ dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.4"]
 include = ["app*"]
 
 [tool.setuptools.package-data]
-app = ["modules/**/*.yaml"]
+app = ["modules/**/*.yaml", "web/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

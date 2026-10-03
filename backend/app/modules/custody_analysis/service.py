@@ -130,18 +130,49 @@ def load_facts(session: Session, dataset_id: int) -> list[F]:
               r.item_source, r.holder_text, Decimal(r.amount), r.source_ref, r.ref_no, tuple(r.flags or ())) for r in rows]
 
 
-def run_analysis(session: Session, dataset: AnalysisDataset) -> dict:
+def period_id(f: F) -> str:
+    return f"{f.year or 0}-{(f.month or 0):02d}"
+
+
+def apply_filters(facts: list[F], active: dict | None) -> list[F]:
+    """Narrow the facts to the selected periods / branches / categories (the analysis is then recomputed on them)."""
+    if not active:
+        return facts
+    periods, branches, cats = set(active.get("periods") or ()), set(active.get("branches") or ()), set(active.get("categories") or ())
+    return [f for f in facts if (not periods or (f.month and period_id(f) in periods))
+            and (not branches or f.branch_key in branches) and (not cats or f.category in cats)]
+
+
+def filter_options(facts: list[F], lang: str, year: int | None) -> dict:
+    from app.modules.custody_analysis.report import MONTH_NAMES
+    periods = sorted({(f.year or 0, f.month) for f in facts if f.month})
+    spell: dict[str, dict[str, int]] = {}
+    kind: dict[str, str | None] = {}
+    for f in facts:
+        if f.branch_key:
+            name = f.branch_label or f.branch_key
+            spell.setdefault(f.branch_key, {})[name] = spell.get(f.branch_key, {}).get(name, 0) + 1
+            kind[f.branch_key] = f.branch_kind
+    branches = [{"key": k, "label": max(v.items(), key=lambda kv: kv[1])[0], "kind": kind[k]} for k, v in spell.items()]
+    branches.sort(key=lambda b: (b["kind"] != "head_office", b["label"].casefold()))
+    return {
+        "periods": [{"id": f"{y}-{m:02d}", "label": MONTH_NAMES[lang][m - 1] + (f" {y or year}" if (y or year) else "")} for y, m in periods],
+        "branches": branches,
+        "categories": sorted({f.category for f in facts if f.category}, key=str.casefold)}
+
+
+def run_analysis(session: Session, dataset: AnalysisDataset, filters: dict | None = None) -> dict:
     th, origin = effective_thresholds(session)
-    facts = load_facts(session, dataset.id)
-    res = analyze(facts, th, dataset.summary.get("presence"), continuous=dataset.layout.startswith("monthly_"))
+    facts = apply_filters(load_facts(session, dataset.id), filters)
+    res = analyze(facts, th, None if filters else dataset.summary.get("presence"), continuous=dataset.layout.startswith("monthly_"))
     res["thresholds"], res["thresholds_origin"] = th, origin
     return res
 
 
-def holder_rows(session: Session, dataset: AnalysisDataset) -> list[dict]:
+def holder_rows(session: Session, dataset: AnalysisDataset, filters: dict | None = None) -> list[dict]:
     """Totals per custodian (personal data: only built for admins)."""
     tot: dict[str, dict] = {}
-    for f in load_facts(session, dataset.id):
+    for f in apply_filters(load_facts(session, dataset.id), filters):
         if not f.holder:
             continue
         key = normalize_text(f.holder)
@@ -155,8 +186,13 @@ def holder_rows(session: Session, dataset: AnalysisDataset) -> list[dict]:
     return rows
 
 
-def build(session: Session, dataset: AnalysisDataset, lang: str, admin: bool):
+def build(session: Session, dataset: AnalysisDataset, lang: str, admin: bool, filters: dict | None = None):
     from app.modules.custody_analysis.report import build_report
-    a = run_analysis(session, dataset)
+    filters = {k: v for k, v in (filters or {}).items() if v}
+    all_facts = load_facts(session, dataset.id)
+    options = filter_options(all_facts, lang, dataset.period_year)
+    a = run_analysis(session, dataset, filters)
     taxonomy = get_setting(session, "custody.display_taxonomy", {}) or {}
-    return build_report(dataset, a, lang, admin, taxonomy, holder_rows(session, dataset) if admin else None), a
+    rm = build_report(dataset, a, lang, admin, taxonomy, holder_rows(session, dataset, filters) if admin else None,
+                      filters=filters, options=options)
+    return rm, a
