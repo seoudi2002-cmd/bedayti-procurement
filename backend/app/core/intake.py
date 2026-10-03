@@ -22,7 +22,7 @@ def analyze_file(registry: ModuleRegistry, filename: str, content: bytes) -> lis
                 matched = {m["field"] for m in mapping.values()}
                 required = [f.name for f in schema.fields if f.required and f.derive is None]
                 req_frac = (sum(r in matched for r in required) / len(required)) if required else 0.0
-                all_frac = len(matched) / len(schema.fields)
+                all_frac = len(matched) / len(schema.fields) if schema.fields else 0.0
                 bonus = 1.0 if schema.sheet and schema.sheet == sheet else 0.0
                 score = round(0.6 * req_frac + 0.3 * all_frac + 0.1 * bonus, 3)
                 if matched:

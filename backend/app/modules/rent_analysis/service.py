@@ -54,6 +54,21 @@ def controls(p: wb.Parsed, a: dict) -> list[dict]:
     return out
 
 
+def _sig(months: dict):
+    return tuple(sorted(months.items()))
+
+
+def _exception_summary(e: dict, a: dict) -> dict:
+    """The copies of a contract grouped by what they state (sheets that agree are listed together) — values and their source, for the exceptions table."""
+    groups: dict = {}
+    for c in e["copies"]:
+        groups.setdefault((_sig(c["months"]), c["start"], c["contract_rent"]), []).append(c)
+    out = []
+    for (sig, start, rent), cps in sorted(groups.items(), key=lambda kv: -len(kv[1])):
+        out.append({"sheets": sorted({f"{c['sheet']}!{c['row']}" for c in cps})[:4], "n_sheets": len({c["sheet"] for c in cps}), "start": start, "contract_rent": rent, "months": dict(sig)})
+    return {"name": e["name"], "status": e["status"], "evidence": e["evidence"], "chosen": e.get("chosen"), "groups": out}
+
+
 def ingest(session: Session, content: bytes, filename: str, user: str | None, options: dict) -> UploadResult:
     if not filename.lower().endswith((".xlsx", ".xlsm")):
         raise AnalysisError(422, "The rent register is an Excel workbook (.xlsx)")
@@ -73,7 +88,7 @@ def ingest(session: Session, content: bytes, filename: str, user: str | None, op
     for c in a["contracts"]:
         ev[c["evidence"] or "none"] = ev.get(c["evidence"] or "none", 0) + 1
     summary = {"issues": p.issues.json(), "controls": ctr, "sheets": p.sheets, "hidden_sheets": p.hidden, "contracts": len(a["contracts"]), "excluded": a["excluded"],
-               "evidence": ev, "stale_contracts": a["stale_contracts"], "stale_cells": a["stale_cells"]}
+               "evidence": ev, "stale_contracts": a["stale_contracts"], "stale_cells": a["stale_cells"], "exceptions": [_exception_summary(e, a) for e in a["exceptions"]]}
     ds = ops.create_dataset(session, MODULE_ID, LAYOUT, "rent", filename, digest, path, user, summary, periods, personal=True, title="rent register", year_source="file")
     ops.add_records(session, ds, recs)
     return UploadResult(item_id="all", meta={"id": "all", "version": ds.id, "layout": LAYOUT, "contracts": len(a["contracts"]), "months": [periods[0], periods[-1]] if periods else None,

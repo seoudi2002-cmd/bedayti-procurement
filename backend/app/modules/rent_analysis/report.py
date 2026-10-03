@@ -34,6 +34,11 @@ T = {
         "na_before": "قيم قبل يناير 2023: لا توجد", "n_personal": "أسماء الملّاك بيانات شخصية: تظهر للمدير فقط.",
         "f_gov": "المحافظة", "f_contract": "العقد", "fld_rent": "الإيجار", "fld_governorate": "المحافظة", "fld_start": "بداية العقد", "fld_end": "نهاية العقد", "fld_advance": "المقدم", "fld_deposit": "التأمين",
         "fld_contract_rent": "القيمة بالعقد", "fld_no_payment": "بلا سداد", "fld_scope": "النطاق", "fld_start_raw": "بداية (نص)", "fld_end_raw": "نهاية (نص)", "fld_current_rent_stated": "القيمة الحالية المذكورة",
+        "t_exc": "عقود فيها تعارض بين النسخ: كيف حُسم وما المستبعد (القيم ومصدرها)", "exc_note": "لا تُعتمد قيمة بالتخمين: يُعتمد السجل الذي تُثبته معادلة الإجمالي الفرعي أو يتطابق مع نسخ أخرى؛ وما لم يُحسم يُستبعد من الأرقام ويبقى هنا للمراجعة.",
+        "c_basis": "أساس القرار", "c_source": "المصدر", "c_values": "القيم المذكورة", "sheets": "ورقة", "start": "بداية",
+        "exs_resolved": "حُسم", "exs_ignored_values": "حُسم (مع قيم غير معتمدة)", "exs_excluded": "مستبعد — يحتاج مراجعة",
+        "exe_undated_copies_merged": "نسخ بلا تاريخ بدء تطابق اسمًا وقيمًا مع عقد مؤرَّخ تجمعه ورقة بمعادلة صريحة؛ اعتُمد السجل المؤرَّخ", "exe_values_before_contract_start": "نسخة تذكر قيمًا قبل تاريخ بدء العقد؛ لم تُعتمد",
+        "exe_copies_conflict_unowned": "نسخ متعارضة ولا ورقة تجمع العقد؛ لا قيمة أرجح",
         "ctl_note": "الإجمالي الفرعي المذكور في ورقة المحافظة مقابل مجموع عقودها كما حُسبت هنا؛ الفروق تُعرض ولا تُصحَّح.",
     },
     "en": {
@@ -64,6 +69,11 @@ T = {
         "na_before": "Values before January 2023: none", "n_personal": "Landlord names are personal data: shown to admins only.",
         "f_gov": "Governorate", "f_contract": "Contract", "fld_rent": "Rent", "fld_governorate": "Governorate", "fld_start": "Start", "fld_end": "End", "fld_advance": "Advance", "fld_deposit": "Deposit",
         "fld_contract_rent": "Contract rent", "fld_no_payment": "No payment", "fld_scope": "Scope", "fld_start_raw": "Start (text)", "fld_end_raw": "End (text)", "fld_current_rent_stated": "Current rent stated",
+        "t_exc": "Contracts whose copies conflict: how it was resolved and what is left out (values and their source)", "exc_note": "No value is chosen by guessing: the record proven by a sub-total formula or matching other copies is used; what cannot be settled is excluded from the figures and stays here for review.",
+        "c_basis": "Basis", "c_source": "Source", "c_values": "Values stated", "sheets": "sheets", "start": "start",
+        "exs_resolved": "Resolved", "exs_ignored_values": "Resolved (some values not used)", "exs_excluded": "Excluded — needs review",
+        "exe_undated_copies_merged": "Undated copies match a dated contract by name and values, which a sheet adds up with an explicit formula; the dated record is used", "exe_values_before_contract_start": "A copy states values before the contract start date; not used",
+        "exe_copies_conflict_unowned": "Conflicting copies and no sheet that adds the contract up; no value is more reliable",
         "ctl_note": "The sub-total stated in a governorate sheet against the sum of its contracts as computed here; differences are shown, not corrected.",
     },
 }
@@ -219,6 +229,17 @@ def build_report(a: dict, data: dict, th: dict, th_origin: dict, lang: str, filt
                                                                                                          col("ex", c.t("c_note"))],
                       "rows": [{"s": gname(x["sheet"]), "pe": x["periods"], "ok": x["matched"], "bad": x["mismatched"],
                                 "ex": " | ".join(f"{L(e['period'])}: {money(e['stated'])} ≠ {money(e['computed'])}" for e in x["examples"][:2])} for x in ctrl]})
+    exc = next((s["exceptions"] for s in reversed(data["summaries"]) if s.get("exceptions")), [])
+    if exc:
+        rows = []
+        for e in exc:
+            for i, g in enumerate(e["groups"]):
+                vals = list(g["months"].items())
+                rows.append({"n": e["name"] if i == 0 else "", "st": c.t("exs_" + e["status"]) if i == 0 else "", "ev": " + ".join(c.t("exe_" + x) for x in e["evidence"].split(",")) if i == 0 else "",
+                             "src": f"{g['n_sheets']} {c.t('sheets')}: " + "، ".join(g["sheets"][:2]) + (f" — {c.t('start')} {g['start']}" if g["start"] else ""),
+                             "v": "، ".join(f"{p}={v:g}" for p, v in vals[:4]) + (f" … ({len(vals)})" if len(vals) > 4 else "")})
+        extra.insert(0, {"key": "exceptions", "title": c.t("t_exc"), "note": c.t("exc_note"), "columns": [col("n", c.t("c_name")), col("st", c.t("c_status")), col("ev", c.t("c_basis")), col("src", c.t("c_source")), col("v", c.t("c_values"))],
+                         "rows": rows})
     if a["periodic"]:
         extra.append({"key": "periodic", "title": c.t("t_periodic"), "columns": [col("name", c.t("c_name")), col("g", c.t("c_gov")), col("b", c.t("c_blank"), "int"), col("r", c.t("c_recorded"), "int")],
                       "rows": [{"name": r["name"], "g": gname(r["governorate"]), "b": r["blank_months"], "r": r["recorded_months"]} for r in a["periodic"]], "pdf_rows": 25})

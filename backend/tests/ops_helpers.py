@@ -33,11 +33,12 @@ def _save(wb, cache: dict | None = None) -> bytes:
 
 
 @lru_cache(maxsize=None)
-def rent_workbook(version: int = 1) -> bytes:
+def rent_workbook(version: int = 1, year: int = 2025) -> bytes:
     """Two governorate sheets repeating one master list (rows 3-6), each footer adding up *its* contracts with a formula, plus Head Office.
     v2: contract A is increased in March and a new contract appears in the Menoufia footer."""
     wb = Workbook()
     wb.remove(wb.active)
+    head = [h.replace("2025", str(year)) for h in RENT_HEAD]
     a_mar = 1210 if version == 2 else 1100
     master = [
         [1, "الزقاريق ( الشرقية )", "_____", 5000, "01/01/2024", "31/12/2030", 1000, 1100, 1100, a_mar],
@@ -48,7 +49,7 @@ def rent_workbook(version: int = 1) -> bytes:
     for gov in ("الشرقية", "المنوفية"):
         ws = wb.create_sheet(gov)
         ws.append([gov])
-        ws.append(RENT_HEAD)
+        ws.append(head)
         for i, r in enumerate(master):
             r = list(r)
             if gov == "المنوفية" and i == 0:
@@ -62,7 +63,7 @@ def rent_workbook(version: int = 1) -> bytes:
             ws.append([None, "اجمالي محافظة الشرقية", None, None, None, None, None, "=SUM(H3+H4)", "=SUM(I3+I4)", "=SUM(J3+J4)"])
     hq = wb.create_sheet("المركز الرئيسي")
     hq.append(["بيان العقود"])
-    hq.append(["المركز / المدينة / المحافظة", "المقدم", "التامين", "المالك", "بداية العقد", "نهاية العقد", "يناير 2025", "فبراير 2025", "مارس 2022"])
+    hq.append(["المركز / المدينة / المحافظة", "المقدم", "التامين", "المالك", "بداية العقد", "نهاية العقد", f"يناير {year}", f"فبراير {year}", "مارس 2022"])
     hq.append(["العجوزة د3", "_____", 900, "مالك أ", datetime(2024, 1, 3), "28/02/2030", 700, 700, 770])
     hq.append(["الإجمالي المسدد", None, None, "الإجمالي", None, None, 700, 700, 770])
     cache = {"الشرقية": {"H8": 3300, "I8": 1100, "J8": a_mar + 2200}, "المنوفية": {"H9": 550, "I9": 550, "J9": 991}}      # Menoufia's March total is stated one off (990 + 1)
@@ -128,13 +129,16 @@ FEB_TOTAL = 1810 + 2500
 
 
 @lru_cache(maxsize=None)
-def repairs_workbook(corrected: bool = False) -> bytes:
+def repairs_workbook(corrected: bool = False, first_plate: str | None = None) -> bytes:
     """Jan and Feb for two vehicles + a half-year sheet (one vehicle's total off) with an insurance-claim side table. Jan's stated total row is one off.
     corrected: a different Feb repair for the first vehicle (a corrected file)."""
     feb = [("س ص 1111", "تويوتا", None, 900, None, 10, 1100, 900, None), FEB[1]] if corrected else FEB
+    jan = JAN
+    if first_plate:
+        jan, feb = [(first_plate, *jan[0][1:]), jan[1]], [(first_plate, *feb[0][1:]), feb[1]]
     wb = Workbook()
     wb.remove(wb.active)
-    _repairs_sheet(wb, "يناير", "يناير", JAN, JAN_TOTAL + 1)
+    _repairs_sheet(wb, "يناير", "يناير", jan, JAN_TOTAL + 1)
     _repairs_sheet(wb, "فبراير", "فبراير", feb, None)
     ws = wb.create_sheet("اجمالي نصف عام 2026")
     ws.append(["بيان الاصلاحات"] + [None] * 24 + ["تحت حساب التأمين", "الشهر", "اصل المبلغ", "نسبة تحمل التأمين", "نسبة تحمل الشركة"])
@@ -192,3 +196,38 @@ def _card_book(km_by_sheet):
 @lru_cache(maxsize=None)
 def card_book() -> bytes:
     return _card_book({"يناير": ("2026/01/01", 29500), "فبراير": ("2026/02/01", 29900), "مارس": ("2026/03/01", 0)})
+
+
+@lru_cache(maxsize=None)
+def rent_exceptions_workbook() -> bytes:
+    """Two sheets. «منشأة س»: an undated master row in both, plus a dated footer row in `بيتا` (its own total adds it up) — one contract; one sheet also carries values
+    from before the contract started. «عقد متعارض»: undated, different values in the two sheets, no sheet adds it up — cannot be settled."""
+    wb = Workbook()
+    wb.remove(wb.active)
+    for name, conflict, stray in (("ألفا", 100, True), ("بيتا", 200, False)):
+        ws = wb.create_sheet(name)
+        ws.append([name])
+        ws.append(RENT_HEAD)
+        ws.append([1, "منشاة س", "_____", "_____", None, None, 50, 100 if not stray else 100, 100, 100])
+        ws.append([2, "عقد متعارض", "_____", "_____", None, None, 70, conflict, conflict, conflict])
+        ws.append([None, None, None, None, None, None, None, None, None, None])        # master total (no name, no '+')
+        if name == "بيتا":
+            ws.append([3, "منشأة س", "_____", "_____", datetime(2025, 1, 3), "31/12/2030", 50, 100, 100, 100])
+            ws.append([None, "اجمالي محافظة بيتا", None, None, None, None, None, "=SUM(H6+H6)", "=SUM(I6+I6)", "=SUM(J6+J6)"])
+    ws = wb["ألفا"]
+    ws["K2"], ws["K3"] = "ديسمبر 2024", 999                       # a value before the dated contract's start, in a sheet that does not own it
+    return _save(wb)
+
+
+@lru_cache(maxsize=None)
+def overtime_with_march() -> bytes:
+    """The corrected statement: the sheet named March now carries March's own title and data (employee 10 only)."""
+    wb = Workbook()
+    wb.remove(wb.active)
+    _ot_sheet(wb, "مارس", "بيان بالاجر الإضافي - شهر مارس 2025", [(10, "موظف أول", [0, 0, 20, 8, 10.8, 4, 6.8, 17.6, 0, 0]), (11, "موظف ثان", None)])
+    rep = wb.create_sheet("report")
+    rep["A1"] = "بيان"
+    rep.append(["الكود", "الاسم ", "مأموريات ", None, "وجبات", "الساعات الإضافية ", None, None, None, "الإجمالي ", "مثل الاجر ", "الاجمالي * 2"])
+    rep.append([None, None, "نهاري ", "ليلي ", None, "نهاري", 1.35, "ليلي ", 1.7, "الإجمالي", None, None])
+    rep.append([10, "موظف أول"] + ["=مارس!%s4" % c for c in "CDEFGHIJKL"])
+    return _save(wb)

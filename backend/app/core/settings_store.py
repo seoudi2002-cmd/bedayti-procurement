@@ -12,12 +12,12 @@ MODULES = Path(__file__).resolve().parents[1] / "modules"
 DEFAULTS_FILES = {"custody": MODULES / "custody_analysis" / "thresholds.yaml", "copier": MODULES / "copier_analysis" / "thresholds.yaml",
                   "aramex": MODULES / "aramex_analysis" / "thresholds.yaml",
                   "procurement": MODULES / "procurement_analysis" / "thresholds.yaml", "rent": MODULES / "rent_analysis" / "thresholds.yaml",
-                  "vehicles": MODULES / "vehicle_analysis" / "thresholds.yaml", "overtime": MODULES / "overtime_analysis" / "thresholds.yaml",
+                  "vehicles": MODULES / "vehicle_analysis" / "thresholds.yaml", "overtime": MODULES / "overtime_analysis" / "thresholds.yaml", "annual": MODULES / "annual_report" / "thresholds.yaml",
                   "custody_advances": MODULES / "custody_analysis" / "advances_thresholds.yaml"}
 STRUCT_DEFAULTS = {"copier.paper": MODULES / "copier_analysis" / "paper_defaults.yaml", "aramex.parties": MODULES / "aramex_analysis" / "parties_defaults.yaml",
                    "aramex.rates": MODULES / "aramex_analysis" / "rates_defaults.yaml",
                    "vehicles.plates": MODULES / "vehicle_analysis" / "plates_defaults.yaml"}
-KNOWN_KEYS = {"custody.thresholds", "custody.display_taxonomy", "custody.branch_key", "copier.thresholds", "copier.paper", "aramex.thresholds", "procurement.thresholds", "custody_advances.thresholds", "rent.thresholds", "vehicles.thresholds", "overtime.thresholds",
+KNOWN_KEYS = {"custody.thresholds", "custody.display_taxonomy", "custody.branch_key", "copier.thresholds", "copier.paper", "aramex.thresholds", "procurement.thresholds", "custody_advances.thresholds", "rent.thresholds", "vehicles.thresholds", "overtime.thresholds", "annual.thresholds",
               "aramex.parties", "aramex.rates", "vehicles.plates"}
 
 

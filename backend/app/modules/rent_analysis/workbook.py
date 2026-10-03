@@ -258,6 +258,10 @@ def bracket(name: str) -> str | None:
     return m.group(1).strip() if m and m.group(1).strip() else None
 
 
+def _copy_info(c: Copy) -> dict:
+    return {"sheet": c.sheet, "row": c.row, "start": c.start.isoformat() if c.start else None, "contract_rent": c.contract_rent, "months": {k: v for k, v in sorted(c.months.items())}, "footer": c.footer}
+
+
 def assemble(p: Parsed) -> dict:
     """Pick one authoritative copy per contract (see module docstring) and resolve its governorate from explicit evidence only."""
     by_key: dict[str, list[Copy]] = {}
@@ -268,8 +272,27 @@ def assemble(p: Parsed) -> dict:
         if ct.owner_rows:
             owners.setdefault(ct.sheet, set()).update(ct.owner_rows)
     sheet_names = [s["sheet"] for s in p.sheets if s["read"] and not s.get("hq")]
-    contracts, excluded = [], []
+    contracts, excluded, exceptions = [], [], []
     stale_cells = stale_contracts = 0
+    # An undated master-list row with no governorate in its name may be the same contract as exactly one dated contract of the same name (typically the
+    # sheet's own footer row): accepted only when the names are equal after folding and every month both state has the same value; the dated record is then
+    # the authoritative one and the undated rows become its copies. Anything else stays as it is.
+    dated: dict[str, list[str]] = {}
+    for k, cps in by_key.items():
+        if not k.endswith("|?") and not cps[0].hq:
+            dated.setdefault(fold(cps[0].name), []).append(k)
+    for k in [k for k in by_key if k.endswith("|?")]:
+        cps = by_key[k]
+        cand = dated.get(fold(cps[0].name), [])
+        if len(cand) != 1 or bracket(cps[0].name):
+            continue
+        target = by_key[cand[0]]
+        ref = next((c for c in target if c.footer), target[0])
+        agree = all(all(abs(v - ref.months[pe]) <= 0.005 for pe, v in c.months.items() if pe in ref.months) and (c.contract_rent in (None, ref.contract_rent)) for c in cps)
+        if agree and ref.months:
+            by_key[cand[0]] = target + cps
+            del by_key[k]
+            exceptions.append({"name": ref.name, "status": "resolved", "evidence": "undated_copies_merged", "copies": [_copy_info(c) for c in target + cps]})
     for key, copies in by_key.items():
         if len(copies) == 1 and copies[0].hq:
             ch = copies[0]
@@ -302,19 +325,25 @@ def assemble(p: Parsed) -> dict:
                     ev = None
                 else:
                     excluded.append({"name": copies[0].name, "reason": "copies_conflict_unowned", "sheets": sorted({c.sheet for c in copies})})
+                    exceptions.append({"name": copies[0].name, "status": "excluded", "evidence": "copies_conflict_unowned", "copies": [_copy_info(c) for c in copies]})
                     p.issues.add("copies_conflict_unowned", "critical", "A contract with differing copies in several sheets and no sheet that adds it up: not valued, needs review", copies[0].name)
                     continue
             if gov and br and fold(br) != fold(gov) and ev == "sheet_formula":
                 p.issues.add("governorate_conflict", "warning", "The governorate written in the contract name differs from the sheet whose total adds it up (the sheet is used)", f"{ch.name} ≠ {gov}")
             copies_other = [c for c in copies if c is not ch]
-        diff = 0
+        diff = stray = pre_start = 0
         for o in copies_other:
+            stray += sum(1 for pe, v in o.months.items() if pe not in ch.months and pe not in ch.nopay and v)
+            if ch.start:
+                pre_start += sum(1 for pe, v in o.months.items() if v and pe not in ch.months and pe < f"{ch.start.year}-{ch.start.month:02d}")
             diff += sum(1 for pe, v in o.months.items() if pe in ch.months and abs(v - ch.months[pe]) > 0.005)
             diff += sum(1 for pe in o.nopay if pe in ch.months)
             diff += sum(1 for pe, v in ch.months.items() if pe in o.nopay)
-        if diff:
-            stale_cells += diff
+        if diff or stray:
+            stale_cells += diff + stray
             stale_contracts += 1
+            if pre_start:
+                exceptions.append({"name": ch.name, "status": "ignored_values", "evidence": "values_before_contract_start", "copies": [_copy_info(c) for c in copies], "chosen": f"{ch.sheet}!{ch.row}"})
         for fl in ch.flags:
             if fl.endswith("_unreadable"):
                 p.issues.add(fl, "warning", f"A {fl.split('_')[0]} date that is not a valid date (kept as written, not repaired)", f"{ch.name}: {ch.start_raw if fl.startswith('start') else ch.end_raw}")
@@ -328,4 +357,12 @@ def assemble(p: Parsed) -> dict:
     if stale_cells:
         p.issues.add("stale_copies", "info", "Contracts whose copies in the other governorate sheets differ from the sheet that adds them up (those copies are not used)", f"{stale_contracts} contracts, {stale_cells} cells")
         p.issues.items[-1].count = stale_contracts
-    return {"contracts": contracts, "excluded": excluded, "stale_cells": stale_cells, "stale_contracts": stale_contracts}
+    for e in exceptions:      # a contract that is both merged and has stray values is one entry
+        pass
+    merged: dict[str, dict] = {}
+    for e in exceptions:
+        m = merged.setdefault(e["name"], e)
+        if m is not e:
+            m["status"] = "resolved" if "resolved" in (m["status"], e["status"]) else m["status"]
+            m["evidence"] = ",".join(dict.fromkeys(m["evidence"].split(",") + e["evidence"].split(",")))
+    return {"contracts": contracts, "excluded": excluded, "stale_cells": stale_cells, "stale_contracts": stale_contracts, "exceptions": list(merged.values())}

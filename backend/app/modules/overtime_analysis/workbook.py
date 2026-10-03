@@ -45,6 +45,7 @@ class Parsed:
     sheets: list = field(default_factory=list)
     summary_controls: dict = field(default_factory=dict)   # field -> stated annual total
     factors: tuple | None = None
+    excluded: list = field(default_factory=list)           # sheets left out of the analysis: {sheet, period, reason, same_as}
     issues: Issues = field(default_factory=Issues)
 
 
@@ -158,8 +159,10 @@ def select(p: Parsed) -> list[SheetData]:
         if sd.period in first:
             kept = first[sd.period]
             if _sig(sd) == _sig(kept):
+                p.excluded.append({"sheet": sd.sheet, "period": sd.period, "reason": "duplicate_period_sheet", "same_as": kept.sheet, "employees": len(sd.rows)})
                 p.issues.add("duplicate_period_sheet", "warning", "A sheet repeats, row for row, the data of another sheet under the same month in its title (excluded; the month it was named for has no data of its own)", f"{sd.sheet} = {kept.sheet} ({sd.period})")
             else:
+                p.excluded.append({"sheet": sd.sheet, "period": sd.period, "reason": "conflicting_period_sheets", "same_as": kept.sheet, "employees": len(sd.rows)})
                 p.issues.add("conflicting_period_sheets", "critical", "Two sheets state the same month with different data (the first is used; needs review)", f"{kept.sheet} / {sd.sheet} ({sd.period})")
             continue
         first[sd.period] = sd

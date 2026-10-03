@@ -271,3 +271,136 @@ def test_rent_month_with_entries_for_only_a_few_contracts_is_partial_and_not_com
     rm = rent_report.build_report(a, {"versions": [{"file": "f.xlsx", "id": 1, "layout": "rent_register", "uploaded_at": "", "from": None, "to": None, "records": 0, "added": None, "dropped": None, "changed": 0}],
                                       "changes": [], "summaries": [{}]}, th, {k: "default" for k in th}, "en", {}, [], False, None)
     assert any("partial" in i["text"].lower() for i in rm.sections[0].insights)
+
+
+def test_rent_conflicting_copies_are_resolved_by_evidence_or_excluded_and_listed_with_their_sources(session):
+    from tests.ops_helpers import rent_exceptions_workbook
+    p = rent_wb.parse(rent_exceptions_workbook())
+    a = rent_wb.assemble(p)
+    names = [c["copy"].name for c in a["contracts"]]
+    assert names == ["منشأة س"]                                                                       # the undated rows were folded into the dated, formula-owned record: one contract, not three
+    assert a["contracts"][0]["governorate"] == "بيتا" and a["contracts"][0]["evidence"] == "sheet_formula"
+    assert [e["name"] for e in a["excluded"]] == ["عقد متعارض"] and issue(p, "copies_conflict_unowned")  # differing copies, no owner: not valued
+    ex = {e["name"]: e for e in a["exceptions"]}
+    assert ex["منشأة س"]["status"] == "resolved" and "undated_copies_merged" in ex["منشأة س"]["evidence"]
+    assert ex["عقد متعارض"]["status"] == "excluded"
+    ad = RentAdapter()
+    ad.ingest(session, rent_exceptions_workbook(), "exc.xlsx", "bob", {})
+    d = rent_service.load(session)
+    assert [c["name"] for c in d["contracts"]] == ["منشأة س"]                                          # excluded: not in the figures
+    groups = next(e for e in d["summaries"][0]["exceptions"] if e["name"] == "عقد متعارض")["groups"]
+    assert sorted(g["months"]["2025-01"] for g in groups) == [100.0, 200.0] and all(g["sheets"] for g in groups)   # the conflicting values and their sources are kept
+    rm, _a = ad.build(session, "all", "en", True, {})
+    q = next(s for s in rm.sections if s.key == "quality")
+    tbl = next(t for t in q.tables if t["key"] == "exceptions")
+    assert any("Excluded" in r["st"] for r in tbl["rows"]) and any("200" in r["v"] for r in tbl["rows"])
+
+
+def test_overtime_excluded_sheet_is_listed_and_a_later_correct_month_replaces_not_available(session):
+    from tests.ops_helpers import overtime_with_march
+    ad = OvertimeAdapter()
+    ad.ingest(session, overtime_workbook(), "ot.xlsx", "bob", {})
+    d1 = ot_service.load(session)
+    assert d1["summaries"][0]["excluded_sheets"] == [{"sheet": "مارس", "period": "2025-02", "reason": "duplicate_period_sheet", "same_as": "فبراير", "employees": 3}]
+    a1 = ot_engine.analyze(d1["rows"], d1["roster"], effective_thresholds.__globals__["default_thresholds"]("overtime"))
+    assert {r["period"] for r in d1["rows"]} == {"2025-01", "2025-02"} and a1["totals"]["all_hours"] == 107     # the repeated sheet adds nothing to any total
+    rm, _a = ad.build(session, "all", "en", True, {})
+    q = next(s for s in rm.sections if s.key == "quality")
+    assert any(t["key"] == "excluded" and t["rows"][0]["s"] == "مارس" for t in q.tables)
+    # the correct March arrives later: a new version; the earlier versions are kept and the month becomes available
+    n_before = session.scalar(select(func.count()).select_from(OpRecord))
+    ad.ingest(session, overtime_with_march(), "ot_march.xlsx", "bob", {})
+    d2 = ot_service.load(session)
+    assert {r["period"] for r in d2["rows"]} == {"2025-01", "2025-02", "2025-03"}
+    assert session.scalar(select(func.count()).select_from(OpRecord)) > n_before and [v["layout"] for v in d2["versions"]] == ["overtime_monthly"] * 2
+    a2 = ot_engine.analyze(d2["rows"], d2["roster"], effective_thresholds.__globals__["default_thresholds"]("overtime"))
+    assert a2["totals"]["missing"] == [] and [m["hours"] for m in a2["avail"]][-1] == 12 and d2["changes"] == []     # nothing earlier changed; March simply became available
+
+
+# ================================================================================================ annual report
+@pytest.fixture
+def three_modules(session):
+    RentAdapter().ingest(session, rent_workbook(1, 2026), "rent26.xlsx", "bob", {})
+    VehicleAdapter().ingest(session, repairs_workbook(), "repairs.xlsx", "bob", {})
+    OvertimeAdapter().ingest(session, overtime_workbook(), "ot.xlsx", "bob", {})
+    return session
+
+
+def test_annual_report_links_rent_and_fleet_in_money_and_keeps_overtime_in_hours(three_modules):
+    from app.modules.annual_report.adapter import AnnualAdapter
+    from app.modules.annual_report import engine as annual_engine
+    s = three_modules
+    ad = AnnualAdapter()
+    assert [i["id"] for i in ad.list_items(s)] == ["y:2026", "y:2025"]
+    rm, A = ad.build(s, "y:2026", "en", True, {})
+    cb = A["combined"]
+    assert cb["common"] == ["2026-01", "2026-02"]                                                    # both rent and fleet complete only in Jan–Feb (the fleet has no March)
+    assert [round(x["combined"]) for x in cb["rows"] if x["combined"] is not None] == [4880 + 8120, 2680 + 4310]
+    assert round(cb["total"]) == 4880 + 8120 + 2680 + 4310 and round(cb["rent"]) == 7560 and round(cb["fleet"]) == 12430
+    mar = next(x for x in cb["rows"] if x["period"] == "2026-03")
+    assert mar["rent_state"] == "ok" and mar["fleet_state"] == "missing" and mar["combined"] is None    # no combined figure for a month one component lacks
+    assert A["modules"]["overtime"] is None                                                           # the overtime file is a 2025 statement
+    keys = [x.key for x in rm.sections]
+    assert keys == ["summary", "cost", "rent", "fleet", "vehicles", "overtime", "compare", "drivers", "moves", "signals", "kpis", "quality", "versions"]
+    text = " ".join(i["text"] for sec in rm.sections for i in sec.insights)
+    assert "Overtime: no data for this year" in text
+    # same numbers as the module dashboards (same source, same engine)
+    rent_a = RentAdapter().build(s, "all", "en", True, {})[1]
+    veh_a = VehicleAdapter().build(s, "all", "en", True, {})[1]
+    rm_by = {m["period"]: m["total"] for m in rent_a["months"] if m.get("available")}
+    fm_by = {m["period"]: m["total"] for m in veh_a["months"]}
+    for x in cb["rows"]:
+        if x["combined"] is not None:
+            assert x["rent"] == rm_by[x["period"]] and x["fleet"] == fm_by[x["period"]]
+    assert A["modules"]["fleet"]["total"] == veh_a["totals"]["total"] and A["modules"]["rent"]["total"] == sum(m["total"] for m in rent_a["avail"])
+    # the dashboard API of the annual module reports the same figures
+    assert ad.api_analysis(A)["combined"]["total"] == cb["total"]
+    assert PdfExporter().render(rm)[:4] == b"%PDF" and ExcelExporter().render(rm)[:2] == b"PK"
+
+
+def test_annual_report_2025_has_overtime_hours_no_money_total_and_lists_exclusions(three_modules):
+    from app.modules.annual_report.adapter import AnnualAdapter
+    s = three_modules
+    rm, A = AnnualAdapter().build(s, "y:2025", "en", False, {})
+    assert A["combined"]["common"] == [] and A["combined"]["total"] == 0                               # overtime is never added; there is no fleet data for 2025
+    ot = A["modules"]["overtime"]
+    assert round(ot["hours"], 1) == 107.0 and [m["period"] for m in ot["months"]] == ["2025-01", "2025-02"]
+    excl = next(t for sec in rm.sections if sec.key == "quality" for t in sec.tables if t["key"] == "exclusions")["rows"]
+    assert any("Overtime" in r["m"] and "excluded" in r["i"].lower() for r in excl)                    # the repeated March sheet
+    emp = next(t for sec in rm.sections if sec.key == "overtime" for t in sec.tables if t["key"] == "ot_emp")
+    assert "name" not in [c["key"] for c in emp["columns"]]                                           # names are admin-only
+    rm_admin, _ = AnnualAdapter().build(s, "y:2025", "en", True, {})
+    emp_a = next(t for sec in rm_admin.sections if sec.key == "overtime" for t in sec.tables if t["key"] == "ot_emp")
+    assert "name" in [c["key"] for c in emp_a["columns"]]
+    vers = next(t for sec in rm.sections if sec.key == "versions" for t in sec.tables if t["key"] == "versions")["rows"]
+    assert {r["m"] for r in vers} == {"Rent", "Fleet", "Overtime"}
+
+
+def test_annual_api(api, three_modules):
+    base = "/api/analysis/annual/datasets"
+    assert api.post(base, files={"file": ("x.xlsx", b"x")}, headers=auth("analyst")).status_code == 422
+    assert [i["id"] for i in api.get(base, headers=auth("viewer")).json()] == ["y:2026", "y:2025"]
+    rep = api.get(f"{base}/y:2026/report?lang=ar", headers=auth("viewer")).json()
+    assert rep["analysis"]["combined"]["common"] == ["2026-01", "2026-02"] and rep["report"]["sections"][0]["key"] == "summary"
+    assert api.get(f"{base}/y:2026/report.pdf?lang=ar", headers=auth("viewer")).content[:4] == b"%PDF"
+    assert api.get(f"{base}/y:2026/report.xlsx?lang=en", headers=auth("viewer")).content[:2] == b"PK"
+    assert api.get(f"{base}/y:1999/report", headers=auth("viewer")).status_code == 404
+    assert api.delete(f"{base}/y:2026", headers=auth("admin")).status_code == 409
+    assert api.get("/api/settings/annual.thresholds", headers=auth("viewer")).status_code == 200
+
+
+def test_plate_aliases_are_a_setting_not_code_and_can_be_changed_later(session):
+    from app.core.settings_store import set_setting
+    ad = VehicleAdapter()
+    ad.ingest(session, repairs_workbook(False, "ع م 3333"), "repairs.xlsx", "bob", {})       # the repairs statement writes the plate with a different letter
+    ad.ingest(session, usage_book(), "usage.xlsx", "bob", {})                                  # «ع ن 3333»
+    ad.ingest(session, card_book(), "card.xlsx", "bob", {})                                    # «3333» alone
+    d = veh_service.load(session)
+    assert sorted(v["plate"] for v in d["vehicles"]) == sorted(["س ص 2222", "ع م 3333", "ع ن 3333", "3333"]) and d["candidates"][0]["number"] == "3333"   # nothing linked by guessing
+    set_setting(session, "vehicles.plates", {"aliases": ["ع ن 3333=ع م 3333"]}, "alice")      # approved by the owner in the settings
+    d = veh_service.load(session)
+    one = [v for v in d["vehicles"] if v["key"] == plates.key("ع م 3333")]
+    assert len(one) == 1 and sorted(one[0]["cost"]) == ["2026-01", "2026-02"] and sorted(one[0]["usage"]) == ["2026-01", "2026-02"] and sorted(one[0]["service"]) == ["2026-01", "2026-02"]
+    assert not d["candidates"] and len(d["vehicles"]) == 2
+    set_setting(session, "vehicles.plates", {"aliases": []}, "alice")                          # and it can be undone: the stored records never changed
+    assert len(veh_service.load(session)["vehicles"]) == 4

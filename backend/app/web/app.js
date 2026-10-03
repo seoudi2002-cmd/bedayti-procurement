@@ -14,7 +14,7 @@
       apply: "تطبيق", clear: "مسح", period: "الفترة", branch: "الفرع", category: "البند", all: "الكل", none: "لا شيء", search: "بحث…",
       selected: "محدد", emptyTitle: "ارفع ملف Excel لبدء التحليل",
       emptyText: "يدعم النظام ثلاثة أنواع: قيود تسوية العهد المؤقتة، تحليل مصروفات الفروع، وتحليل مصروفات المركز الرئيسي. كل نوع يُحلل منفصلًا.",
-      token: "رمز الدخول", tokenHint: "يلزم عند تفعيل المصادقة على الخادم (Bearer token).", save: "حفظ", showAll: "عرض الكل", rows: "سطر",
+      token: "رمز الدخول", tokenHint: "يلزم عند تفعيل المصادقة على الخادم (Bearer token).", save: "حفظ", settings: "الإعدادات", settingsHint: "قيم المقارنة والتنبيه. التعديل للمدير فقط ويُسجَّل باسمه؛ التقارير تذكر القيم المستخدمة.", aliasesTitle: "مرادفات اللوحات (سيارة واحدة بكتابات مختلفة)", aliasesHint: "سطر لكل مرادف بالشكل: المرادف=المعتمد. مثال: س ص 1234=س ع 1234", saved: "تم الحفظ", close: "إغلاق", showAll: "عرض الكل", rows: "سطر",
       uploaded: "تم رفع الملف وتحليله", layout: "نوع الملف", issues: "ملاحظات جودة", duplicate: "هذا الملف مرفوع من قبل — تم فتحه.",
       failed: "تعذر التنفيذ", unauthorized: "غير مصرح — أدخل رمز الدخول", filtered: "عرض مفلتر", noDatasets: "لا توجد ملفات بعد",
       layouts: { rent_register: "سجل عقود الإيجار", repairs_statement: "بيان إصلاحات السيارات", usage_report: "تقرير استخدام سيارة", maintenance_card: "كارت صيانة السيارات", overtime_monthly: "بيان الأجر الإضافي", advance_register: "سجل السلف المؤقتة", gl_settlement_lines: "قيود تسوية العهد المؤقتة", monthly_branch_expense: "مصروفات الفروع", monthly_custodian_expense: "مصروفات المركز الرئيسي" },
@@ -24,7 +24,7 @@
       apply: "Apply", clear: "Clear", period: "Period", branch: "Branch", category: "Category", all: "All", none: "None", search: "Search…",
       selected: "selected", emptyTitle: "Upload an Excel file to start",
       emptyText: "Three file types are supported: temporary-custody settlement journal, branch expense analysis and Head Office expense analysis. Each is analysed separately.",
-      token: "Access token", tokenHint: "Needed when the server has authentication enabled (Bearer token).", save: "Save", showAll: "Show all", rows: "rows",
+      token: "Access token", tokenHint: "Needed when the server has authentication enabled (Bearer token).", save: "Save", settings: "Settings", settingsHint: "Comparison and alert values. Only an admin can change them (recorded by name); reports state the values used.", aliasesTitle: "Plate aliases (one vehicle written differently)", aliasesHint: "One alias per line: alias=canonical. Example: AB 1234=AC 1234", saved: "Saved", close: "Close", showAll: "Show all", rows: "rows",
       uploaded: "File uploaded and analysed", layout: "File type", issues: "data-quality observations", duplicate: "This file was already uploaded — opened it.",
       failed: "Request failed", unauthorized: "Not authorised — enter the access token", filtered: "Filtered view", noDatasets: "No files yet",
       layouts: { rent_register: "Rent contract register", repairs_statement: "Vehicle repairs statement", usage_report: "Vehicle usage report", maintenance_card: "Vehicle maintenance card", overtime_monthly: "Monthly overtime statement", advance_register: "Temporary-advance register", gl_settlement_lines: "Temporary-custody settlement journal", monthly_branch_expense: "Branch expenses", monthly_custodian_expense: "Head Office expenses" },
@@ -92,6 +92,7 @@
     $("#emptyTitle") && ($("#emptyTitle").textContent = t.emptyTitle); $("#emptyText") && ($("#emptyText").textContent = t.emptyText);
     renderModules();
     const mo = $("#monthInput"); if (mo) { mo.parentElement.querySelector("span").textContent = t.month; mo.parentElement.hidden = state.module !== "copiers"; }
+    $("#dropzone").style.display = (mod().accepts || [".xlsx"]).length ? "" : "none";
     $("#fileInput").setAttribute("accept", (mod().accepts || [".xlsx"]).join(",")); state.module !== "custody" ? $("#fileInput").setAttribute("multiple", "") : $("#fileInput").removeAttribute("multiple");
     const hint = (mod().upload_hint || {})[state.lang]; $("#lblDrop").textContent = hint || t.drop;
     $("#tokenTitle").textContent = t.token; $("#tokenHint").textContent = t.tokenHint; $("#tokenSave").textContent = t.save;
@@ -382,10 +383,55 @@
     return wrap;
   }
 
+  // ------------------------------------------------------------------ settings (thresholds + plate aliases)
+  const settingsName = () => ({ copiers: "copier" }[state.module] || state.module);
+  async function openSettings() {
+    const t = T(), body = $("#settingsBody"); body.textContent = "";
+    $("#settingsTitle").textContent = t.settings + " — " + ((mod().label || {})[state.lang] || state.module); $("#settingsHint").textContent = t.settingsHint;
+    $("#settingsSave").textContent = t.save; $("#settingsClose").textContent = t.close; $("#settingsMsg").textContent = "";
+    state.settingsDraft = { thr: {}, aliases: null };
+    try {
+      const th = await api(`/api/settings/${settingsName()}.thresholds`);
+      state.settingsDraft.thr = th;
+      for (const k of Object.keys(th.defaults)) {
+        const inp = el("input", { type: "number", step: "any", value: th.effective[k], "data-k": k });
+        body.append(el("label", { class: "srow" }, el("span", { class: "skey" }, k), inp, el("span", { class: "hint" }, `${th.origin[k] === "custom" ? "●" : "○"} ${th.defaults[k]}`)));
+      }
+    } catch (e) { body.append(el("p", { class: "hint" }, e.message)); }
+    if (state.module === "vehicles") {
+      try {
+        const pl = await api("/api/settings/vehicles.plates");
+        body.append(el("h4", {}, t.aliasesTitle), el("p", { class: "hint" }, t.aliasesHint), el("textarea", { id: "aliasesBox", rows: "5" }, (pl.effective.aliases || []).join("\n")));
+        state.settingsDraft.aliases = true;
+      } catch (e) { body.append(el("p", { class: "hint" }, e.message)); }
+    }
+    $("#settingsDlg").showModal();
+  }
+  async function saveSettings() {
+    const t = T(), msg = $("#settingsMsg"); msg.textContent = "";
+    try {
+      const changed = {};
+      for (const inp of document.querySelectorAll("#settingsBody input[data-k]")) {
+        const k = inp.dataset.k, v = Number(inp.value);
+        if (inp.value !== "" && v !== state.settingsDraft.thr.effective[k]) changed[k] = v;
+      }
+      if (Object.keys(changed).length) await api(`/api/settings/${settingsName()}.thresholds`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(changed) });
+      if (state.settingsDraft.aliases) {
+        const lines = $("#aliasesBox").value.split("\n").map((x) => x.trim()).filter(Boolean);
+        await api("/api/settings/vehicles.plates", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ aliases: lines }) });
+      }
+      msg.textContent = t.saved; msg.className = "hint ok";
+      await loadReport();
+    } catch (e) { msg.textContent = e.message; msg.className = "hint err"; }
+  }
+
   // ------------------------------------------------------------------ wiring
   function boot() {
     applyLang();
     $("#langBtn").onclick = () => { state.lang = state.lang === "ar" ? "en" : "ar"; store.set("lang", state.lang); applyLang(); loadDatasets().then(loadReport); };
+    $("#settingsBtn").onclick = openSettings;
+    $("#settingsSave").onclick = saveSettings;
+    $("#settingsClose").onclick = () => $("#settingsDlg").close();
     $("#tokenBtn").onclick = () => { $("#tokenInput").value = state.token; $("#tokenDlg").showModal(); };
     $("#tokenDlg").addEventListener("close", async () => { if ($("#tokenDlg").returnValue === "ok") { state.token = $("#tokenInput").value.trim(); store.set("token", state.token); await init(); } });
     $("#uploadBtn").onclick = () => $("#fileInput").click();

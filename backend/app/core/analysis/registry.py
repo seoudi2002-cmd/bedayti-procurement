@@ -12,8 +12,9 @@ def adapters() -> dict[str, AnalysisAdapter]:
         from app.modules.rent_analysis.adapter import RentAdapter
         from app.modules.overtime_analysis.adapter import OvertimeAdapter
         from app.modules.vehicle_analysis.adapter import VehicleAdapter
+        from app.modules.annual_report.adapter import AnnualAdapter
         from app.modules.custody_analysis.adapter import CustodyAdapter
-        _ADAPTERS = {a.info.key: a for a in (CustodyAdapter(), CopierAdapter(), AramexAdapter(), ProcurementAdapter(), RentAdapter(), VehicleAdapter(), OvertimeAdapter())}
+        _ADAPTERS = {a.info.key: a for a in (CustodyAdapter(), CopierAdapter(), AramexAdapter(), ProcurementAdapter(), RentAdapter(), VehicleAdapter(), OvertimeAdapter(), AnnualAdapter())}
     return _ADAPTERS
 
 

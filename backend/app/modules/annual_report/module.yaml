@@ -1,0 +1,11 @@
+id: annual_report
+name: Annual Administrative Operating Cost Report
+version: 0.1.0
+category: administration
+description: >
+  A management report that links the rent, vehicle-fleet and overtime modules for a year: the administrative operating cost (rent + fleet, in money),
+  overtime in hours (it has no amounts, so it is never added to the money total), trends, comparisons, the main cost drivers, the biggest increases and
+  decreases, signals worth a cost review, data quality and exclusions, and the version history. It stores nothing of its own: every figure is computed from the
+  same effective data and the same engines the module dashboards use. Analysis only (PDF/Excel/dashboard).
+fact_targets: []
+contains_personal_data: true

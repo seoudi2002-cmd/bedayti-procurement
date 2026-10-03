@@ -1,0 +1,7 @@
+# INITIAL VALUES — awaiting the owner's confirmation. Effective values live in the system setting `annual.thresholds`
+# (PUT /api/settings/annual.thresholds, admin, no code change); the report states the values used.
+# The modules' own thresholds (rent.*, vehicles.*, overtime.*) apply to their parts of the report.
+top_n: 10                  # rows in the driver / rise / fall tables
+move_n: 8                  # rows in the biggest increases / decreases tables
+signal_n: 5                # rows per cost-review signal
+mom_change_pct: 15         # a month-on-month change of the combined cost above this is remarked

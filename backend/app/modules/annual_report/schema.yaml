@@ -1,0 +1,2 @@
+# This report has no input file; it reads the stored records of rent_analysis, vehicle_analysis and overtime_analysis.
+fields: []

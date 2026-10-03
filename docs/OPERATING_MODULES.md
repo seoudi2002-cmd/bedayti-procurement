@@ -50,6 +50,25 @@ A new file adds a version; the old versions stay; the system can say what a valu
 * **Outputs:** month-on-month and annual cumulative; day/night split; per-employee totals and concentration; employee × month heatmap; months far above the employee's own average; the annual sheet's totals vs the months read; versions and changes.
 * **Not available:** cost of the overtime; attendance / working hours; employee department or branch; reason for the overtime.
 
+## Conflicting copies, exclusions and corrections (rent / overtime)
+* **Evidence first, never a guess.** When copies of a rent contract differ, the record proven by a sub-total formula (or agreeing with the other copies) is used. An undated master row whose name matches exactly one dated contract
+  and whose recorded months are identical is folded into that dated record; values a copy states before the contract's start date are not used. What cannot be settled is **excluded from every figure** and listed in the
+  quality section with each conflicting value and its source sheet/row («Excluded — needs review»).
+* **Excluded overtime sheets** (a sheet that repeats another sheet's data under the same title month) enter no figure; the month stays «not available». When the correct month is uploaded later it is stored as a new version, becomes
+  available in the current view, and every earlier version stays on record.
+* A correction never deletes or replaces history: the current view changes, the versions and the change log do not.
+* **Plate aliases are a setting** (`vehicles.plates`, edited from the dashboard ⚙ dialog by an admin, or `PUT /api/settings/vehicles.plates`); removing an alias separates the vehicles again — stored records are never rewritten.
+
+## Annual report (`annual`) — `app/modules/annual_report`
+A management report that links the three modules for a year (`y:YYYY`); it stores nothing and has no upload. It calls the same `service.load` / `engine.analyze` as the module dashboards and slices their monthly series to the year,
+so the report and the dashboards show the same numbers from the same source.
+* **Administrative operating cost (money) = rent + fleet (maintenance + fuel as stated)**, summed over the months in which **both** are complete. **Overtime is shown in hours beside it and is never added** (the statement has no amounts or hourly value).
+* Sections: executive summary · operating cost and its monthly trend · rent · fleet · cost per vehicle · overtime · month-on-month / year-on-year comparisons (only where both periods have data) · top cost drivers (shares of the combined total
+  and of their component) · biggest increases and decreases · signals for review / cost-saving opportunities (drawn from the figures: contracts nearing expiry, highest regular increases, highest cost per km, outlier months, claims the company bore,
+  overtime far above an employee's average — **signals, not recommendations or savings estimates**) · KPIs per module · data quality, exceptions and **what is not in the official figures** (partial / missing months, excluded sheets and contracts,
+  unlinked plates, mismatching stated totals — each with its effect) · version history and latest changes.
+* Settings: `annual.thresholds` (top_n, move_n, signal_n, mom_change_pct); each module's own thresholds apply to its part; all are listed in the report.
+
 ## Dashboard / API
 `/api/analysis/{rent|vehicles|overtime}/datasets[/{all|m:YYYY-MM}[/report|report.pdf|report.xlsx]]` (upload: analyst; reports: viewer). `all` = everything recorded; `m:YYYY-MM` = a snapshot up to that month
 (annual cumulative included). Filters: governorate / contract (rent), vehicle (vehicles), employee (overtime).

@@ -25,7 +25,10 @@ T = {
         "i_basis_nofac": "الكميات ساعات كما في الكشف؛ «المكافئة» هي القيمة الموزونة المذكورة فيه. لا توجد مبالغ أو قيمة ساعة، فلا تُحوَّل إلى تكلفة. ولا تحليل حضور وانصراف.",
         "i_period": "الفترة تؤخذ من العنوان المكتوب داخل كل ورقة وليس من اسم الورقة.", "i_filtered": "العرض مفلتر على الموظفين المختارين.", "i_focus": "لقطة حتى {m}.",
         "na_money": "التكلفة المالية للأوفر تايم: لا توجد قيمة ساعة أو مبالغ في الملف", "na_attendance": "الحضور والانصراف ومواعيد العمل: غير موجودة (ولا تُبنى عليها أي نتيجة)", "na_dept": "القسم أو الفرع للموظف وسبب الإضافي: غير مذكور",
-        "n_personal": "أسماء الموظفين بيانات شخصية: تظهر للمدير فقط؛ يُعرض الكود لغيره.", "f_emp": "الموظف", "t_controls": "مطابقة إجمالي الورقة السنوية بمجموع الأشهر المقروءة", "ctl_note": "الفرق يظهر عندما تحتوي ورقة الإجمالي على شهر مكرر أو لا تطابق الأشهر؛ يُعرض ولا يُصحَّح.",
+        "n_personal": "أسماء الموظفين بيانات شخصية: تظهر للمدير فقط؛ يُعرض الكود لغيره.", "f_emp": "الموظف", "t_excl": "أوراق مستبعدة من التحليل", "excl_note": "لا تدخل في أي رقم؛ تبقى هنا للمراجعة. إذا رُفع الكشف الصحيح للشهر يُحفظ كنسخة جديدة ويحل محل حالة «غير متاح» مع بقاء ما سبق.",
+        "c_file_n": "ملف رقم", "c_sheet": "الورقة", "c_reason": "السبب", "c_emp": "صفوف الموظفين",
+        "exr_duplicate_period_sheet": "نسخة مكررة حرفيًا من ورقة «{same}» وعنوانها يذكر نفس الشهر؛ ليست بيانات الشهر الذي سُمّيت به", "exr_conflicting_period_sheets": "تذكر نفس شهر ورقة «{same}» ببيانات مختلفة؛ المعتمد الأولى ويحتاج الأمر مراجعة",
+        "t_controls": "مطابقة إجمالي الورقة السنوية بمجموع الأشهر المقروءة", "ctl_note": "الفرق يظهر عندما تحتوي ورقة الإجمالي على شهر مكرر أو لا تطابق الأشهر؛ يُعرض ولا يُصحَّح.",
         "c_field": "الحقل", "c_stated": "المذكور في الملف", "c_computed": "المحسوب من الأشهر", "c_diff": "الفرق",
         "fld_mission_day": "مأموريات نهاري", "fld_mission_night": "مأموريات ليلي", "fld_meals": "وجبات", "fld_day_hours": "ساعات نهاري", "fld_day_weighted": "نهاري مكافئ", "fld_night_hours": "ساعات ليلي",
         "fld_night_weighted": "ليلي مكافئ", "fld_raw_total": "إجمالي الساعات", "fld_weighted_total": "إجمالي مكافئ", "fld_equal_pay_days": "مثل الأجر", "fld_equal_pay_x2": "الإجمالي × 2", "fld_listed": "مدرج",
@@ -49,7 +52,10 @@ T = {
         "i_basis_nofac": "Quantities are hours as in the statement; «weighted» is the statement's own weighted value. There are no amounts or hourly rate, so nothing is converted to cost; no attendance analysis.",
         "i_period": "The period is taken from the title written inside each sheet, not from the sheet name.", "i_filtered": "Filtered to the selected employees.", "i_focus": "Snapshot up to {m}.",
         "na_money": "Cost of the overtime: the file has no hourly rate or amounts", "na_attendance": "Attendance and working hours: not present (nothing is concluded from them)", "na_dept": "Employee department / branch and the reason for overtime: not stated",
-        "n_personal": "Employee names are personal data: shown to admins only; others see the code.", "f_emp": "Employee", "t_controls": "The annual sheet's totals against the sum of the months read", "ctl_note": "A difference appears when the annual sheet includes a repeated month or does not match the months; shown, not corrected.",
+        "n_personal": "Employee names are personal data: shown to admins only; others see the code.", "f_emp": "Employee", "t_excl": "Sheets left out of the analysis", "excl_note": "They enter no figure; they stay here for review. When the correct statement for the month is uploaded it is kept as a new version and replaces the «not available» state while everything earlier is kept.",
+        "c_file_n": "File no.", "c_sheet": "Sheet", "c_reason": "Reason", "c_emp": "Employee rows",
+        "exr_duplicate_period_sheet": "A row-for-row copy of sheet «{same}» whose title states the same month; not the data of the month it was named for", "exr_conflicting_period_sheets": "States the same month as sheet «{same}» with different data; the first is used and this needs review",
+        "t_controls": "The annual sheet's totals against the sum of the months read", "ctl_note": "A difference appears when the annual sheet includes a repeated month or does not match the months; shown, not corrected.",
         "c_field": "Field", "c_stated": "Stated in the file", "c_computed": "Computed from the months", "c_diff": "Difference",
         "fld_mission_day": "Day missions", "fld_mission_night": "Night missions", "fld_meals": "Meals", "fld_day_hours": "Day hours", "fld_day_weighted": "Day weighted", "fld_night_hours": "Night hours",
         "fld_night_weighted": "Night weighted", "fld_raw_total": "Total hours", "fld_weighted_total": "Weighted total", "fld_equal_pay_days": "Equal-pay days", "fld_equal_pay_x2": "Total × 2", "fld_listed": "Listed",
@@ -164,5 +170,9 @@ def build_report(a: dict, data: dict, th: dict, th_origin: dict, lang: str, filt
     if ctrl:
         extra.append({"key": "controls", "title": c.t("t_controls"), "note": c.t("ctl_note"), "columns": [col("f", c.t("c_field")), col("s", c.t("c_stated"), "num"), col("c", c.t("c_computed"), "num"), col("d", c.t("c_diff"), "snum")],
                       "rows": [{"f": fld(x["field"]), "s": x["stated"], "c": x["computed"], "d": x["diff"]} for x in ctrl]})
+    exs = [dict(e, file=i) for i, s in enumerate(data["summaries"], 1) for e in s.get("excluded_sheets", [])]
+    if exs:
+        extra.insert(0, {"key": "excluded", "title": c.t("t_excl"), "note": c.t("excl_note"), "columns": [col("f", c.t("c_file_n")), col("s", c.t("c_sheet")), col("p", c.t("c_period")), col("r", c.t("c_reason")), col("n", c.t("c_emp"), "int")],
+                         "rows": [{"f": e["file"], "s": e["sheet"], "p": L(e["period"]), "r": c.t("exr_" + e["reason"], same=e["same_as"]), "n": e["employees"]} for e in exs]})
     rm.sections.append(quality_section(c, merged_issues(data["summaries"]), th, th_origin, [c.t("na_money"), c.t("na_attendance"), c.t("na_dept")], extra, [c.t("n_personal")]))
     return rm

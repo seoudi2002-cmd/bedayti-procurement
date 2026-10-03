@@ -49,7 +49,7 @@ def ingest(session: Session, content: bytes, filename: str, user: str | None, op
     recs = build_records(sheets)
     periods = sorted(sd.period for sd in sheets)
     summary = {"issues": p.issues.json(), "controls": controls(p, sheets), "periods": periods, "sheets": [{"sheet": s.sheet, "period": s.period, "employees": len(s.rows)} for s in p.sheets],
-               "factors": list(p.factors) if p.factors else None}
+               "factors": list(p.factors) if p.factors else None, "excluded_sheets": p.excluded}
     ds = ops.create_dataset(session, MODULE_ID, LAYOUT, "overtime", filename, digest, path, user, summary, periods, personal=True, title="overtime", year_source="file")
     ops.add_records(session, ds, recs)
     return UploadResult(item_id="all", meta={"id": "all", "version": ds.id, "layout": LAYOUT, "months": [periods[0], periods[-1]], "issues": summary["issues"], "status": "ready"})

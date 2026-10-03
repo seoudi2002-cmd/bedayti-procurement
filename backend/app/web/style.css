@@ -82,3 +82,9 @@ dialog input{width:100%;padding:8px;margin:8px 0;border:1px solid var(--axis);bo
 .mtabs{display:flex;gap:6px;padding:10px 20px 0;background:var(--surface)}
 .mtab{padding:7px 16px;border:1px solid var(--axis);border-radius:999px;background:var(--card);color:var(--ink2);cursor:pointer;font:inherit}
 .mtab.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+
+#settingsDlg{max-width:560px;max-height:85vh;overflow:auto}
+#settingsBody .srow{display:grid;grid-template-columns:1fr 110px auto;gap:8px;align-items:center}
+#settingsBody .srow input{margin:4px 0}
+#settingsBody textarea{width:100%;padding:8px;border:1px solid var(--axis);border-radius:8px;background:var(--card);color:var(--ink)}
+.hint.err{color:#b3261e}.hint.ok{color:#1b7f3b}

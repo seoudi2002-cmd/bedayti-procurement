@@ -12,6 +12,7 @@
   <div class="brand"><span class="logo" aria-hidden="true"></span><h1 id="appTitle">منصة التحليل الإداري</h1></div>
   <div class="top-actions">
     <button id="langBtn" class="btn ghost" title="Language">EN</button>
+    <button id="settingsBtn" class="btn ghost" title="Settings">⚙</button>
     <button id="tokenBtn" class="btn ghost" title="Access token">🔑</button>
   </div>
 </header>
@@ -59,6 +60,14 @@
     <input type="password" id="tokenInput" autocomplete="off">
     <div class="row"><button class="btn primary" value="ok" id="tokenSave">حفظ</button><button class="btn" value="cancel">إلغاء</button></div>
   </form>
+</dialog>
+
+<dialog id="settingsDlg">
+  <h3 id="settingsTitle"></h3>
+  <p class="hint" id="settingsHint"></p>
+  <div id="settingsBody"></div>
+  <p class="hint" id="settingsMsg"></p>
+  <div class="row"><button class="btn primary" id="settingsSave"></button><button class="btn" id="settingsClose"></button></div>
 </dialog>
 
 <div id="busy" class="busy" hidden><div class="spinner"></div></div>
