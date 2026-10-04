@@ -45,7 +45,7 @@ Generated from the live run on the real files, from this code (commit `561a517`,
 Dashboard and annual report were checked month by month against each other on the real files: **0 differences** (rent, fleet, overtime, combined total, per-month values).
 
 ## 4b. Deployment status
-Nothing is deployed: there is no production URL, host or admin account yet. The platform was verified in the build environment only (PostgreSQL 16 + uvicorn + the real files). Deployment is the owner's step (section 2).
+Nothing is deployed: there is no production URL, host or admin account yet (the build environment has no hosting and no Docker daemon). Everything needed is prepared in `deploy/` and `docs/DEPLOYMENT.md` (compose stack with HTTPS proxy, secrets generator, scheduled backup, restore, smoke test, alias script). The production-mode behaviour (fail-closed auth, roles, persistence across restart, versioning, backup → wipe → restore, settings kept in the database) was verified on PostgreSQL + uvicorn with `APP_ENV=production`; the Docker images themselves could not be built or run here.
 
 ## 5. Known limits and open decisions (not blockers)
 * **Not available by design:** actual rent paid and the reason for a change; vehicle register (model year, chassis, licence/insurance dates → no renewal alerts); measured fuel quantity; overtime cost and attendance; data before the first month in each file.

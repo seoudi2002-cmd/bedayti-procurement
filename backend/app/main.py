@@ -22,6 +22,10 @@ from app.db import get_engine
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     registry = get_registry()  # fails fast if any module package is invalid
+    from app.config import get_settings
+    from app.core.auth import _tokens
+    if get_settings().app_env != "development" and not any(p.role == "admin" for p in _tokens().values()):
+        raise RuntimeError("Refusing to start: outside development API_TOKENS must define at least one admin token (token:admin:name)")
     with Session(get_engine()) as session:
         registry.sync_to_db(session)
         ensure_system_branches(session)

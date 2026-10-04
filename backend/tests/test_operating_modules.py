@@ -404,3 +404,26 @@ def test_plate_aliases_are_a_setting_not_code_and_can_be_changed_later(session):
     assert not d["candidates"] and len(d["vehicles"]) == 2
     set_setting(session, "vehicles.plates", {"aliases": []}, "alice")                          # and it can be undone: the stored records never changed
     assert len(veh_service.load(session)["vehicles"]) == 4
+
+
+def test_production_refuses_to_start_without_an_admin_token(monkeypatch, engine):
+    import pytest as _pytest
+    from fastapi.testclient import TestClient
+    from app.config import get_settings
+    import app.main as main_mod
+    from app.main import app
+    monkeypatch.setattr(main_mod, "get_engine", lambda: engine)
+    for env, tokens, ok in (("production", "", False), ("production", "a:viewer:v", False), ("production", "a:admin:x", True), ("development", "", True)):
+        monkeypatch.setenv("APP_ENV", env)
+        monkeypatch.setenv("API_TOKENS", tokens)
+        get_settings.cache_clear()
+        if ok:
+            with TestClient(app):
+                pass
+        else:
+            with _pytest.raises(RuntimeError):
+                with TestClient(app):
+                    pass
+    monkeypatch.delenv("APP_ENV")
+    monkeypatch.delenv("API_TOKENS")
+    get_settings.cache_clear()

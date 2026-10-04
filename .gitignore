@@ -16,3 +16,8 @@ uploads/
 *.csv
 !backend/tests/fixtures/*.csv
 .test_uploads/
+
+# deploy secrets and backups (never commit)
+deploy/.env
+deploy/.env.production
+deploy/backups/

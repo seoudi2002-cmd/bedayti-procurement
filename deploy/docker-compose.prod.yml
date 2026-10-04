@@ -1,0 +1,79 @@
+# Production stack: PostgreSQL (persistent volume, not exposed) + the platform + HTTPS reverse proxy + scheduled backups.
+# Usage (on the server, from this folder):  sh scripts/gen-secrets.sh && docker compose -f docker-compose.prod.yml up -d --build
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bedayti
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run scripts/gen-secrets.sh first}
+      POSTGRES_DB: bedayti
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bedayti"]
+      interval: 5s
+      retries: 20
+  api:
+    build: ../backend
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      APP_ENV: production
+      UPLOAD_DIR: /data/uploads
+      DATABASE_URL: postgresql+psycopg://bedayti:${POSTGRES_PASSWORD}@db:5432/bedayti
+    depends_on:
+      db: {condition: service_healthy}
+    volumes: [uploads:/data/uploads]
+    expose: ["8000"]
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health').status==200 else 1)"]
+      interval: 15s
+      retries: 5
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env.production}
+    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, caddy_data:/data]
+    depends_on: [api]
+  backup:
+    image: postgres:16
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      PGHOST: db
+      PGUSER: bedayti
+      PGDATABASE: bedayti
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      UPLOAD_DIR: /data/uploads
+      BACKUP_DIR: /backups
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-30}
+    volumes:
+      - uploads:/data/uploads:ro
+      - ./backups:/backups
+      - ./scripts:/scripts:ro
+    depends_on:
+      db: {condition: service_healthy}
+    entrypoint: ["sh", "/scripts/backup-loop.sh"]
+  restore:                     # only used by the restore procedure (docs/DEPLOYMENT.md); not started by `up`
+    image: postgres:16
+    profiles: ["tools"]
+    env_file: .env.production
+    environment:
+      PGHOST: db
+      PGUSER: bedayti
+      PGDATABASE: bedayti
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
+      - ./backups:/backups:ro
+      - ./scripts:/scripts:ro
+    depends_on:
+      db: {condition: service_healthy}
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:
