@@ -1,6 +1,6 @@
 # Final production handover and platform freeze
 
-**Status: FROZEN at tag `platform-freeze-v1.0`.** From this point only defects (wrong numbers, crashes, security) are fixed; no new features, modules or report sections are added without a new owner decision.
+**Status: FROZEN at the commit that adds this document on branch `claude/epic-clarke-xvsry2`** (the tag `platform-freeze-v1.0` could not be pushed from the build environment: create it on that commit). From this point only defects (wrong numbers, crashes, security) are fixed; no new features, modules or report sections are added without a new owner decision.
 
 ## 1. What the platform is
 One management data-analysis and reporting platform: upload a management file → recognise → validate → analyse → dashboard → executive report (PDF / Excel). Analysis only: no workflow, no approvals, no ERP functions. Every module is an adapter + reader + engine + report builder + settings (`docs/PLATFORM_SCOPE.md`, `docs/ARCHITECTURE.md`).
@@ -44,6 +44,9 @@ Generated from the live run on the real files, from this code (commit `561a517`,
 
 Dashboard and annual report were checked month by month against each other on the real files: **0 differences** (rent, fleet, overtime, combined total, per-month values).
 
+## 4b. Deployment status
+Nothing is deployed: there is no production URL, host or admin account yet. The platform was verified in the build environment only (PostgreSQL 16 + uvicorn + the real files). Deployment is the owner's step (section 2).
+
 ## 5. Known limits and open decisions (not blockers)
 * **Not available by design:** actual rent paid and the reason for a change; vehicle register (model year, chassis, licence/insurance dates → no renewal alerts); measured fuel quantity; overtime cost and attendance; data before the first month in each file.
 * **Needs the owner's inputs:** the vehicle plate alias for the 9412 car must be entered in ⚙ on the production system (the live-run setting was local); overtime for March 2025 (the existing sheet is a copy of February and is excluded); rent months Aug–Dec 2025 hold only Head Office entries (partial, left out of comparisons); stated totals in the files that do not match their parts are listed in each report's quality section, not corrected.
@@ -52,4 +55,4 @@ Dashboard and annual report were checked month by month against each other on th
 * Optional later decision (not built): an overtime hourly-value setting, only if the owner supplies a real value.
 
 ## 6. Freeze policy
-Tag `platform-freeze-v1.0` on branch `claude/epic-clarke-xvsry2`. Changes after the tag: defect fixes only, each with a test and a changelog line; a new module, report section or setting needs a written owner request.
+Freeze point: the commit adding this document on branch `claude/epic-clarke-xvsry2` (tag it `platform-freeze-v1.0`). Changes after the tag: defect fixes only, each with a test and a changelog line; a new module, report section or setting needs a written owner request.
