@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>حاسبة الأجر الإضافي</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--ink:#1d2733;--mut:#6b7785;--line:#d9e0e7;--pri:#0b6e4f;--pri2:#0a5a41;--warn:#b45309;--in:#fffbe6}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+header{background:var(--pri);color:#fff;padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+header h1{margin:0;font-size:18px;flex:1}
+main{padding:14px;max-width:1500px;margin:auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+button,select,input{font:inherit}
+button{background:var(--pri);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
+button:hover{background:var(--pri2)}
+button.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+button.sec:hover{background:#eef2f5}
+button.del{background:#fff;color:#b91c1c;border:1px solid #f1c4c4;padding:4px 8px}
+select,input[type=text],input[type=number]{border:1px solid var(--line);border-radius:6px;padding:7px 8px;background:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px;overflow:auto}
+table{border-collapse:collapse;width:100%;min-width:980px}
+th,td{border:1px solid var(--line);padding:5px 6px;text-align:center;white-space:nowrap}
+th{background:#e9f1ee;font-weight:600}
+td.name{text-align:right;min-width:150px}
+td input{width:64px;text-align:center;background:var(--in)}
+td input.w{width:90px}
+td.calc{background:#f7f9fa}
+td.money{background:#eefaf3;font-weight:600}
+tfoot td{background:#dff0e8;font-weight:700}
+.hint{color:var(--mut);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.grid label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--mut)}
+.grid input{width:100%}
+dialog{border:0;border-radius:10px;padding:16px;max-width:560px;width:96%;box-shadow:0 10px 40px #0005}
+dialog table{min-width:0}
+dialog td input{width:80px}
+.print-only{display:none}
+@media print{
+ header,.bar,.noprint,.card.noprint,td button,th.noprint,td.noprint{display:none!important}
+ body{background:#fff}.card{border:0;padding:0}
+ .print-only{display:block;text-align:center;font-weight:700;margin:6px 0 12px}
+ td input{border:0;background:none;width:auto}
+ table{min-width:0;font-size:12px}
+ .sign{display:flex!important;justify-content:space-between;margin-top:40px}
+}
+.sign{display:none}
+</style>
+</head>
+<body>
+<header>
+ <h1>حاسبة الأجر الإضافي والمأموريات والوجبات</h1>
+ <span class="hint" style="color:#cfeede">البيانات تُحفظ تلقائياً على هذا الجهاز</span>
+</header>
+<main>
+ <div class="bar noprint">
+  <label>الشهر <select id="mon"></select></label>
+  <label>السنة <input type="number" id="yr" style="width:90px"></label>
+  <button class="sec" id="copyPrev">نسخ بيانات الشهر السابق</button>
+  <button id="addEmp" class="sec">+ إضافة موظف</button>
+  <button id="print">طباعة البيان</button>
+  <button id="csv" class="sec">تصدير Excel (CSV)</button>
+  <button id="bk" class="sec">نسخة احتياطية</button>
+  <button id="rs" class="sec">استرجاع نسخة</button>
+  <input type="file" id="rsf" accept=".json" hidden>
+ </div>
+
+ <details class="card noprint" id="setBox">
+  <summary><b>الإعدادات</b> (الأسعار والمعاملات)</summary>
+  <div class="grid" id="settings" style="margin-top:10px"></div>
+  <p class="hint">الراتب الأساسي لكل موظف اختياري: لو كتبته (في عمود "الراتب") يحسب البرنامج مبلغ الإضافي بالجنيه، ولو تركته فاضي يحسب الساعات المرجّحة فقط زي ملفاتك.</p>
+ </details>
+
+ <div class="card">
+  <div class="print-only" id="ptitle"></div>
+  <table id="tbl">
+   <thead>
+    <tr>
+     <th rowspan="2">الكود</th><th rowspan="2">الاسم</th>
+     <th colspan="2">مأموريات</th><th rowspan="2">وجبات</th>
+     <th colspan="2">ساعات فعلية</th><th colspan="3">ساعات مرجّحة</th>
+     <th rowspan="2">مثل الأجر</th><th rowspan="2">× معامل</th>
+     <th colspan="3" class="money">المبالغ (جنيه)</th>
+     <th rowspan="2" class="noprint">الراتب</th><th rowspan="2" class="noprint"></th>
+    </tr>
+    <tr>
+     <th>نهاري</th><th>ليلي</th><th>نهاري</th><th>ليلي</th>
+     <th id="hdD">نهاري</th><th id="hdN">ليلي</th><th>الإجمالي</th>
+     <th>مأموريات+وجبات</th><th>الإضافي</th><th>الإجمالي</th>
+    </tr>
+   </thead>
+   <tbody id="body"></tbody>
+   <tfoot id="foot"></tfoot>
+  </table>
+  <div class="sign"><div>نائب رئيس قطاع الشئون الإدارية</div><div>المسؤول: ____________</div></div>
+  <p class="hint noprint">الخانات الصفراء للإدخال. زر "يومي" بجانب كل موظف يفتح جدول الأيام ويجمع الساعات والوجبات تلقائياً (بديل لملف كل موظف).</p>
+ </div>
+</main>
+
+<dialog id="dlg">
+ <h3 id="dtitle" style="margin-top:0"></h3>
+ <div style="max-height:60vh;overflow:auto"><table><thead><tr><th>اليوم</th><th>ساعات نهاري</th><th>ساعات ليلي</th><th>وجبة (1 = نعم)</th></tr></thead><tbody id="dbody"></tbody>
+ <tfoot><tr><td>المجموع</td><td id="sd"></td><td id="sn"></td><td id="sm"></td></tr></tfoot></table></div>
+ <div style="display:flex;gap:8px;margin-top:12px"><button id="dok">حفظ وتطبيق على الشهر</button><button class="sec" id="dno">إلغاء</button></div>
+</dialog>
+
+<script>
+const MONTHS=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const KEY="overtime-calc-v1";
+const DEF={dayMission:100,nightMission:150,meal:40,dayF:1.35,nightF:1.7,equalF:2,daysInMonth:30,hoursPerDay:8};
+const SETLBL={dayMission:"المأمورية النهارية (ج)",nightMission:"المأمورية الليلية (ج)",meal:"سعر الوجبة (ج)",dayF:"معامل الساعة النهارية",nightF:"معامل الساعة الليلية",equalF:"معامل \"مثل الأجر\"",daysInMonth:"أيام الشهر للأجر اليومي",hoursPerDay:"ساعات اليوم للأجر بالساعة"};
+const SEED=[[58,"حسام السبكي"],[3035,"كرم حمدان"],[6347,"رامي فؤاد"],[8870,"عبدالله طارق"],[9300,"طارق محسن"],[9361,"فرج صابر"],[10302,"سامح مرسي"],[154,"محمد طه"],[9190,"محمد علي علي"],[64,"محمد شعبان"],[690,"يوسف رمضان"],[618,"نبيل محمد عيسوي"],[688,"محمد وليد"],[92,"نجوي زينهم"],[642,"جمال صابر"],[2581,"عاطف سيد"],[3728,"احمد حسين"],[4876,"اسلام محمد"],[8898,"محمد عبد الباري"],[9995,"طارق عيد"]];
+let S;
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+ if(!S||!S.employees){const n=new Date();S={settings:{...DEF},employees:SEED.map(([c,n],i)=>({id:i+1,code:c,name:n,salary:""})),months:{},cur:{y:n.getFullYear(),m:n.getMonth()}}}
+ S.settings={...DEF,...S.settings};}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const mk=()=>S.cur.y+"-"+String(S.cur.m+1).padStart(2,"0");
+const md=()=>S.months[mk()]||(S.months[mk()]={});
+const row=id=>md()[id]||(md()[id]={md:0,mn:0,meals:0,hd:0,hn:0,eq:0,days:null});
+const num=v=>{const x=parseFloat(v);return isFinite(x)?x:0};
+const r2=x=>Math.round(x*100)/100;
+const fmt=x=>r2(x).toLocaleString("en-US",{maximumFractionDigits:2});
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function calc(e){const r=row(e.id),s=S.settings;
+ const wd=r.hd*s.dayF,wn=r.hn*s.nightF,tot=wd+wn,eq2=r.eq*s.equalF;
+ const sal=num(e.salary),daily=sal/(s.daysInMonth||30),hourly=daily/(s.hoursPerDay||8);
+ const mm=r.md*s.dayMission+r.mn*s.nightMission+r.meals*s.meal;
+ const ot=sal?(tot*hourly+eq2*daily):0;
+ return{r,wd,wn,tot,eq2,mm,ot,all:mm+ot};}
+
+function render(){
+ const s=S.settings;
+ document.getElementById("mon").value=S.cur.m;document.getElementById("yr").value=S.cur.y;
+ document.getElementById("hdD").textContent="نهاري ×"+s.dayF;document.getElementById("hdN").textContent="ليلي ×"+s.nightF;
+ document.getElementById("ptitle").textContent="بيان بالأجر الإضافي والمأموريات لموظفي الخدمات المعاونة (إدارة الشئون الإدارية) - شهر "+MONTHS[S.cur.m]+" "+S.cur.y;
+ const T={md:0,mn:0,meals:0,hd:0,hn:0,wd:0,wn:0,tot:0,eq:0,eq2:0,mm:0,ot:0,all:0};
+ const b=document.getElementById("body");b.innerHTML="";
+ S.employees.forEach(e=>{const c=calc(e),r=c.r,tr=document.createElement("tr");
+  const inp=(k,w)=>`<td><input type="number" step="any" min="0" data-id="${e.id}" data-k="${k}" value="${r[k]||""}"></td>`;
+  tr.innerHTML=`<td>${esc(e.code??"")}</td><td class="name">${esc(e.name)}</td>${inp("md")}${inp("mn")}${inp("meals")}${inp("hd")}${inp("hn")}
+  <td class="calc">${fmt(c.wd)}</td><td class="calc">${fmt(c.wn)}</td><td class="calc"><b>${fmt(c.tot)}</b></td>${inp("eq")}<td class="calc">${fmt(c.eq2)}</td>
+  <td class="money">${fmt(c.mm)}</td><td class="money">${c.ot?fmt(c.ot):"-"}</td><td class="money">${fmt(c.all)}</td>
+  <td class="noprint"><input class="w" type="number" min="0" data-id="${e.id}" data-sal="1" value="${e.salary||""}" placeholder="اختياري"></td>
+  <td class="noprint"><button class="sec" data-day="${e.id}">يومي</button> <button class="del" data-del="${e.id}">حذف</button></td>`;
+  b.appendChild(tr);
+  T.md+=r.md;T.mn+=r.mn;T.meals+=r.meals;T.hd+=r.hd;T.hn+=r.hn;T.wd+=c.wd;T.wn+=c.wn;T.tot+=c.tot;T.eq+=r.eq;T.eq2+=c.eq2;T.mm+=c.mm;T.ot+=c.ot;T.all+=c.all;});
+ document.getElementById("foot").innerHTML=`<tr><td colspan="2">الإجمالي</td><td>${fmt(T.md)}</td><td>${fmt(T.mn)}</td><td>${fmt(T.meals)}</td><td>${fmt(T.hd)}</td><td>${fmt(T.hn)}</td><td>${fmt(T.wd)}</td><td>${fmt(T.wn)}</td><td>${fmt(T.tot)}</td><td>${fmt(T.eq)}</td><td>${fmt(T.eq2)}</td><td>${fmt(T.mm)}</td><td>${T.ot?fmt(T.ot):"-"}</td><td>${fmt(T.all)}</td><td class="noprint" colspan="2"></td></tr>`;
+}
+
+function settingsUI(){const g=document.getElementById("settings");g.innerHTML="";
+ Object.keys(DEF).forEach(k=>{const l=document.createElement("label");l.innerHTML=`${SETLBL[k]}<input type="number" step="any" data-set="${k}" value="${S.settings[k]}">`;g.appendChild(l)});}
+
+document.addEventListener("input",ev=>{const t=ev.target;
+ if(t.dataset.set){S.settings[t.dataset.set]=num(t.value);save();render();return}
+ if(t.dataset.k){const r=row(+t.dataset.id);r[t.dataset.k]=num(t.value);
+  if(["hd","hn","meals"].includes(t.dataset.k))r.days=null;
+  save();const p=t.selectionStart;const f=t.dataset.id+t.dataset.k;render();
+  const n=document.querySelector(`input[data-id="${t.dataset.id}"][data-k="${t.dataset.k}"]`);if(n){n.focus();try{n.select()}catch(e){}}return}
+ if(t.dataset.sal){S.employees.find(e=>e.id==t.dataset.id).salary=t.value;save();
+  // refresh money cells only, keep focus
+  const a=document.activeElement,id=t.dataset.id;render();const n=document.querySelector(`input[data-id="${id}"][data-sal]`);if(n){n.focus()}}
+});
+document.addEventListener("click",ev=>{const t=ev.target;
+ if(t.dataset.del){const e=S.employees.find(e=>e.id==t.dataset.del);if(confirm("حذف "+e.name+" من القائمة؟ (بياناته في الشهور السابقة تبقى محفوظة)")){S.employees=S.employees.filter(x=>x!==e);save();render()}}
+ if(t.dataset.day)openDay(+t.dataset.day);
+});
+document.getElementById("mon").innerHTML=MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join("");
+document.getElementById("mon").onchange=e=>{S.cur.m=+e.target.value;save();render()};
+document.getElementById("yr").onchange=e=>{S.cur.y=+e.target.value||S.cur.y;save();render()};
+document.getElementById("addEmp").onclick=()=>{const name=prompt("اسم الموظف:");if(!name)return;const code=prompt("الكود (اختياري):")||"";
+ S.employees.push({id:Math.max(0,...S.employees.map(e=>e.id))+1,code,name:name.trim(),salary:""});save();render()};
+document.getElementById("copyPrev").onclick=()=>{let y=S.cur.y,m=S.cur.m-1;if(m<0){m=11;y--}
+ const pk=y+"-"+String(m+1).padStart(2,"0"),p=S.months[pk];if(!p){alert("لا توجد بيانات للشهر السابق");return}
+ if(!confirm("سيتم استبدال بيانات الشهر الحالي بنسخة من "+MONTHS[m]+" "+y+". متابعة؟"))return;
+ S.months[mk()]=JSON.parse(JSON.stringify(p));save();render()};
+document.getElementById("print").onclick=()=>window.print();
+
+document.getElementById("csv").onclick=()=>{
+ const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+ const rows=[["الكود","الاسم","مأموريات نهاري","مأموريات ليلي","وجبات","ساعات نهاري","ساعات ليلي","نهاري مرجّح","ليلي مرجّح","إجمالي الساعات","مثل الأجر","× معامل","مأموريات+وجبات (ج)","الإضافي (ج)","الإجمالي (ج)"]];
+ S.employees.forEach(e=>{const c=calc(e),r=c.r;rows.push([e.code,e.name,r.md,r.mn,r.meals,r.hd,r.hn,r2(c.wd),r2(c.wn),r2(c.tot),r.eq,r2(c.eq2),r2(c.mm),r2(c.ot),r2(c.all)])});
+ const blob=new Blob(["﻿"+rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="overtime-"+mk()+".csv";a.click();};
+document.getElementById("bk").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:"application/json"}));a.download="overtime-backup-"+new Date().toISOString().slice(0,10)+".json";a.click()};
+document.getElementById("rs").onclick=()=>document.getElementById("rsf").click();
+document.getElementById("rsf").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+ rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!d.employees||!d.months)throw 0;if(!confirm("استرجاع النسخة سيستبدل كل البيانات الحالية. متابعة؟"))return;S=d;S.settings={...DEF,...S.settings};save();settingsUI();render()}catch(x){alert("ملف غير صالح")}};rd.readAsText(f)};
+
+// daily sheet
+let dEmp=null;const dlg=document.getElementById("dlg");
+function openDay(id){dEmp=id;const e=S.employees.find(e=>e.id==id),r=row(id);
+ document.getElementById("dtitle").textContent=e.name+" — "+MONTHS[S.cur.m]+" "+S.cur.y;
+ const n=new Date(S.cur.y,S.cur.m+1,0).getDate(),b=document.getElementById("dbody");b.innerHTML="";
+ for(let d=1;d<=n;d++){const v=(r.days&&r.days[d])||{};const tr=document.createElement("tr");
+  tr.innerHTML=`<td>${d}</td><td><input type="number" step="any" min="0" data-dd="d" data-day="${d}" value="${v.d||""}"></td><td><input type="number" step="any" min="0" data-dd="n" data-day="${d}" value="${v.n||""}"></td><td><input type="number" min="0" max="1" data-dd="m" data-day="${d}" value="${v.m||""}"></td>`;b.appendChild(tr)}
+ dsum();dlg.showModal();}
+function dsum(){const t={d:0,n:0,m:0};dlg.querySelectorAll("[data-dd]").forEach(i=>t[i.dataset.dd]+=num(i.value));
+ document.getElementById("sd").textContent=fmt(t.d);document.getElementById("sn").textContent=fmt(t.n);document.getElementById("sm").textContent=fmt(t.m);return t}
+dlg.addEventListener("input",dsum);
+document.getElementById("dno").onclick=()=>dlg.close();
+document.getElementById("dok").onclick=()=>{const days={};dlg.querySelectorAll("[data-dd]").forEach(i=>{const d=i.dataset.day;(days[d]=days[d]||{})[i.dataset.dd]=num(i.value)});
+ const t=dsum(),r=row(dEmp);r.hd=r2(t.d);r.hn=r2(t.n);r.meals=t.m;r.days=days;save();dlg.close();render()};
+
+load();settingsUI();render();
+</script>
+</body>
+</html>
