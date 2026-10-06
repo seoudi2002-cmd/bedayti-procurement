@@ -3,208 +3,462 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>حاسبة الأجر الإضافي</title>
+<title>نظام الأجر الإضافي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap">
 <style>
-:root{--bg:#f4f6f8;--card:#fff;--ink:#1d2733;--mut:#6b7785;--line:#d9e0e7;--pri:#0b6e4f;--pri2:#0a5a41;--warn:#b45309;--in:#fffbe6}
-*{box-sizing:border-box}
-body{margin:0;font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
-header{background:var(--pri);color:#fff;padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-header h1{margin:0;font-size:18px;flex:1}
-main{padding:14px;max-width:1500px;margin:auto}
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
-button,select,input{font:inherit}
-button{background:var(--pri);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
-button:hover{background:var(--pri2)}
-button.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
-button.sec:hover{background:#eef2f5}
-button.del{background:#fff;color:#b91c1c;border:1px solid #f1c4c4;padding:4px 8px}
-select,input[type=text],input[type=number]{border:1px solid var(--line);border-radius:6px;padding:7px 8px;background:#fff}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px;overflow:auto}
-table{border-collapse:collapse;width:100%;min-width:980px}
-th,td{border:1px solid var(--line);padding:5px 6px;text-align:center;white-space:nowrap}
-th{background:#e9f1ee;font-weight:600}
-td.name{text-align:right;min-width:150px}
-td input{width:64px;text-align:center;background:var(--in)}
-td input.w{width:90px}
-td.calc{background:#f7f9fa}
-td.money{background:#eefaf3;font-weight:600}
-tfoot td{background:#dff0e8;font-weight:700}
-.hint{color:var(--mut);font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
-.grid label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--mut)}
-.grid input{width:100%}
-dialog{border:0;border-radius:10px;padding:16px;max-width:560px;width:96%;box-shadow:0 10px 40px #0005}
-dialog table{min-width:0}
-dialog td input{width:80px}
-.print-only{display:none}
+/* Layout: white page, green info strip, logo + underlined tabs, sharp-cornered cards; Bedayti CI tokens */
+:root{
+ --brand-orange:#df5c16;--brand-gray:#53565a;--brand-yellow:#ffc845;--brand-green:#00c389;
+ --ink-heading:#484849;--ink:#222222;--ink-body:#666666;--surface:#ffffff;--surface-muted:#f9f9f9;--surface-alt:#f0f5f9;--border:#dddddd;
+ --nav-underline:#efbc11;--input-bg:#fff9e6;--warn-bg:#fdebe0;--ok:#0a7a57;
+ --shadow-card:0 0 10px rgba(0,0,0,.1);--shadow-soft:0 0 10px rgba(0,0,0,.05);--shadow-menu:0 8px 16px rgba(0,0,0,.15);
+ --font-ar:"GE SS Two",Tajawal,Tahoma,sans-serif;--font-lat:"Century Gothic","URW Gothic",Tajawal,sans-serif;
+ color-scheme:light}
+html,body{background:var(--surface);margin:0}
+body{color:var(--ink-body)}
+#app{direction:rtl;font:400 15px/1.6 var(--font-ar);color:var(--ink-body);background:var(--surface);min-height:100vh}
+#app *{box-sizing:border-box}
+#app button,#app input,#app select,#app textarea{font:inherit}
+.num,.grid input,.kpi b,td.c{font-family:var(--font-lat),var(--font-ar);font-variant-numeric:tabular-nums}
+.strip{background:var(--brand-green);color:var(--ink);font-size:14px;line-height:20px;padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px 24px;justify-content:space-between}
+.head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 28px;padding:12px 16px 0;border-bottom:1px solid var(--border);box-shadow:var(--shadow-soft)}
+.head img{height:52px;display:block}
+.tabs{display:flex;flex-wrap:wrap;gap:4px 28px;margin:0;padding:0;list-style:none;flex:1}
+.tabs button{position:relative;background:none;border:0;padding:14px 2px 12px;font:500 18px/30px var(--font-ar);color:var(--ink-heading);cursor:pointer}
+.tabs button::after{content:"";position:absolute;inset-inline:0;bottom:0;height:3px;background:var(--brand-orange);transform:scaleX(0);transition:300ms}
+.tabs button:hover::after,.tabs button[aria-selected=true]::after{transform:scaleX(1)}
+.tabs button[aria-selected=true]{color:var(--ink);font-weight:700}
+main{padding:24px 16px 48px;max-width:1560px;margin:auto}
+.sec-title{margin:0 0 16px}
+.kicker{position:relative;display:inline-block;margin:0 0 6px;padding-inline-start:55px;font:400 18px/26px var(--font-ar);color:var(--ink-heading)}
+.kicker::before{content:"";position:absolute;inset-inline-start:0;top:12px;width:45px;height:2px;background:var(--brand-orange)}
+h2.h1{margin:0;font:700 30px/40px var(--font-ar);color:var(--ink-heading);text-wrap:balance}
+h2.h1 span{color:var(--brand-orange)}
+h3{margin:0 0 12px;font:700 20px/30px var(--font-ar);color:var(--ink)}
+.btn{position:relative;display:inline-block;z-index:1;overflow:hidden;border:0;border-radius:0;background:var(--brand-orange);color:#fff;font:700 15px/26px var(--font-ar);padding:9px 22px;cursor:pointer;transition:500ms;white-space:nowrap}
+.btn::before,.btn::after{content:"";position:absolute;inset:0;z-index:-1;transform:scaleY(0);transform-origin:left top;transition:.3s}
+.btn::before{background:#fff;opacity:.5}.btn::after{background:var(--brand-gray)}
+.btn:hover::before,.btn:hover::after{transform:scaleY(1)}.btn:hover::after{transition-delay:.2s}
+.btn.sec{background:#fff;color:var(--brand-gray);box-shadow:inset 0 0 0 1.5px var(--brand-gray)}
+.btn.sec::before{display:none}.btn.sec::after{background:var(--brand-gray)}.btn.sec:hover{color:#fff}
+.btn.sm{padding:4px 12px;font-size:14px;line-height:22px}
+.btn.danger{background:#fff;color:#a32116;box-shadow:inset 0 0 0 1.5px #a32116}.btn.danger::after{background:#a32116}.btn.danger:hover{color:#fff}
+.btn:disabled{opacity:.45;pointer-events:none}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:0 0 14px}
+.bar .grow{flex:1}
+.field{display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--ink-heading)}
+.field input,.field select,.inp{border:1px solid var(--border);border-radius:0;background:#fff;padding:7px 10px;min-width:0;color:var(--ink)}
+.card{background:#fff;box-shadow:var(--shadow-card);padding:16px;margin:0 0 20px;min-width:0}
+.card.flat{box-shadow:none;border:1px solid var(--border)}
+.hint{font-size:13px;color:var(--ink-body)}
+.banner{background:var(--surface-alt);border-inline-start:4px solid var(--brand-gray);padding:8px 14px;margin:0 0 14px;color:var(--ink)}
+.banner.lock{border-color:var(--brand-orange);background:var(--warn-bg)}
+.scroll{overflow:auto;max-height:68vh;border:1px solid var(--border)}
+table{border-collapse:separate;border-spacing:0;width:100%}
+.grid{min-width:1320px}
+th,td{padding:4px 6px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--border);border-inline-start:1px solid var(--border)}
+thead th{position:sticky;top:0;z-index:3;font-weight:700;font-size:14px;color:#fff;background:var(--brand-gray)}
+thead tr.r2 th{top:34px}
+thead th.calc{background:var(--brand-green);color:var(--ink)}
+thead th.money{background:var(--brand-yellow);color:var(--ink)}
+.stick{position:sticky;z-index:2;background:#fff}
+thead .stick{z-index:5;background:var(--brand-gray)}
+.s1{right:0;min-width:64px;width:64px}.s2{right:64px;min-width:170px;text-align:right;font-weight:500;color:var(--ink)}
+tbody tr:nth-child(even) td{background:var(--surface-muted)}tbody tr:nth-child(even) td.stick{background:var(--surface-muted)}
+tbody tr:hover td{background:var(--surface-alt)}
+tbody tr.zero td.name,tbody tr.zero td.s1{color:#999}
+.grid td input{width:68px;text-align:center;border:1px solid transparent;background:var(--input-bg);border-radius:0;padding:5px 2px;color:var(--ink)}
+.grid td input:focus{border-color:var(--brand-orange);background:#fff}
+.grid td input.note{width:150px;text-align:right}
+td.calc{color:var(--ink)}td.money{font-weight:700;color:var(--ink)}td.tot{font-weight:700}
+tfoot td{position:sticky;bottom:0;z-index:3;background:var(--brand-gray);color:#fff;font-weight:700;border-color:#6d7075}
+.pill{display:inline-block;font-size:12px;line-height:18px;padding:0 7px;margin-inline-start:6px;border:1px solid var(--brand-orange);color:#a8420b;background:var(--warn-bg)}
+.pill[hidden]{display:none}
+.pill.muted{border-color:var(--border);color:var(--ink-body);background:#fff}
+.pill.ok{border-color:var(--ok);color:var(--ok);background:#e6f7f0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin:0 0 20px}
+.kpi{background:#fff;box-shadow:var(--shadow-card);padding:14px 16px;border-top:3px solid var(--brand-orange)}
+.kpi:nth-child(2){border-color:var(--brand-green)}.kpi:nth-child(3){border-color:var(--brand-yellow)}.kpi:nth-child(4){border-color:var(--brand-gray)}
+.kpi span{display:block;font-size:14px;color:var(--ink-heading)}
+.kpi b{display:block;font-size:30px;line-height:42px;color:var(--ink)}
+.kpi small{font-size:13px}.up{color:#a8420b}.down{color:var(--ok)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:20px}
+.hbar{display:grid;grid-template-columns:130px 1fr 60px;gap:8px;align-items:center;margin:0 0 7px;font-size:14px}
+.hbar .t{background:var(--surface-alt);height:20px}.hbar .t i{display:block;height:100%;background:var(--brand-orange)}
+.hbar span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.cols{display:flex;gap:10px;align-items:flex-end;height:220px;overflow-x:auto;padding-top:22px}
+.col{flex:1;min-width:58px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;cursor:pointer}
+.col .v{font-size:12px;color:var(--ink);margin-bottom:3px}
+.col .b{width:100%;max-width:56px;background:var(--brand-green)}.col.cur .b{background:var(--brand-orange)}
+.col .l{font-size:12px;margin-top:5px;color:var(--ink-heading);text-align:center}
+table.rep th{position:static;background:var(--brand-gray)}table.rep td.l,table.rep th.l{text-align:right}
+table.rep tr.click{cursor:pointer}table.rep tr.click:hover td{background:var(--surface-alt)}
+table.rep tfoot td{position:static}
+.emp td input{width:100%;min-width:70px;border:1px solid var(--border);padding:5px 8px;background:#fff;color:var(--ink)}
+dialog{border:0;border-radius:0;padding:20px;max-width:640px;width:calc(100% - 32px);box-shadow:var(--shadow-menu);color:var(--ink-body);direction:rtl;font:400 15px/1.6 var(--font-ar)}
+dialog::backdrop{background:rgba(34,34,34,.45)}
+.setg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.toast{position:fixed;inset-inline-start:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:#fff;padding:10px 18px;z-index:99;box-shadow:var(--shadow-menu);transition:opacity .3s}
+.toast[hidden]{display:none}
+#printSheet{display:none}
+@media (max-width:700px){h2.h1{font-size:24px;line-height:32px}.head img{height:42px}.tabs button{font-size:16px}}
 @media print{
- header,.bar,.noprint,.card.noprint,td button,th.noprint,td.noprint{display:none!important}
- body{background:#fff}.card{border:0;padding:0}
- .print-only{display:block;text-align:center;font-weight:700;margin:6px 0 12px}
- td input{border:0;background:none;width:auto}
- table{min-width:0;font-size:12px}
- .sign{display:flex!important;justify-content:space-between;margin-top:40px}
+ @page{size:A4 landscape;margin:12mm}
+ #app>*:not(#printSheet){display:none!important}
+ #printSheet{display:block!important;color:#000;font-size:12px}
+ #printSheet h1{font:700 17px/26px var(--font-ar);text-align:center;margin:0 0 10px;color:#000}
+ #printSheet table{min-width:0}#printSheet th{position:static;background:#ddd!important;color:#000;border:1px solid #000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #printSheet td{border:1px solid #000;padding:2px 5px}#printSheet tr:last-child td{font-weight:700;background:#eee!important}
+ .psign{display:flex;justify-content:space-between;margin-top:36px;font-weight:700}.pnotes{margin-top:12px;font-size:11px}
 }
-.sign{display:none}
 </style>
+
 </head>
 <body>
-<header>
- <h1>حاسبة الأجر الإضافي والمأموريات والوجبات</h1>
- <span class="hint" style="color:#cfeede">البيانات تُحفظ تلقائياً على هذا الجهاز</span>
-</header>
-<main>
- <div class="bar noprint">
-  <label>الشهر <select id="mon"></select></label>
-  <label>السنة <input type="number" id="yr" style="width:90px"></label>
-  <button class="sec" id="copyPrev">نسخ بيانات الشهر السابق</button>
-  <button id="addEmp" class="sec">+ إضافة موظف</button>
-  <button id="print">طباعة البيان</button>
-  <button id="csv" class="sec">تصدير Excel (CSV)</button>
-  <button id="bk" class="sec">نسخة احتياطية</button>
-  <button id="rs" class="sec">استرجاع نسخة</button>
-  <input type="file" id="rsf" accept=".json" hidden>
+<div id="app" dir="rtl">
+ <div class="strip"><span>بدايتي للتمويل متناهي الصغر · إدارة الشئون الإدارية</span><span>نظام حساب الأجر الإضافي والمأموريات والوجبات</span></div>
+ <div class="head">
+  <img alt="بدايتي للتمويل متناهي الصغر" src="data:image/png;base64,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">
+  <ul class="tabs" role="tablist" id="tabs">
+   <li><button role="tab" data-tab="sheet" aria-selected="true">الإدخال الشهري</button></li>
+   <li><button role="tab" data-tab="dash" aria-selected="false">اللوحة</button></li>
+   <li><button role="tab" data-tab="rep" aria-selected="false">التقارير</button></li>
+   <li><button role="tab" data-tab="emp" aria-selected="false">الموظفون</button></li>
+  </ul>
+  <button class="btn sec sm" id="openSet">الإعدادات</button>
  </div>
+ <main>
+  <!-- SHEET -->
+  <section id="v-sheet">
+   <div class="sec-title"><span class="kicker" id="skick">الإدخال الشهري</span><h2 class="h1" id="stitle"></h2></div>
+   <div class="bar">
+    <label class="field">الشهر<select id="mon"></select></label>
+    <label class="field">السنة<input type="number" id="yr" style="width:96px"></label>
+    <label class="field grow">بحث بالاسم أو الكود<input type="search" id="q" placeholder="اكتب للبحث"></label>
+    <label class="field">عرض<select id="flt"><option value="all">كل الموظفين</option><option value="missing">لم تُدخل بياناتهم</option><option value="flag">قيم غير معتادة</option></select></label>
+    <button class="btn sec" id="undo">تراجع</button><button class="btn sec" id="redo">إعادة</button>
+   </div>
+   <div class="bar">
+    <button class="btn sec" id="copyPrev">ترحيل من الشهر السابق</button>
+    <button class="btn sec" id="imp">استيراد من Excel</button><input type="file" id="impf" accept=".xlsx,.xls,.csv" hidden>
+    <button class="btn" id="xls">تصدير Excel</button>
+    <button class="btn sec" id="prt">طباعة البيان</button>
+    <button class="btn sec" id="lock">اعتماد الشهر</button>
+   </div>
+   <div id="lockBanner" class="banner lock" hidden>هذا الشهر معتمد ومغلق للتعديل. اضغط «إلغاء الاعتماد» لو محتاج تعدّل.</div>
+   <div class="scroll"><table class="grid" id="grid">
+    <thead>
+     <tr><th rowspan="2" class="stick s1">الكود</th><th rowspan="2" class="stick s2">الاسم</th><th colspan="2">مأموريات</th><th rowspan="2">وجبات</th><th colspan="2">ساعات فعلية</th><th rowspan="2">مثل الأجر</th><th colspan="3" class="calc">ساعات مرجّحة</th><th rowspan="2" class="calc">× معامل</th><th colspan="3" class="money">المبالغ (ج)</th><th rowspan="2">ملاحظات</th><th rowspan="2">يومي</th></tr>
+     <tr class="r2"><th>نهاري</th><th>ليلي</th><th>نهاري</th><th>ليلي</th><th class="calc" id="hD">نهاري</th><th class="calc" id="hN">ليلي</th><th class="calc">الإجمالي</th><th class="money">مأموريات ووجبات</th><th class="money">الإضافي</th><th class="money">الإجمالي</th></tr>
+    </thead>
+    <tbody id="gbody"></tbody><tfoot id="gfoot"></tfoot>
+   </table></div>
+   <p class="hint">الخانات الصفراء للإدخال. تنقّل بالأسهم أو Enter. تقدر تنسخ جدول من Excel وتلصقه في أي خانة. الإضافي بالجنيه يظهر لما تكتب الراتب في تبويب «الموظفون».</p>
+  </section>
 
- <details class="card noprint" id="setBox">
-  <summary><b>الإعدادات</b> (الأسعار والمعاملات)</summary>
-  <div class="grid" id="settings" style="margin-top:10px"></div>
-  <p class="hint">الراتب الأساسي لكل موظف اختياري: لو كتبته (في عمود "الراتب") يحسب البرنامج مبلغ الإضافي بالجنيه، ولو تركته فاضي يحسب الساعات المرجّحة فقط زي ملفاتك.</p>
- </details>
+  <!-- DASH -->
+  <section id="v-dash" hidden>
+   <div class="sec-title"><span class="kicker">ملخص الشهر</span><h2 class="h1" id="dtitle"></h2></div>
+   <div class="kpis" id="kpis"></div>
+   <div class="two">
+    <div class="card"><h3>أعلى الموظفين في الساعات المرجّحة</h3><div id="topEmp"></div></div>
+    <div class="card"><h3>اتجاه الساعات المرجّحة شهريًا</h3><div class="cols" id="trend"></div><p class="hint">اضغط على أي شهر لفتحه.</p></div>
+  </div>
+  </section>
 
- <div class="card">
-  <div class="print-only" id="ptitle"></div>
-  <table id="tbl">
-   <thead>
-    <tr>
-     <th rowspan="2">الكود</th><th rowspan="2">الاسم</th>
-     <th colspan="2">مأموريات</th><th rowspan="2">وجبات</th>
-     <th colspan="2">ساعات فعلية</th><th colspan="3">ساعات مرجّحة</th>
-     <th rowspan="2">مثل الأجر</th><th rowspan="2">× معامل</th>
-     <th colspan="3" class="money">المبالغ (جنيه)</th>
-     <th rowspan="2" class="noprint">الراتب</th><th rowspan="2" class="noprint"></th>
-    </tr>
-    <tr>
-     <th>نهاري</th><th>ليلي</th><th>نهاري</th><th>ليلي</th>
-     <th id="hdD">نهاري</th><th id="hdN">ليلي</th><th>الإجمالي</th>
-     <th>مأموريات+وجبات</th><th>الإضافي</th><th>الإجمالي</th>
-    </tr>
-   </thead>
-   <tbody id="body"></tbody>
-   <tfoot id="foot"></tfoot>
-  </table>
-  <div class="sign"><div>نائب رئيس قطاع الشئون الإدارية</div><div>المسؤول: ____________</div></div>
-  <p class="hint noprint">الخانات الصفراء للإدخال. زر "يومي" بجانب كل موظف يفتح جدول الأيام ويجمع الساعات والوجبات تلقائياً (بديل لملف كل موظف).</p>
- </div>
-</main>
+  <!-- REP -->
+  <section id="v-rep" hidden>
+   <div class="sec-title"><span class="kicker">التقارير</span><h2 class="h1">الشهور <span>وكشف الموظف</span></h2></div>
+   <div class="card"><h3>كل الشهور</h3><div class="scroll" style="max-height:none"><table class="rep" id="repM"></table></div></div>
+   <div class="card"><div class="bar"><h3 style="margin:0">كشف موظف</h3><label class="field"><select id="repE"></select></label></div><div class="scroll" style="max-height:none"><table class="rep" id="repE2"></table></div></div>
+  </section>
 
-<dialog id="dlg">
- <h3 id="dtitle" style="margin-top:0"></h3>
- <div style="max-height:60vh;overflow:auto"><table><thead><tr><th>اليوم</th><th>ساعات نهاري</th><th>ساعات ليلي</th><th>وجبة (1 = نعم)</th></tr></thead><tbody id="dbody"></tbody>
- <tfoot><tr><td>المجموع</td><td id="sd"></td><td id="sn"></td><td id="sm"></td></tr></tfoot></table></div>
- <div style="display:flex;gap:8px;margin-top:12px"><button id="dok">حفظ وتطبيق على الشهر</button><button class="sec" id="dno">إلغاء</button></div>
-</dialog>
+  <!-- EMP -->
+  <section id="v-emp" hidden>
+   <div class="sec-title"><span class="kicker">بيانات الأساس</span><h2 class="h1">الموظفون <span>والرواتب</span></h2></div>
+   <div class="bar"><button class="btn" id="addEmp">إضافة موظف</button><span class="hint">الراتب اختياري. لما تكتبه، البرنامج يحسب الإضافي بالجنيه: الراتب ÷ أيام الشهر ÷ ساعات اليوم × الساعات المرجّحة، ومثل الأجر × الأجر اليومي.</span></div>
+   <div class="card"><div class="scroll" style="max-height:none"><table class="emp rep" id="empT"></table></div></div>
+  </section>
+ </main>
+
+ <div id="printSheet"></div>
+ <div class="toast" id="toast" hidden></div>
+
+ <dialog id="dlgDay"><h3 id="dayT"></h3>
+  <div class="scroll" style="max-height:52vh"><table class="rep"><thead><tr><th>اليوم</th><th>ساعات نهاري</th><th>ساعات ليلي</th><th>وجبة (1 = نعم)</th></tr></thead><tbody id="dayB"></tbody>
+  <tfoot><tr><td>المجموع</td><td id="sd" class="c"></td><td id="sn" class="c"></td><td id="sm" class="c"></td></tr></tfoot></table></div>
+  <div class="bar" style="margin:14px 0 0"><button class="btn" id="dayOk">حفظ وتطبيق على الشهر</button><button class="btn sec" id="dayNo">إلغاء</button></div>
+ </dialog>
+
+ <dialog id="dlgSet"><h3>الإعدادات</h3><div class="setg" id="setg"></div>
+  <p class="hint">تغيير الأسعار والمعاملات يسري على الشهر المفتوح وكل الشهور، لأن الأرقام المحفوظة هي الساعات والأعداد.</p>
+  <div class="bar" style="margin:14px 0 0"><button class="btn" id="setOk">تم</button><button class="btn sec" id="bk">نسخة احتياطية</button><button class="btn sec" id="rs">استرجاع نسخة</button><input type="file" id="rsf" accept=".json" hidden><button class="btn danger" id="reset">مسح كل البيانات</button></div>
+ </dialog>
+
+ <dialog id="dlgImp"><h3>استيراد من Excel</h3>
+  <div class="bar"><label class="field">الورقة<select id="iSheet"></select></label><label class="field">أول صف بيانات<input type="number" id="iFrom" min="1" style="width:90px"></label></div>
+  <div class="setg" id="iMap"></div>
+  <p class="hint">معاينة أول صفوف بعد الاختيار. سيُكتب الاستيراد في الشهر المفتوح، ويُربط الموظف بالكود أو الاسم، والجدد يُضافون.</p>
+  <div class="scroll" style="max-height:26vh"><table class="rep" id="iPrev"></table></div>
+  <div class="bar" style="margin:14px 0 0"><button class="btn" id="iOk">استيراد</button><button class="btn sec" id="iNo">إلغاء</button></div>
+ </dialog>
+</div>
 
 <script>
+(function(){
+"use strict";
 const MONTHS=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
-const KEY="overtime-calc-v1";
-const DEF={dayMission:100,nightMission:150,meal:40,dayF:1.35,nightF:1.7,equalF:2,daysInMonth:30,hoursPerDay:8};
-const SETLBL={dayMission:"المأمورية النهارية (ج)",nightMission:"المأمورية الليلية (ج)",meal:"سعر الوجبة (ج)",dayF:"معامل الساعة النهارية",nightF:"معامل الساعة الليلية",equalF:"معامل \"مثل الأجر\"",daysInMonth:"أيام الشهر للأجر اليومي",hoursPerDay:"ساعات اليوم للأجر بالساعة"};
-const SEED=[[58,"حسام السبكي"],[3035,"كرم حمدان"],[6347,"رامي فؤاد"],[8870,"عبدالله طارق"],[9300,"طارق محسن"],[9361,"فرج صابر"],[10302,"سامح مرسي"],[154,"محمد طه"],[9190,"محمد علي علي"],[64,"محمد شعبان"],[690,"يوسف رمضان"],[618,"نبيل محمد عيسوي"],[688,"محمد وليد"],[92,"نجوي زينهم"],[642,"جمال صابر"],[2581,"عاطف سيد"],[3728,"احمد حسين"],[4876,"اسلام محمد"],[8898,"محمد عبد الباري"],[9995,"طارق عيد"]];
-let S;
-function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
- if(!S||!S.employees){const n=new Date();S={settings:{...DEF},employees:SEED.map(([c,n],i)=>({id:i+1,code:c,name:n,salary:""})),months:{},cur:{y:n.getFullYear(),m:n.getMonth()}}}
- S.settings={...DEF,...S.settings};}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-const mk=()=>S.cur.y+"-"+String(S.cur.m+1).padStart(2,"0");
-const md=()=>S.months[mk()]||(S.months[mk()]={});
-const row=id=>md()[id]||(md()[id]={md:0,mn:0,meals:0,hd:0,hn:0,eq:0,days:null});
-const num=v=>{const x=parseFloat(v);return isFinite(x)?x:0};
+const KEY="bedayti-overtime-v2";
+const DEF={dayMission:100,nightMission:150,meal:40,dayF:1.35,nightF:1.7,equalF:2,daysInMonth:30,hoursPerDay:8,signer1:"نائب رئيس قطاع الشئون الإدارية",signer2:"أحمد بدوي"};
+const SETLBL={dayMission:"المأمورية النهارية (ج)",nightMission:"المأمورية الليلية (ج)",meal:"سعر الوجبة (ج)",dayF:"معامل الساعة النهارية",nightF:"معامل الساعة الليلية",equalF:"معامل «مثل الأجر»",daysInMonth:"أيام الشهر (للأجر اليومي)",hoursPerDay:"ساعات اليوم (للأجر بالساعة)",signer1:"المعتمِد (الوظيفة)",signer2:"المعتمِد (الاسم)"};
+const SEED={"employees": [{"code": 58, "name": "حسام السبكي"}, {"code": 3035, "name": "كرم حمدان"}, {"code": 6347, "name": "رامي فؤاد"}, {"code": 8870, "name": "عبدالله طارق"}, {"code": 9300, "name": "طارق محسن"}, {"code": 9361, "name": "فرج صابر"}, {"code": 10302, "name": "سامح مرسي"}, {"code": 154, "name": "محمد طه"}, {"code": 9190, "name": "محمد علي علي"}, {"code": 64, "name": "محمد شعبان"}, {"code": 690, "name": "يوسف رمضان"}, {"code": 618, "name": "نبيل محمد عيسوي"}, {"code": 688, "name": "محمد وليد"}, {"code": 92, "name": "نجوي زينهم"}, {"code": 642, "name": "جمال صابر"}, {"code": 2581, "name": "عاطف سيد"}, {"code": 3728, "name": "احمد حسين"}, {"code": 4876, "name": "اسلام محمد"}, {"code": 8898, "name": "محمد عبد الباري"}, {"code": 9995, "name": "طارق عيد"}], "months": {"2026-05": {"58": {"md": 0, "mn": 0, "meals": 15, "hd": 32, "hn": 28.1, "eq": 0}, "3035": {"md": 0, "mn": 1, "meals": 15, "hd": 20, "hn": 40.7, "eq": 0}, "6347": {"md": 0, "mn": 0, "meals": 20, "hd": 19, "hn": 51.9, "eq": 2}, "8870": {"md": 0, "mn": 0, "meals": 18, "hd": 21, "hn": 39.9, "eq": 1}, "9300": {"md": 4, "mn": 2, "meals": 12, "hd": 24, "hn": 11.1, "eq": 0}, "9361": {"md": 0, "mn": 2, "meals": 19, "hd": 13, "hn": 52.3, "eq": 0}, "10302": {"md": 0, "mn": 0, "meals": 8, "hd": 8, "hn": 22, "eq": 0}, "154": {"md": 0, "mn": 0, "meals": 13, "hd": 20, "hn": 20.46, "eq": 1}, "9190": {"md": 0, "mn": 0, "meals": 10, "hd": 10, "hn": 6, "eq": 2}, "64": {"md": 0, "mn": 0, "meals": 14, "hd": 20, "hn": 30.18, "eq": 0}, "690": {"md": 0, "mn": 0, "meals": 13, "hd": 24.3, "hn": 26.58, "eq": 1}, "618": {"md": 0, "mn": 0, "meals": 13, "hd": 24, "hn": 26.62, "eq": 0}, "688": {"md": 0, "mn": 0, "meals": 17, "hd": 14.24, "hn": 3.24, "eq": 2}, "92": {"md": 0, "mn": 0, "meals": 15, "hd": 20.1, "hn": 20.65, "eq": 1}, "642": {"md": 0, "mn": 0, "meals": 19, "hd": 18, "hn": 22.23, "eq": 0}, "2581": {"md": 0, "mn": 0, "meals": 20, "hd": 32, "hn": 17.58, "eq": 2}, "3728": {"md": 0, "mn": 0, "meals": 17, "hd": 19, "hn": 31.94, "eq": 2}, "4876": {"md": 0, "mn": 0, "meals": 15, "hd": 15, "hn": 20.23, "eq": 3}, "8898": {"md": 0, "mn": 0, "meals": 15, "hd": 16, "hn": 20.34, "eq": 3}, "9995": {"md": 0, "mn": 0, "meals": 20, "hd": 18, "hn": 32.84, "eq": 2}}, "2026-06": {"58": {"md": 0, "mn": 0, "meals": 17, "hd": 17, "hn": 31.5, "eq": 0}, "3035": {"md": 0, "mn": 1, "meals": 17, "hd": 19, "hn": 31.9, "eq": 0}, "6347": {"md": 0, "mn": 0, "meals": 17, "hd": 21, "hn": 39, "eq": 1}, "8870": {"md": 0, "mn": 0, "meals": 17, "hd": 19, "hn": 21, "eq": 1}, "9300": {"md": 2, "mn": 3, "meals": 15, "hd": 16, "hn": 23, "eq": 0}, "9361": {"md": 0, "mn": 1, "meals": 16, "hd": 17, "hn": 39, "eq": 0}, "10302": {"md": 0, "mn": 0, "meals": 14, "hd": 18, "hn": 22.2, "eq": 0}, "154": {"md": 0, "mn": 0, "meals": 13, "hd": 14, "hn": 13.8, "eq": 0}, "9190": {"md": 0, "mn": 0, "meals": 9, "hd": 9, "hn": 2, "eq": 1}, "64": {"md": 0, "mn": 0, "meals": 12, "hd": 12, "hn": 13.69, "eq": 1}, "690": {"md": 0, "mn": 0, "meals": 18, "hd": 35, "hn": 15.31, "eq": 0}, "618": {"md": 0, "mn": 0, "meals": 10, "hd": 13, "hn": 27.22, "eq": 0}, "688": {"md": 0, "mn": 0, "meals": 13, "hd": 14, "hn": 1, "eq": 2}, "92": {"md": 0, "mn": 0, "meals": 15, "hd": 18, "hn": 20.5, "eq": 1}, "642": {"md": 0, "mn": 0, "meals": 16, "hd": 13, "hn": 0, "eq": 0}, "2581": {"md": 0, "mn": 0, "meals": 18, "hd": 16, "hn": 15.11, "eq": 2}, "3728": {"md": 0, "mn": 0, "meals": 20, "hd": 18, "hn": 35.34, "eq": 2}, "4876": {"md": 0, "mn": 0, "meals": 18, "hd": 18, "hn": 11.54, "eq": 2}, "8898": {"md": 0, "mn": 0, "meals": 20, "hd": 15, "hn": 11.5, "eq": 3}, "9995": {"md": 0, "mn": 0, "meals": 21, "hd": 17, "hn": 26.1, "eq": 2}}, "2026-07": {"58": {"md": 0, "mn": 0, "meals": 18, "hd": 18, "hn": 37.4, "eq": 0}, "3035": {"md": 0, "mn": 1, "meals": 20, "hd": 20, "hn": 40.3, "eq": 1}, "6347": {"md": 0, "mn": 0, "meals": 20, "hd": 16, "hn": 44.9, "eq": 1}, "8870": {"md": 0, "mn": 0, "meals": 22, "hd": 8, "hn": 62, "eq": 3}, "9300": {"md": 4, "mn": 2, "meals": 18, "hd": 17, "hn": 26.95, "eq": 0}, "9361": {"md": 1, "mn": 0, "meals": 21, "hd": 20, "hn": 40.7, "eq": 0}, "10302": {"md": 1, "mn": 1, "meals": 15, "hd": 12, "hn": 28.05, "eq": 0}, "154": {"md": 0, "mn": 0, "meals": 16, "hd": 16, "hn": 22.64, "eq": 0}, "9190": {"md": 0, "mn": 0, "meals": 17, "hd": 17, "hn": 18, "eq": 2}, "64": {"md": 0, "mn": 0, "meals": 16, "hd": 16, "hn": 17.52, "eq": 1}, "690": {"md": 0, "mn": 0, "meals": 22, "hd": 21, "hn": 33.94, "eq": 1}, "618": {"md": 0, "mn": 0, "meals": 15, "hd": 14, "hn": 41.27, "eq": 1}, "688": {"md": 0, "mn": 0, "meals": 22, "hd": 20, "hn": 0.42, "eq": 2}, "92": {"md": 0, "mn": 0, "meals": 17, "hd": 6, "hn": 19.68, "eq": 0}, "642": {"md": 0, "mn": 0, "meals": 14, "hd": 14, "hn": 0.65, "eq": 0}, "2581": {"md": 0, "mn": 0, "meals": 20, "hd": 18, "hn": 14.82, "eq": 2}, "3728": {"md": 0, "mn": 0, "meals": 20, "hd": 3, "hn": 42.42, "eq": 2}, "4876": {"md": 0, "mn": 0, "meals": 20, "hd": 17, "hn": 4.0, "eq": 2}, "8898": {"md": 0, "mn": 0, "meals": 17, "hd": 15, "hn": 6.81, "eq": 2}, "9995": {"md": 0, "mn": 0, "meals": 20, "hd": 20, "hn": 18.73, "eq": 2}}, "2026-08": {"58": {"md": 0, "mn": 0, "meals": 17, "hd": 16, "hn": 33, "eq": 0}, "3035": {"md": 0, "mn": 3, "meals": 18, "hd": 16, "hn": 30, "eq": 0}, "6347": {"md": 0, "mn": 6, "meals": 20, "hd": 10, "hn": 22, "eq": 0}, "8870": {"md": 0, "mn": 0, "meals": 20, "hd": 18, "hn": 40, "eq": 3}, "9300": {"md": 2, "mn": 1, "meals": 14, "hd": 12, "hn": 10, "eq": 0}, "9361": {"md": 1, "mn": 0, "meals": 20, "hd": 18, "hn": 40, "eq": 1}, "10302": {"md": 1, "mn": 2, "meals": 17, "hd": 15, "hn": 28.05, "eq": 1}, "154": {"md": 0, "mn": 0, "meals": 13, "hd": 12, "hn": 10, "eq": 0}, "9190": {"md": 0, "mn": 0, "meals": 14, "hd": 13, "hn": 13, "eq": 2}, "64": {"md": 0, "mn": 0, "meals": 17, "hd": 16, "hn": 19, "eq": 1}, "690": {"md": 0, "mn": 0, "meals": 20, "hd": 24, "hn": 35, "eq": 3}, "618": {"md": 0, "mn": 0, "meals": 15, "hd": 15, "hn": 35, "eq": 1}, "688": {"md": 0, "mn": 0, "meals": 21, "hd": 20, "hn": 0, "eq": 4}, "92": {"md": 0, "mn": 0, "meals": 16, "hd": 18, "hn": 14, "eq": 0}, "642": {"md": 0, "mn": 0, "meals": 14, "hd": 14, "hn": 5, "eq": 0}, "2581": {"md": 0, "mn": 0, "meals": 18, "hd": 15, "hn": 14.82, "eq": 2}, "3728": {"md": 0, "mn": 0, "meals": 18, "hd": 15, "hn": 30, "eq": 3}, "4876": {"md": 0, "mn": 0, "meals": 18, "hd": 15, "hn": 8, "eq": 2}, "8898": {"md": 0, "mn": 0, "meals": 17, "hd": 19, "hn": 6.81, "eq": 3}, "9995": {"md": 0, "mn": 0, "meals": 18, "hd": 20, "hn": 16.5, "eq": 3}}, "2026-09": {"58": {"md": 0, "mn": 0, "meals": 16, "hd": 18, "hn": 22, "eq": 2}, "3035": {"md": 0, "mn": 3, "meals": 15, "hd": 18, "hn": 20, "eq": 0}, "6347": {"md": 0, "mn": 0, "meals": 18, "hd": 22, "hn": 23, "eq": 2}, "8870": {"md": 0, "mn": 0, "meals": 18, "hd": 19.5, "hn": 20, "eq": 2}, "9300": {"md": 2, "mn": 2, "meals": 15, "hd": 16, "hn": 8, "eq": 1}, "9361": {"md": 0, "mn": 2, "meals": 20, "hd": 20, "hn": 21, "eq": 2}, "154": {"md": 0, "mn": 0, "meals": 17, "hd": 18, "hn": 9.74, "eq": 0}, "9190": {"md": 0, "mn": 0, "meals": 11, "hd": 11, "hn": 1, "eq": 0}, "64": {"md": 0, "mn": 0, "meals": 18, "hd": 35, "hn": 11, "eq": 1}, "690": {"md": 0, "mn": 0, "meals": 20, "hd": 27, "hn": 20, "eq": 2}, "618": {"md": 0, "mn": 0, "meals": 17, "hd": 24, "hn": 22.5, "eq": 1}, "688": {"md": 0, "mn": 0, "meals": 20, "hd": 20, "hn": 0, "eq": 4}, "92": {"md": 0, "mn": 0, "meals": 16, "hd": 5, "hn": 20, "eq": 2}, "642": {"md": 0, "mn": 0, "meals": 12, "hd": 13, "hn": 0, "eq": 0}, "2581": {"md": 0, "mn": 0, "meals": 18, "hd": 14.5, "hn": 12.25, "eq": 3}, "3728": {"md": 0, "mn": 0, "meals": 18, "hd": 13, "hn": 20, "eq": 2}, "4876": {"md": 0, "mn": 0, "meals": 12, "hd": 14, "hn": 7.03, "eq": 1}, "8898": {"md": 0, "mn": 0, "meals": 13, "hd": 13, "hn": 10.67, "eq": 2}, "9995": {"md": 0, "mn": 0, "meals": 19, "hd": 17, "hn": 10.4, "eq": 2}}}};
+const FIELDS=["md","mn","meals","hd","hn","eq"];
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const r2=x=>Math.round(x*100)/100;
 const fmt=x=>r2(x).toLocaleString("en-US",{maximumFractionDigits:2});
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm=v=>{const s=String(v??"").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[،,]/g,".").replace(/[^\d.\-]/g,"");const x=parseFloat(s);return isFinite(x)?x:0};
+let S,view="sheet",lastTouch=0,undoS=[],redoS=[],saveT;
 
-function calc(e){const r=row(e.id),s=S.settings;
- const wd=r.hd*s.dayF,wn=r.hn*s.nightF,tot=wd+wn,eq2=r.eq*s.equalF;
- const sal=num(e.salary),daily=sal/(s.daysInMonth||30),hourly=daily/(s.hoursPerDay||8);
- const mm=r.md*s.dayMission+r.mn*s.nightMission+r.meals*s.meal;
- const ot=sal?(tot*hourly+eq2*daily):0;
- return{r,wd,wn,tot,eq2,mm,ot,all:mm+ot};}
-
-function render(){
- const s=S.settings;
- document.getElementById("mon").value=S.cur.m;document.getElementById("yr").value=S.cur.y;
- document.getElementById("hdD").textContent="نهاري ×"+s.dayF;document.getElementById("hdN").textContent="ليلي ×"+s.nightF;
- document.getElementById("ptitle").textContent="بيان بالأجر الإضافي والمأموريات لموظفي الخدمات المعاونة (إدارة الشئون الإدارية) - شهر "+MONTHS[S.cur.m]+" "+S.cur.y;
- const T={md:0,mn:0,meals:0,hd:0,hn:0,wd:0,wn:0,tot:0,eq:0,eq2:0,mm:0,ot:0,all:0};
- const b=document.getElementById("body");b.innerHTML="";
- S.employees.forEach(e=>{const c=calc(e),r=c.r,tr=document.createElement("tr");
-  const inp=(k,w)=>`<td><input type="number" step="any" min="0" data-id="${e.id}" data-k="${k}" value="${r[k]||""}"></td>`;
-  tr.innerHTML=`<td>${esc(e.code??"")}</td><td class="name">${esc(e.name)}</td>${inp("md")}${inp("mn")}${inp("meals")}${inp("hd")}${inp("hn")}
-  <td class="calc">${fmt(c.wd)}</td><td class="calc">${fmt(c.wn)}</td><td class="calc"><b>${fmt(c.tot)}</b></td>${inp("eq")}<td class="calc">${fmt(c.eq2)}</td>
-  <td class="money">${fmt(c.mm)}</td><td class="money">${c.ot?fmt(c.ot):"-"}</td><td class="money">${fmt(c.all)}</td>
-  <td class="noprint"><input class="w" type="number" min="0" data-id="${e.id}" data-sal="1" value="${e.salary||""}" placeholder="اختياري"></td>
-  <td class="noprint"><button class="sec" data-day="${e.id}">يومي</button> <button class="del" data-del="${e.id}">حذف</button></td>`;
-  b.appendChild(tr);
-  T.md+=r.md;T.mn+=r.mn;T.meals+=r.meals;T.hd+=r.hd;T.hn+=r.hn;T.wd+=c.wd;T.wn+=c.wn;T.tot+=c.tot;T.eq+=r.eq;T.eq2+=c.eq2;T.mm+=c.mm;T.ot+=c.ot;T.all+=c.all;});
- document.getElementById("foot").innerHTML=`<tr><td colspan="2">الإجمالي</td><td>${fmt(T.md)}</td><td>${fmt(T.mn)}</td><td>${fmt(T.meals)}</td><td>${fmt(T.hd)}</td><td>${fmt(T.hn)}</td><td>${fmt(T.wd)}</td><td>${fmt(T.wn)}</td><td>${fmt(T.tot)}</td><td>${fmt(T.eq)}</td><td>${fmt(T.eq2)}</td><td>${fmt(T.mm)}</td><td>${T.ot?fmt(T.ot):"-"}</td><td>${fmt(T.all)}</td><td class="noprint" colspan="2"></td></tr>`;
+function freshState(){
+ const emps=SEED.employees.map((e,i)=>({id:i+1,code:e.code??"",name:e.name,salary:"",active:true}));
+ const byKey={};SEED.employees.forEach((e,i)=>byKey[e.code||e.name]=i+1);
+ const months={};
+ for(const [mk,d] of Object.entries(SEED.months)){const rows={};for(const [k,v] of Object.entries(d)){rows[byKey[k]]={...v,note:"",days:null}}months[mk]={locked:mk!=="2026-09",rows}}
+ return{v:2,settings:{...DEF},employees:emps,months,cur:{y:2026,m:8}};
 }
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
+ if(!S||S.v!==2||!S.employees)S=freshState();S.settings={...DEF,...S.settings}}
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},250)}
+const mkOf=(y,m)=>y+"-"+String(m+1).padStart(2,"0");
+const mk=()=>mkOf(S.cur.y,S.cur.m);
+const M=(k)=>S.months[k||mk()]||(S.months[k||mk()]={locked:false,rows:{}});
+const R=(id,k)=>{const m=M(k);return m.rows[id]||(m.rows[id]={md:0,mn:0,meals:0,hd:0,hn:0,eq:0,note:"",days:null})};
+const hasData=r=>r&&FIELDS.some(f=>r[f]);
+function calc(e,r){const s=S.settings;r=r||{};
+ const md=r.md||0,mn=r.mn||0,meals=r.meals||0,hd=r.hd||0,hn=r.hn||0,eq=r.eq||0;
+ const wd=hd*s.dayF,wn=hn*s.nightF,tot=wd+wn,eq2=eq*s.equalF;
+ const sal=norm(e.salary),daily=sal/(s.daysInMonth||30),hourly=daily/(s.hoursPerDay||8);
+ const mm=md*s.dayMission+mn*s.nightMission+meals*s.meal;
+ const ot=sal?tot*hourly+eq2*daily:0;
+ return{wd,wn,tot,eq2,mm,ot,all:mm+ot,md,mn,meals,hd,hn,eq};}
+function totalsOf(k){const t={n:0,md:0,mn:0,meals:0,hd:0,hn:0,wd:0,wn:0,tot:0,eq:0,eq2:0,mm:0,ot:0,all:0};
+ const m=S.months[k];if(!m)return t;
+ S.employees.forEach(e=>{const r=m.rows[e.id];if(!hasData(r))return;const c=calc(e,r);t.n++;for(const f of ["md","mn","meals","hd","hn","wd","wn","tot","eq","eq2","mm","ot","all"])t[f]+=c[f]});return t}
+function prevKey(k){let [y,m]=k.split("-").map(Number);m--;if(m<1){m=12;y--}return y+"-"+String(m).padStart(2,"0")}
+function avgPrev(e){const ks=Object.keys(S.months).filter(k=>k<mk()).sort().slice(-3);const v=ks.map(k=>S.months[k].rows[e.id]).filter(hasData).map(r=>calc(e,r).tot);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0}
+function toast(t){const n=$("#toast");n.textContent=t;n.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>n.hidden=true,2600)}
 
-function settingsUI(){const g=document.getElementById("settings");g.innerHTML="";
- Object.keys(DEF).forEach(k=>{const l=document.createElement("label");l.innerHTML=`${SETLBL[k]}<input type="number" step="any" data-set="${k}" value="${S.settings[k]}">`;g.appendChild(l)});}
+/* history */
+function touch(){const n=Date.now();if(n-lastTouch>900){undoS.push(JSON.stringify(M()));if(undoS.length>60)undoS.shift();redoS=[]}lastTouch=n;updUR()}
+function updUR(){$("#undo").disabled=!undoS.length;$("#redo").disabled=!redoS.length}
+function undo(){if(!undoS.length)return;redoS.push(JSON.stringify(M()));S.months[mk()]=JSON.parse(undoS.pop());lastTouch=0;save();renderSheet()}
+function redo(){if(!redoS.length)return;undoS.push(JSON.stringify(M()));S.months[mk()]=JSON.parse(redoS.pop());lastTouch=0;save();renderSheet()}
 
-document.addEventListener("input",ev=>{const t=ev.target;
- if(t.dataset.set){S.settings[t.dataset.set]=num(t.value);save();render();return}
- if(t.dataset.k){const r=row(+t.dataset.id);r[t.dataset.k]=num(t.value);
-  if(["hd","hn","meals"].includes(t.dataset.k))r.days=null;
-  save();const p=t.selectionStart;const f=t.dataset.id+t.dataset.k;render();
-  const n=document.querySelector(`input[data-id="${t.dataset.id}"][data-k="${t.dataset.k}"]`);if(n){n.focus();try{n.select()}catch(e){}}return}
- if(t.dataset.sal){S.employees.find(e=>e.id==t.dataset.id).salary=t.value;save();
-  // refresh money cells only, keep focus
-  const a=document.activeElement,id=t.dataset.id;render();const n=document.querySelector(`input[data-id="${id}"][data-sal]`);if(n){n.focus()}}
-});
-document.addEventListener("click",ev=>{const t=ev.target;
- if(t.dataset.del){const e=S.employees.find(e=>e.id==t.dataset.del);if(confirm("حذف "+e.name+" من القائمة؟ (بياناته في الشهور السابقة تبقى محفوظة)")){S.employees=S.employees.filter(x=>x!==e);save();render()}}
- if(t.dataset.day)openDay(+t.dataset.day);
-});
-document.getElementById("mon").innerHTML=MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join("");
-document.getElementById("mon").onchange=e=>{S.cur.m=+e.target.value;save();render()};
-document.getElementById("yr").onchange=e=>{S.cur.y=+e.target.value||S.cur.y;save();render()};
-document.getElementById("addEmp").onclick=()=>{const name=prompt("اسم الموظف:");if(!name)return;const code=prompt("الكود (اختياري):")||"";
- S.employees.push({id:Math.max(0,...S.employees.map(e=>e.id))+1,code,name:name.trim(),salary:""});save();render()};
-document.getElementById("copyPrev").onclick=()=>{let y=S.cur.y,m=S.cur.m-1;if(m<0){m=11;y--}
- const pk=y+"-"+String(m+1).padStart(2,"0"),p=S.months[pk];if(!p){alert("لا توجد بيانات للشهر السابق");return}
- if(!confirm("سيتم استبدال بيانات الشهر الحالي بنسخة من "+MONTHS[m]+" "+y+". متابعة؟"))return;
- S.months[mk()]=JSON.parse(JSON.stringify(p));save();render()};
-document.getElementById("print").onclick=()=>window.print();
+/* ---------- sheet ---------- */
+function visibleEmps(){const q=$("#q").value.trim().toLowerCase(),f=$("#flt").value;
+ return S.employees.filter(e=>{
+  const r=M().rows[e.id];
+  if(!e.active&&!hasData(r))return false;
+  if(q&&!(String(e.name).toLowerCase().includes(q)||String(e.code).toLowerCase().includes(q)))return false;
+  if(f==="missing"&&hasData(r))return false;
+  if(f==="flag"&&!flagOf(e,r))return false;return true})}
+function flagOf(e,r){if(!hasData(r))return"";const a=avgPrev(e),t=calc(e,r).tot;if(a>0&&t>0&&Math.abs(t-a)/a>0.5)return"المتوسط السابق "+fmt(a)+" ساعة مرجّحة";return""}
+function renderSheet(){
+ const k=mk(),m=M(),locked=!!m.locked;
+ $("#mon").value=S.cur.m;$("#yr").value=S.cur.y;
+ $("#stitle").innerHTML="شهر "+MONTHS[S.cur.m]+" <span>"+S.cur.y+"</span>";
+ $("#hD").textContent="نهاري ×"+S.settings.dayF;$("#hN").textContent="ليلي ×"+S.settings.nightF;
+ $("#lockBanner").hidden=!locked;$("#lock").textContent=locked?"إلغاء الاعتماد":"اعتماد الشهر";
+ const b=$("#gbody");b.innerHTML="";
+ visibleEmps().forEach(e=>{
+  const r=R(e.id),tr=document.createElement("tr");tr.dataset.id=e.id;
+  const inp=f=>`<td><input inputmode="decimal" autocomplete="off" data-f="${f}" value="${r[f]||""}" ${locked?"disabled":""}></td>`;
+  tr.innerHTML=`<td class="stick s1 c">${esc(e.code)}</td><td class="stick s2 name">${esc(e.name)}<span class="pill" data-flag hidden></span></td>
+  ${inp("md")}${inp("mn")}${inp("meals")}${inp("hd")}${inp("hn")}${inp("eq")}
+  <td class="calc c" data-c="wd"></td><td class="calc c" data-c="wn"></td><td class="calc tot c" data-c="tot"></td><td class="calc c" data-c="eq2"></td>
+  <td class="money c" data-c="mm"></td><td class="money c" data-c="ot"></td><td class="money c" data-c="all"></td>
+  <td><input class="note" data-f="note" value="${esc(r.note||"")}" ${locked?"disabled":""}></td>
+  <td><button class="btn sec sm" data-day="${e.id}">يومي</button></td>`;
+  b.appendChild(tr);paintRow(tr,e)});
+ paintFoot();updUR();
+}
+function paintRow(tr,e){const r=R(e.id),c=calc(e,r);
+ for(const key of ["wd","wn","tot","eq2","mm","all"])tr.querySelector(`[data-c=${key}]`).textContent=fmt(c[key]);
+ tr.querySelector("[data-c=ot]").textContent=c.ot?fmt(c.ot):"-";
+ tr.classList.toggle("zero",!hasData(r));
+ const p=tr.querySelector("[data-flag]"),fl=flagOf(e,r);
+ if(fl){p.hidden=false;p.textContent="غير معتاد";p.title=fl}else if(!hasData(r)&&e.active){p.hidden=false;p.textContent="لم يُدخل";p.className="pill muted";p.removeAttribute("title")}else{p.hidden=true}
+ if(fl)p.className="pill"}
+function paintFoot(){const t=totalsOf(mk());
+ $("#gfoot").innerHTML=`<tr><td class="stick s1" style="background:var(--brand-gray)">${t.n}</td><td class="stick s2" style="background:var(--brand-gray);color:#fff">الإجمالي</td><td class="c">${fmt(t.md)}</td><td class="c">${fmt(t.mn)}</td><td class="c">${fmt(t.meals)}</td><td class="c">${fmt(t.hd)}</td><td class="c">${fmt(t.hn)}</td><td class="c">${fmt(t.eq)}</td><td class="c">${fmt(t.wd)}</td><td class="c">${fmt(t.wn)}</td><td class="c">${fmt(t.tot)}</td><td class="c">${fmt(t.eq2)}</td><td class="c">${fmt(t.mm)}</td><td class="c">${t.ot?fmt(t.ot):"-"}</td><td class="c">${fmt(t.all)}</td><td colspan="2"></td></tr>`}
 
-document.getElementById("csv").onclick=()=>{
- const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
- const rows=[["الكود","الاسم","مأموريات نهاري","مأموريات ليلي","وجبات","ساعات نهاري","ساعات ليلي","نهاري مرجّح","ليلي مرجّح","إجمالي الساعات","مثل الأجر","× معامل","مأموريات+وجبات (ج)","الإضافي (ج)","الإجمالي (ج)"]];
- S.employees.forEach(e=>{const c=calc(e),r=c.r;rows.push([e.code,e.name,r.md,r.mn,r.meals,r.hd,r.hn,r2(c.wd),r2(c.wn),r2(c.tot),r.eq,r2(c.eq2),r2(c.mm),r2(c.ot),r2(c.all)])});
- const blob=new Blob(["﻿"+rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"});
- const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="overtime-"+mk()+".csv";a.click();};
-document.getElementById("bk").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:"application/json"}));a.download="overtime-backup-"+new Date().toISOString().slice(0,10)+".json";a.click()};
-document.getElementById("rs").onclick=()=>document.getElementById("rsf").click();
-document.getElementById("rsf").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
- rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!d.employees||!d.months)throw 0;if(!confirm("استرجاع النسخة سيستبدل كل البيانات الحالية. متابعة؟"))return;S=d;S.settings={...DEF,...S.settings};save();settingsUI();render()}catch(x){alert("ملف غير صالح")}};rd.readAsText(f)};
+$("#gbody").addEventListener("input",ev=>{const i=ev.target;if(!i.dataset.f)return;const tr=i.closest("tr"),e=S.employees.find(x=>x.id==tr.dataset.id);
+ touch();const r=R(e.id);
+ if(i.dataset.f==="note")r.note=i.value;else{r[i.dataset.f]=norm(i.value);if(["hd","hn","meals"].includes(i.dataset.f))r.days=null}
+ paintRow(tr,e);paintFoot();save()});
+$("#gbody").addEventListener("focusin",ev=>{if(ev.target.tagName==="INPUT")ev.target.select()});
+$("#gbody").addEventListener("keydown",ev=>{const i=ev.target;if(i.tagName!=="INPUT")return;
+ const dir=ev.key==="Enter"||ev.key==="ArrowDown"?1:ev.key==="ArrowUp"?-1:0;if(!dir)return;ev.preventDefault();
+ const rows=$$("#gbody tr"),idx=rows.indexOf(i.closest("tr")),n=rows[idx+dir];if(n){const t=n.querySelector(`[data-f="${i.dataset.f}"]`);if(t)t.focus()}});
+$("#gbody").addEventListener("paste",ev=>{const i=ev.target;if(!i.dataset||!i.dataset.f||i.dataset.f==="note")return;
+ const txt=(ev.clipboardData||window.clipboardData).getData("text");if(!/[\t\n]/.test(txt.trim()))return;ev.preventDefault();
+ const rows=$$("#gbody tr"),r0=rows.indexOf(i.closest("tr")),c0=FIELDS.indexOf(i.dataset.f);touch();
+ txt.replace(/\r/g,"").split("\n").filter(l=>l.length).forEach((line,ri)=>{const tr=rows[r0+ri];if(!tr)return;
+  const e=S.employees.find(x=>x.id==tr.dataset.id);line.split("\t").forEach((cell,ci)=>{const f=FIELDS[c0+ci];if(!f)return;R(e.id)[f]=norm(cell);const inp=tr.querySelector(`[data-f="${f}"]`);if(inp)inp.value=R(e.id)[f]||""});paintRow(tr,e)});
+ paintFoot();save();toast("تم لصق البيانات")});
+$("#gbody").addEventListener("click",ev=>{const b=ev.target.closest("[data-day]");if(b)openDay(+b.dataset.day)});
+["#q","#flt"].forEach(s=>$(s).addEventListener("input",renderSheet));
 
-// daily sheet
-let dEmp=null;const dlg=document.getElementById("dlg");
-function openDay(id){dEmp=id;const e=S.employees.find(e=>e.id==id),r=row(id);
- document.getElementById("dtitle").textContent=e.name+" — "+MONTHS[S.cur.m]+" "+S.cur.y;
- const n=new Date(S.cur.y,S.cur.m+1,0).getDate(),b=document.getElementById("dbody");b.innerHTML="";
- for(let d=1;d<=n;d++){const v=(r.days&&r.days[d])||{};const tr=document.createElement("tr");
-  tr.innerHTML=`<td>${d}</td><td><input type="number" step="any" min="0" data-dd="d" data-day="${d}" value="${v.d||""}"></td><td><input type="number" step="any" min="0" data-dd="n" data-day="${d}" value="${v.n||""}"></td><td><input type="number" min="0" max="1" data-dd="m" data-day="${d}" value="${v.m||""}"></td>`;b.appendChild(tr)}
- dsum();dlg.showModal();}
-function dsum(){const t={d:0,n:0,m:0};dlg.querySelectorAll("[data-dd]").forEach(i=>t[i.dataset.dd]+=num(i.value));
- document.getElementById("sd").textContent=fmt(t.d);document.getElementById("sn").textContent=fmt(t.n);document.getElementById("sm").textContent=fmt(t.m);return t}
-dlg.addEventListener("input",dsum);
-document.getElementById("dno").onclick=()=>dlg.close();
-document.getElementById("dok").onclick=()=>{const days={};dlg.querySelectorAll("[data-dd]").forEach(i=>{const d=i.dataset.day;(days[d]=days[d]||{})[i.dataset.dd]=num(i.value)});
- const t=dsum(),r=row(dEmp);r.hd=r2(t.d);r.hn=r2(t.n);r.meals=t.m;r.days=days;save();dlg.close();render()};
+/* daily sheet */
+let dEmp=null;
+function openDay(id){dEmp=id;const e=S.employees.find(x=>x.id===id),r=R(id);$("#dayT").textContent=e.name+" — "+MONTHS[S.cur.m]+" "+S.cur.y;
+ const n=new Date(S.cur.y,S.cur.m+1,0).getDate(),b=$("#dayB");b.innerHTML="";
+ for(let d=1;d<=n;d++){const v=(r.days&&r.days[d])||{},tr=document.createElement("tr"),dis=M().locked?"disabled":"";
+  tr.innerHTML=`<td class="c">${d}</td><td><input class="inp" style="width:80px" inputmode="decimal" data-dd="d" data-day="${d}" value="${v.d||""}" ${dis}></td><td><input class="inp" style="width:80px" inputmode="decimal" data-dd="n" data-day="${d}" value="${v.n||""}" ${dis}></td><td><input class="inp" style="width:80px" inputmode="decimal" data-dd="m" data-day="${d}" value="${v.m||""}" ${dis}></td>`;b.appendChild(tr)}
+ daySum();$("#dlgDay").showModal()}
+function daySum(){const t={d:0,n:0,m:0};$$("#dlgDay [data-dd]").forEach(i=>t[i.dataset.dd]+=norm(i.value));$("#sd").textContent=fmt(t.d);$("#sn").textContent=fmt(t.n);$("#sm").textContent=fmt(t.m);return t}
+$("#dlgDay").addEventListener("input",daySum);$("#dayNo").onclick=()=>$("#dlgDay").close();
+$("#dayOk").onclick=()=>{if(M().locked){$("#dlgDay").close();return}touch();const days={};$$("#dlgDay [data-dd]").forEach(i=>{(days[i.dataset.day]=days[i.dataset.day]||{})[i.dataset.dd]=norm(i.value)});
+ const t=daySum(),r=R(dEmp);r.hd=r2(t.d);r.hn=r2(t.n);r.meals=t.m;r.days=days;save();$("#dlgDay").close();renderSheet()};
 
-load();settingsUI();render();
+/* toolbar */
+$("#mon").innerHTML=MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join("");
+$("#mon").onchange=e=>{S.cur.m=+e.target.value;undoS=[];redoS=[];save();renderAll()};
+$("#yr").onchange=e=>{S.cur.y=+e.target.value||S.cur.y;undoS=[];redoS=[];save();renderAll()};
+$("#undo").onclick=undo;$("#redo").onclick=redo;
+document.addEventListener("keydown",ev=>{if(view!=="sheet"||!(ev.ctrlKey||ev.metaKey))return;if(ev.key==="z"){ev.preventDefault();undo()}else if(ev.key==="y"){ev.preventDefault();redo()}});
+$("#copyPrev").onclick=()=>{const pk=prevKey(mk());if(!S.months[pk]){toast("لا توجد بيانات للشهر السابق");return}
+ if(M().locked){toast("الشهر معتمد");return}
+ if(!confirm("سيتم استبدال بيانات الشهر الحالي بنسخة من الشهر السابق. متابعة؟"))return;touch();lastTouch=0;
+ const c=JSON.parse(JSON.stringify(S.months[pk]));c.locked=false;S.months[mk()]=c;save();renderAll()};
+$("#lock").onclick=()=>{const m=M();m.locked=!m.locked;save();renderSheet();toast(m.locked?"تم اعتماد الشهر":"تم إلغاء الاعتماد")};
+
+/* ---------- dashboard ---------- */
+function renderDash(){const k=mk(),t=totalsOf(k),p=totalsOf(prevKey(k));
+ $("#dtitle").innerHTML="شهر "+MONTHS[S.cur.m]+" <span>"+S.cur.y+"</span>";
+ const d=(a,b,cost)=>{if(!b)return"<small>لا يوجد شهر سابق للمقارنة</small>";const x=(a-b)/b*100;return`<small class="${(x>0)===!!cost?"up":"down"}"><span class="num" dir="ltr">${x>0?"+":"−"}${fmt(Math.abs(x))}%</span> عن الشهر السابق</small>`};
+ $("#kpis").innerHTML=`<div class="kpi"><span>الساعات المرجّحة</span><b>${fmt(t.tot)}</b>${d(t.tot,p.tot,1)}</div>
+ <div class="kpi"><span>المأموريات (نهاري / ليلي)</span><b>${fmt(t.md)} / ${fmt(t.mn)}</b>${d(t.md+t.mn,p.md+p.mn,1)}</div>
+ <div class="kpi"><span>الوجبات</span><b>${fmt(t.meals)}</b>${d(t.meals,p.meals,1)}</div>
+ <div class="kpi"><span>مأموريات ووجبات (ج)</span><b>${fmt(t.mm)}</b>${d(t.mm,p.mm,1)}</div>
+ <div class="kpi"><span>عدد الموظفين بالبيان</span><b>${t.n}</b><small>${t.ot?"الإضافي بالجنيه: "+fmt(t.ot):"أضف الرواتب لحساب الإضافي بالجنيه"}</small></div>`;
+ const rows=S.employees.map(e=>({e,c:calc(e,M().rows[e.id])})).filter(x=>x.c.tot>0).sort((a,b)=>b.c.tot-a.c.tot).slice(0,10),mx=rows[0]?rows[0].c.tot:1;
+ $("#topEmp").innerHTML=rows.length?rows.map(x=>`<div class="hbar"><span>${esc(x.e.name)}</span><span class="t"><i style="width:${x.c.tot/mx*100}%"></i></span><span class="num">${fmt(x.c.tot)}</span></div>`).join(""):'<p class="hint">لا توجد بيانات في هذا الشهر بعد.</p>';
+ const ks=Object.keys(S.months).filter(x=>totalsOf(x).n).sort().slice(-12),vals=ks.map(x=>totalsOf(x).tot),mv=Math.max(1,...vals);
+ $("#trend").innerHTML=ks.map((x,i)=>`<div class="col ${x===k?"cur":""}" data-go="${x}"><span class="v num">${fmt(vals[i])}</span><div class="b" style="height:${vals[i]/mv*150}px"></div><span class="l">${MONTHS[+x.slice(5)-1]}<br>${x.slice(0,4)}</span></div>`).join("");
+}
+$("#trend").addEventListener("click",ev=>{const c=ev.target.closest("[data-go]");if(c)goMonth(c.dataset.go)});
+function goMonth(k){const [y,m]=k.split("-").map(Number);S.cur={y,m:m-1};undoS=[];redoS=[];save();setView("sheet")}
+
+/* ---------- reports ---------- */
+function renderRep(){
+ const ks=Object.keys(S.months).filter(k=>totalsOf(k).n).sort().reverse();
+ $("#repM").innerHTML=`<thead><tr><th class="l">الشهر</th><th>الموظفون</th><th>مأموريات نهاري</th><th>مأموريات ليلي</th><th>وجبات</th><th>ساعات مرجّحة</th><th>مأموريات ووجبات (ج)</th><th>الإضافي (ج)</th><th>الحالة</th></tr></thead><tbody>`+
+ ks.map(k=>{const t=totalsOf(k);return`<tr class="click" data-go="${k}"><td class="l">${MONTHS[+k.slice(5)-1]} ${k.slice(0,4)}</td><td class="c">${t.n}</td><td class="c">${fmt(t.md)}</td><td class="c">${fmt(t.mn)}</td><td class="c">${fmt(t.meals)}</td><td class="c">${fmt(t.tot)}</td><td class="c">${fmt(t.mm)}</td><td class="c">${t.ot?fmt(t.ot):"-"}</td><td>${S.months[k].locked?'<span class="pill ok">معتمد</span>':'<span class="pill muted">مسودة</span>'}</td></tr>`}).join("")+"</tbody>";
+ const sel=$("#repE"),cur=sel.value;sel.innerHTML=S.employees.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join("");if(cur)sel.value=cur;
+ const e=S.employees.find(x=>x.id==sel.value)||S.employees[0];if(!e){$("#repE2").innerHTML="";return}
+ let tt={md:0,mn:0,meals:0,hd:0,hn:0,tot:0,eq:0,all:0},n=0;
+ const body=Object.keys(S.months).sort().reverse().filter(k=>hasData(S.months[k].rows[e.id])).map(k=>{const c=calc(e,S.months[k].rows[e.id]);n++;for(const f in tt)tt[f]+=c[f];
+  return`<tr class="click" data-go="${k}"><td class="l">${MONTHS[+k.slice(5)-1]} ${k.slice(0,4)}</td><td class="c">${fmt(c.md)}</td><td class="c">${fmt(c.mn)}</td><td class="c">${fmt(c.meals)}</td><td class="c">${fmt(c.hd)}</td><td class="c">${fmt(c.hn)}</td><td class="c">${fmt(c.tot)}</td><td class="c">${fmt(c.eq)}</td><td class="c">${fmt(c.all)}</td></tr>`}).join("");
+ $("#repE2").innerHTML=`<thead><tr><th class="l">الشهر</th><th>مأموريات نهاري</th><th>مأموريات ليلي</th><th>وجبات</th><th>ساعات نهاري</th><th>ساعات ليلي</th><th>ساعات مرجّحة</th><th>مثل الأجر</th><th>مأموريات ووجبات + إضافي (ج)</th></tr></thead><tbody>${body}</tbody>`+
+ (n?`<tfoot><tr><td class="l">الإجمالي (${n} شهر)</td><td class="c">${fmt(tt.md)}</td><td class="c">${fmt(tt.mn)}</td><td class="c">${fmt(tt.meals)}</td><td class="c">${fmt(tt.hd)}</td><td class="c">${fmt(tt.hn)}</td><td class="c">${fmt(tt.tot)}</td><td class="c">${fmt(tt.eq)}</td><td class="c">${fmt(tt.all)}</td></tr><tr><td class="l">المتوسط الشهري</td><td class="c">${fmt(tt.md/n)}</td><td class="c">${fmt(tt.mn/n)}</td><td class="c">${fmt(tt.meals/n)}</td><td class="c">${fmt(tt.hd/n)}</td><td class="c">${fmt(tt.hn/n)}</td><td class="c">${fmt(tt.tot/n)}</td><td class="c">${fmt(tt.eq/n)}</td><td class="c">${fmt(tt.all/n)}</td></tr></tfoot>`:"");
+}
+$("#repM").addEventListener("click",ev=>{const c=ev.target.closest("[data-go]");if(c)goMonth(c.dataset.go)});
+$("#repE2").addEventListener("click",ev=>{const c=ev.target.closest("[data-go]");if(c)goMonth(c.dataset.go)});
+$("#repE").onchange=renderRep;
+
+/* ---------- employees ---------- */
+function renderEmp(){
+ $("#empT").innerHTML=`<thead><tr><th>الكود</th><th class="l">الاسم</th><th>الراتب الأساسي (ج)</th><th>يظهر في البيان</th><th></th></tr></thead><tbody>`+
+ S.employees.map(e=>`<tr data-id="${e.id}"><td><input data-k="code" value="${esc(e.code)}" style="max-width:110px"></td><td><input data-k="name" value="${esc(e.name)}"></td><td><input data-k="salary" inputmode="decimal" value="${esc(e.salary)}" placeholder="اختياري" style="max-width:150px"></td><td><input type="checkbox" data-k="active" ${e.active?"checked":""} style="width:auto;min-width:0"></td><td><button class="btn danger sm" data-del="${e.id}">حذف</button></td></tr>`).join("")+"</tbody>"}
+$("#empT").addEventListener("input",ev=>{const i=ev.target,tr=i.closest("tr");if(!tr||!i.dataset.k)return;const e=S.employees.find(x=>x.id==tr.dataset.id);e[i.dataset.k]=i.type==="checkbox"?i.checked:i.value;save()});
+$("#empT").addEventListener("click",ev=>{const b=ev.target.closest("[data-del]");if(!b)return;const e=S.employees.find(x=>x.id==b.dataset.del);
+ if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="تأكيد الحذف";setTimeout(()=>{b.dataset.arm="";b.textContent="حذف"},3000);return}
+ S.employees=S.employees.filter(x=>x!==e);save();renderEmp();toast("تم حذف "+e.name+" (سجلاته في الشهور تبقى محفوظة)")});
+$("#addEmp").onclick=()=>{S.employees.push({id:Math.max(0,...S.employees.map(e=>e.id))+1,code:"",name:"موظف جديد",salary:"",active:true});save();renderEmp();const r=$$("#empT tbody tr");const l=r[r.length-1];l.scrollIntoView({block:"center"});l.querySelector('[data-k=name]').select()};
+
+/* ---------- settings ---------- */
+function settingsUI(){const g=$("#setg");g.innerHTML="";Object.keys(DEF).forEach(k=>{const l=document.createElement("label");l.className="field";const txt=typeof DEF[k]==="string";
+ l.innerHTML=`${SETLBL[k]}<input class="inp" data-set="${k}" ${txt?'type="text"':'inputmode="decimal"'} value="${esc(S.settings[k])}">`;g.appendChild(l)})}
+$("#setg").addEventListener("input",ev=>{const k=ev.target.dataset.set;if(!k)return;S.settings[k]=typeof DEF[k]==="string"?ev.target.value:norm(ev.target.value);save()});
+$("#openSet").onclick=()=>{settingsUI();$("#dlgSet").showModal()};
+$("#setOk").onclick=()=>{$("#dlgSet").close();renderAll()};
+$("#bk").onclick=()=>download("bedayti-overtime-backup-"+new Date().toISOString().slice(0,10)+".json",new Blob([JSON.stringify(S)],{type:"application/json"}));
+$("#rs").onclick=()=>$("#rsf").click();
+$("#rsf").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(d.v!==2||!d.employees||!d.months)throw 0;if(!confirm("استرجاع النسخة سيستبدل كل البيانات الحالية. متابعة؟"))return;S=d;S.settings={...DEF,...S.settings};save();$("#dlgSet").close();renderAll();toast("تم الاسترجاع")}catch(x){toast("ملف غير صالح")}};rd.readAsText(f);e.target.value=""};
+$("#reset").onclick=function(){if(this.dataset.arm!=="1"){this.dataset.arm="1";this.textContent="اضغط تاني للتأكيد";setTimeout(()=>{this.dataset.arm="";this.textContent="مسح كل البيانات"},3000);return}
+ try{localStorage.removeItem(KEY)}catch(e){}S=freshState();$("#dlgSet").close();renderAll();toast("تمت إعادة البيانات الأصلية")};
+
+/* ---------- export / print ---------- */
+function download(name,blob){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(a.href)},500)}
+let xlsxP;function loadXLSX(){if(window.XLSX)return Promise.resolve(window.XLSX);return xlsxP||(xlsxP=new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=()=>res(window.XLSX);s.onerror=()=>{xlsxP=null;rej()};document.head.appendChild(s)}))}
+function exportRows(){return S.employees.filter(e=>hasData(M().rows[e.id])||e.active)}
+$("#xls").onclick=async()=>{
+ const s=S.settings,list=exportRows(),title="بيان بالأجر الإضافي والمأموريات لموظفي الخدمات المعاونة (إدارة الشئون الإدارية) - شهر "+MONTHS[S.cur.m]+" "+S.cur.y;
+ let X;try{X=await loadXLSX()}catch(e){X=null}
+ if(!X){const q=v=>'"'+String(v).replace(/"/g,'""')+'"';const rows=[["الكود","الاسم","مأموريات نهاري","مأموريات ليلي","وجبات","ساعات نهاري","ساعات ليلي","مثل الأجر","نهاري مرجّح","ليلي مرجّح","إجمالي الساعات","× معامل","مأموريات ووجبات","الإضافي","الإجمالي","ملاحظات"]];
+  list.forEach(e=>{const r=R(e.id),c=calc(e,r);rows.push([e.code,e.name,c.md,c.mn,c.meals,c.hd,c.hn,c.eq,r2(c.wd),r2(c.wn),r2(c.tot),r2(c.eq2),r2(c.mm),r2(c.ot),r2(c.all),r.note||""])});
+  download("overtime-"+mk()+".csv",new Blob(["﻿"+rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"}));toast("تم تصدير CSV (مكتبة Excel تحتاج إنترنت)");return}
+ const H=["الكود","الاسم","مأموريات نهاري","مأموريات ليلي","وجبات","ساعات نهاري","ساعات ليلي","مثل الأجر","نهاري ×"+s.dayF,"ليلي ×"+s.nightF,"إجمالي الساعات المرجّحة","× معامل","مأموريات ووجبات (ج)","الإضافي (ج)","الإجمالي (ج)","الراتب","ملاحظات"];
+ const ws={};const set=(a,o)=>ws[a]=o;const col=i=>X.utils.encode_col(i);
+ set("A1",{t:"s",v:title});H.forEach((h,i)=>set(col(i)+"2",{t:"s",v:h}));
+ list.forEach((e,i)=>{const r=R(e.id),c=calc(e,r),n=i+3,sal=norm(e.salary);
+  set("A"+n,e.code===""?{t:"s",v:""}:{t:isNaN(+e.code)?"s":"n",v:isNaN(+e.code)?String(e.code):+e.code});set("B"+n,{t:"s",v:e.name});
+  [c.md,c.mn,c.meals,c.hd,c.hn,c.eq].forEach((v,j)=>set(col(2+j)+n,{t:"n",v}));
+  set("I"+n,{t:"n",f:`F${n}*${s.dayF}`,v:c.wd});set("J"+n,{t:"n",f:`G${n}*${s.nightF}`,v:c.wn});set("K"+n,{t:"n",f:`I${n}+J${n}`,v:c.tot});set("L"+n,{t:"n",f:`H${n}*${s.equalF}`,v:c.eq2});
+  set("M"+n,{t:"n",f:`C${n}*${s.dayMission}+D${n}*${s.nightMission}+E${n}*${s.meal}`,v:c.mm});
+  set("N"+n,{t:"n",f:`IF(P${n}>0,K${n}*P${n}/${s.daysInMonth}/${s.hoursPerDay}+L${n}*P${n}/${s.daysInMonth},0)`,v:c.ot});
+  set("O"+n,{t:"n",f:`M${n}+N${n}`,v:c.all});set("P"+n,{t:"n",v:sal});set("Q"+n,{t:"s",v:r.note||""})});
+ const last=list.length+2,tr=last+1;set("A"+tr,{t:"s",v:"الإجمالي"});
+ for(let i=2;i<=15;i++){const L=col(i);let sum=0;for(let n=3;n<=last;n++)sum+=(ws[L+n]&&ws[L+n].v)||0;set(L+tr,{t:"n",f:`SUM(${L}3:${L}${last})`,v:sum})}
+ ws["!ref"]="A1:Q"+tr;ws["!merges"]=[{s:{r:0,c:0},e:{r:0,c:16}}];ws["!cols"]=[{wch:8},{wch:22},...Array(14).fill({wch:13}),{wch:24}];
+ const wb=X.utils.book_new();wb.Workbook={Views:[{RTL:true}]};X.utils.book_append_sheet(wb,ws,MONTHS[S.cur.m]+" "+S.cur.y);
+ X.writeFile(wb,"overtime-"+mk()+".xlsx");toast("تم تصدير ملف Excel بالمعادلات")};
+$("#prt").onclick=()=>{const s=S.settings,t=totalsOf(mk()),list=S.employees.filter(e=>hasData(M().rows[e.id]));
+ const body=list.map(e=>{const c=calc(e,M().rows[e.id]);return`<tr><td>${esc(e.code)}</td><td style="text-align:right">${esc(e.name)}</td><td>${fmt(c.md)}</td><td>${fmt(c.mn)}</td><td>${fmt(c.meals)}</td><td>${fmt(c.hd)}</td><td>${fmt(c.wd)}</td><td>${fmt(c.hn)}</td><td>${fmt(c.wn)}</td><td>${fmt(c.tot)}</td><td>${fmt(c.eq)}</td><td>${fmt(c.eq2)}</td></tr>`}).join("");
+ $("#printSheet").innerHTML=`<h1>بيان بالأجر الإضافي والمأموريات لموظفي الخدمات المعاونة (إدارة الشئون الإدارية) - شهر ${MONTHS[S.cur.m]} ${S.cur.y}</h1>
+ <table><thead><tr><th>الكود</th><th>الاسم</th><th colspan="2">مأموريات (نهاري / ليلي)</th><th>وجبات</th><th colspan="2">نهاري (فعلي / ×${s.dayF})</th><th colspan="2">ليلي (فعلي / ×${s.nightF})</th><th>الإجمالي</th><th>مثل الأجر</th><th>× ${s.equalF}</th></tr></thead><tbody>${body}
+ <tr><td colspan="2">الإجمالي</td><td>${fmt(t.md)}</td><td>${fmt(t.mn)}</td><td>${fmt(t.meals)}</td><td>${fmt(t.hd)}</td><td>${fmt(t.wd)}</td><td>${fmt(t.hn)}</td><td>${fmt(t.wn)}</td><td>${fmt(t.tot)}</td><td>${fmt(t.eq)}</td><td>${fmt(t.eq2)}</td></tr></tbody></table>
+ <div class="pnotes"><b>ملاحظات:</b> المأموريات: عدد المأموريات النهارية × ${s.dayMission} جنيه، والليلية × ${s.nightMission} جنيه. الإضافي: الساعات النهارية = ${s.dayF} من القيمة، والليلية = ${s.nightF} من القيمة. الوجبات: إجمالي عدد الوجبات × ${s.meal} جنيه.</div>
+ <div class="psign"><div>${esc(s.signer1)}</div><div>${esc(s.signer2)}</div></div>`;
+ try{window.print()}catch(e){toast("الطباعة غير متاحة هنا")}};
+
+/* ---------- import ---------- */
+let IM=null;const colL=i=>String.fromCharCode(65+i);
+$("#imp").onclick=()=>{if(M().locked){toast("الشهر معتمد");return}$("#impf").click()};
+$("#impf").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;let X;try{X=await loadXLSX()}catch(x){toast("استيراد Excel يحتاج اتصال إنترنت لتحميل المكتبة");return}
+ const rd=new FileReader();rd.onload=()=>{try{const wb=X.read(rd.result,{type:"array"});IM={X,wb};
+  $("#iSheet").innerHTML=wb.SheetNames.map((n,i)=>`<option value="${i}">${esc(n)}</option>`).join("");impSheet();$("#dlgImp").showModal()}catch(x){toast("تعذر قراءة الملف")}};rd.readAsArrayBuffer(f)};
+function impSheet(){const ws=IM.wb.Sheets[IM.wb.SheetNames[+$("#iSheet").value]];IM.rows=IM.X.utils.sheet_to_json(ws,{header:1,defval:"",raw:true});
+ let h=IM.rows.findIndex(r=>r.some(c=>String(c).includes("الكود")));if(h<0)h=0;let from=h+1;
+ while(from<IM.rows.length&&!(IM.rows[from][0]!==""&&!isNaN(parseFloat(IM.rows[from][0]))))from++;if(from>=IM.rows.length)from=h+2;
+ const hdr=IM.rows[h]||[],wide=Math.max(...IM.rows.slice(0,6).map(r=>r.length))>=12;
+ let eq=hdr.findIndex(c=>String(c).includes("مثل"));if(eq<0)eq=wide?10:8;
+ IM.map={code:0,name:1,md:2,mn:3,meals:4,hd:5,hn:wide?7:6,eq};$("#iFrom").value=from+1;
+ const L=[["code","الكود"],["name","الاسم"],["md","مأموريات نهاري"],["mn","مأموريات ليلي"],["meals","وجبات"],["hd","ساعات نهاري (فعلية)"],["hn","ساعات ليلي (فعلية)"],["eq","مثل الأجر"]];
+ const ncol=Math.max(14,...IM.rows.slice(0,10).map(r=>r.length));
+ $("#iMap").innerHTML=L.map(([k,t])=>`<label class="field">${t}<select data-m="${k}">${Array.from({length:ncol},(_,i)=>`<option value="${i}" ${IM.map[k]===i?"selected":""}>عمود ${colL(i)}</option>`).join("")}</select></label>`).join("");impPrev()}
+function impRows(){const from=Math.max(1,+$("#iFrom").value||1)-1,out=[];
+ IM.rows.slice(from).forEach(r=>{const name=String(r[IM.map.name]??"").trim();if(!name||name.startsWith("الإجمالي"))return;out.push({code:r[IM.map.code]===""?"":String(r[IM.map.code]).trim(),name,v:Object.fromEntries(FIELDS.map(f=>[f,norm(r[IM.map[f]])]))})});return out}
+function impPrev(){const rows=impRows();$("#iPrev").innerHTML=`<thead><tr><th>الكود</th><th class="l">الاسم</th><th>م.ن</th><th>م.ل</th><th>وجبات</th><th>س.ن</th><th>س.ل</th><th>مثل</th></tr></thead><tbody>`+rows.slice(0,6).map(r=>`<tr><td class="c">${esc(r.code)}</td><td class="l">${esc(r.name)}</td>${FIELDS.map(f=>`<td class="c">${fmt(r.v[f])}</td>`).join("")}</tr>`).join("")+`</tbody><tfoot><tr><td colspan="8" class="l">${rows.length} صف سيتم استيراده</td></tr></tfoot>`}
+$("#iSheet").onchange=impSheet;$("#iFrom").oninput=impPrev;$("#iMap").addEventListener("change",ev=>{if(ev.target.dataset.m){IM.map[ev.target.dataset.m]=+ev.target.value;impPrev()}});
+$("#iNo").onclick=()=>$("#dlgImp").close();
+$("#iOk").onclick=()=>{const rows=impRows();touch();lastTouch=0;let add=0,upd=0;
+ rows.forEach(x=>{let e=S.employees.find(e=>x.code!==""&&String(e.code)===x.code)||S.employees.find(e=>e.name.replace(/\s+/g,"")===x.name.replace(/\s+/g,""));
+  if(!e){e={id:Math.max(0,...S.employees.map(z=>z.id))+1,code:x.code,name:x.name,salary:"",active:true};S.employees.push(e);add++}else upd++;
+  const r=R(e.id);FIELDS.forEach(f=>r[f]=x.v[f]);r.days=null});
+ save();$("#dlgImp").close();renderAll();toast(`تم الاستيراد: ${upd} محدَّث، ${add} جديد`)};
+
+/* ---------- shell ---------- */
+function setView(v){view=v;$$("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===v));["sheet","dash","rep","emp"].forEach(x=>$("#v-"+x).hidden=x!==v);renderAll()}
+$("#tabs").addEventListener("click",ev=>{const b=ev.target.closest("button");if(b)setView(b.dataset.tab)});
+function renderAll(){if(view==="sheet")renderSheet();else if(view==="dash")renderDash();else if(view==="rep")renderRep();else renderEmp()}
+load();settingsUI();renderAll();
+})();
 </script>
+
 </body>
 </html>
