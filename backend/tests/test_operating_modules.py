@@ -427,3 +427,25 @@ def test_production_refuses_to_start_without_an_admin_token(monkeypatch, engine)
     monkeypatch.delenv("APP_ENV")
     monkeypatch.delenv("API_TOKENS")
     get_settings.cache_clear()
+
+
+def test_vehicle_cost_cells_cleared_in_a_newer_version_are_not_carried_over(session):
+    """A newer file that moves a cost from one category to another must not leave the old category's value in the current view (it would double-count)."""
+    ad = VehicleAdapter()
+    ad.ingest(session, repairs_workbook(), "repairs.xlsx", "bob", {})
+    wb = repairs_workbook(True)                                    # Feb: the first vehicle's repair 700 -> 900 (same category) …
+    from openpyxl import load_workbook
+    import io
+    book = load_workbook(io.BytesIO(wb))
+    ws = book["فبراير"]
+    ws["E5"].value, ws["F5"].value = None, 700                     # … and here the 700 is moved from «صيانة» to «اخري - تكييف» instead
+    ws["H5"].value = 710
+    buf = io.BytesIO()
+    book.save(buf)
+    ad.ingest(session, buf.getvalue(), "repairs_moved.xlsx", "bob", {})
+    d = veh_service.load(session)
+    v = next(x for x in d["vehicles"] if x["plate"] == "س ص 1111")
+    cats = {k: val for k, val in v["cost"]["2026-02"]["values"].items() if k.startswith("cat:")}
+    assert cats.get("cat:اخري - تكييف") == 700 and "cat:صيانة" not in cats and sum(cats.values()) == 710       # moved, not duplicated
+    gone = [c for c in d["changes"] if c["field"] == "cat:صيانة" and c["period"] == "2026-02"]
+    assert [(c["old"], c["new"]) for c in gone] == [(700, None)]                                            # and the move is visible as a change

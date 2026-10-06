@@ -70,7 +70,7 @@ def load(session: Session) -> dict:
     recs = ops.load_records(session, MODULE_ID)
     if not recs:
         return {"vehicles": [], "claims": [], "candidates": [], "changes": [], "versions": [], "summaries": [], "layouts": []}
-    res = ops.resolve(recs)
+    res = ops.resolve(recs, replace_prefix={"vehicle_cost": "cat:"})
     cur = res["current"]
     cfg, _o = effective_struct(session, "vehicles.plates")
     aliases = alias_map(cfg["aliases"])

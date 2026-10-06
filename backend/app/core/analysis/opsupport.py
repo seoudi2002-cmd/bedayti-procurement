@@ -103,14 +103,22 @@ def same(a, b) -> bool:
     return a == b
 
 
-def resolve(records: list[dict], ignore: tuple = ()) -> dict:
+def resolve(records: list[dict], ignore: tuple = (), replace_prefix: dict | None = None) -> dict:
     """Effective rows + the change log. records must be ordered oldest version first (load_records orders them).
     current[(kind, key, period)] = {"values", "personal", "label", "flags", "datasets": [ids], "versions": n, "last_dataset": id}.
     changes: one entry per field whose stated value differs between two consecutive versions that both state it."""
     cur: dict[tuple, dict] = {}
     seq: dict[tuple, dict[str, list]] = defaultdict(lambda: defaultdict(list))    # (kind,key,period) -> field -> [(dataset, value)]
+    removed: list[dict] = []
+    replace_prefix = replace_prefix or {}
     for r in records:
         k = (r["kind"], r["key"], r["period"])
+        pre = replace_prefix.get(r["kind"])
+        if pre and k in cur and r["dataset_id"] not in cur[k]["datasets"]:
+            # a newer version of a row states its cost cells as a set: a cell it no longer states was cleared (not carried over from the older version)
+            for f in [f for f in cur[k]["values"] if f.startswith(pre) and r["values"].get(f) is None]:
+                removed.append({"kind": k[0], "key": k[1], "label": cur[k]["label"], "period": k[2], "field": f, "old": cur[k]["values"].pop(f), "new": None,
+                                "from_dataset": cur[k]["last_dataset"], "to_dataset": r["dataset_id"]})
         c = cur.setdefault(k, {"values": {}, "personal": {}, "label": r["label"], "flags": [], "datasets": [], "versions": 0, "last_dataset": None})
         if r["dataset_id"] not in c["datasets"]:
             c["datasets"].append(r["dataset_id"])
@@ -135,7 +143,7 @@ def resolve(records: list[dict], ignore: tuple = ()) -> dict:
             for (d0, v0), (d1, v1) in zip(steps, steps[1:]):
                 if d0 != d1 and not same(v0, v1):
                     changes.append({"kind": k[0], "key": k[1], "label": cur[k]["label"], "period": k[2], "field": f, "old": v0, "new": v1, "from_dataset": d0, "to_dataset": d1})
-    return {"current": cur, "changes": changes}
+    return {"current": cur, "changes": changes + removed}
 
 
 def versions_table(session: Session, module_id: str, records: list[dict], changes: list[dict]) -> list[dict]:
