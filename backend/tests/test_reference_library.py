@@ -119,3 +119,28 @@ def test_api_upload_list_pages_rbac_and_no_delete(api, monkeypatch, engine):
     assert info["status"] == "ready" and info["summary"]["pages"] == 2
     assert "Article 1" in api.get(f"{base}/{did}/pages/1", headers=auth("viewer")).json()["text"] and api.get(f"{base}/{did}/pages/9", headers=auth("viewer")).status_code == 404
     assert api.get(f"{base}/{did}/assets", headers=auth("viewer")).status_code == 409
+
+
+def test_second_export_layout_is_read_as_stated_and_total_line_is_not_an_asset(session):
+    # the header of the second export: a Location block (Country/City/Location) and a Category block (Major/Minor) named in the second row
+    import io
+
+    from openpyxl import Workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.append(["Asset No.", "Description", "Total Units", "Life Yr.Mo", "Asset Type", "Date Placed In Service", "Tag No.", "Location", None, None, "Category", None, "Original Cost", "Depreciation Reserve", "Net Book Value"])
+    ws.append([None] * 7 + ["Country", "City ", "Location ", "Major Category", "Minor Category", None, None, None])
+    ws.append([10000, "Chair", 1, 10, "CAPITALIZED", 44593, None, "Gov1", "CityA", "CityA Office", "Furniture", "Chairs-1", 800, 300, 500])
+    ws.append([10001, "Chair", 1, 10, "CAPITALIZED", 44593, None, "Gov1", "CityA", "CityA Office", "Furniture", "Chairs-1", 800, 300, 500])
+    ws.append([None, None, None, None, None, None, None, None, None, None, None, None, 1600, 600, 1000])      # grand-total line
+    buf = io.BytesIO()
+    wb.save(buf)
+    c = buf.getvalue()
+    assert assets.is_asset_register(c)
+    p = assets.parse_assets(c)
+    assert len(p.rows) == 2                                                                            # the total line is not an asset
+    r = p.rows[0]
+    assert (r["asset_number"], r["in_service_date"], r["location_text"], r["major_category"], r["category_segment"]) == ("10000", date(2022, 2, 1), "Gov1-CityA-CityA Office-", "Furniture", "Chairs-1")
+    codes = {i.code for i in p.issues}
+    assert "stated_total_row" in codes and "stated_total_differs" not in codes and "layout_without_cost_and_months" in codes
+    assert Decimal(assets.profile(p)["totals"]["original_cost"]) == Decimal(1600)

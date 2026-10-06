@@ -54,7 +54,7 @@ def register(session: Session, content: bytes, filename: str, user: str | None, 
              as_of: date | None = None, notes: str | None = None) -> ReferenceSource:
     name = filename.lower()
     if kind is None:
-        kind = "asset_register" if name.endswith((".xlsx", ".xlsm")) and assets.is_asset_register(content) else None
+        kind = "asset_register" if name.endswith((".xlsx", ".xlsm", ".xlsb")) and assets.is_asset_register(content, filename) else None
     if kind not in KINDS:
         raise ReferenceError(422, f"State the kind of this reference file ({', '.join(KINDS)}); an Excel file is recognised as an asset register by its columns")
     digest = _digest(content)
@@ -82,7 +82,7 @@ def register(session: Session, content: bytes, filename: str, user: str | None, 
 
 def _register_assets(session, content, filename, user, series, title, as_of, notes, digest) -> ReferenceSource:
     try:
-        parsed = assets.parse_assets(content)
+        parsed = assets.parse_assets(content, filename)
     except assets.UnrecognisedAssetRegister as exc:
         raise ReferenceError(422, str(exc)) from exc
     prof = assets.profile(parsed)
@@ -98,11 +98,14 @@ def _register_assets(session, content, filename, user, series, title, as_of, not
     if prev is not None:
         old: dict[str, list] = {}
         for x in session.scalars(select(AssetRegisterRow).where(AssetRegisterRow.source_id == prev.id)):
-            old.setdefault(x.asset_number, []).append({f: getattr(x, f) for f in ("description", "location_text", "major_category", "category_segment", "cost", "net_book_value", "current_units", "date_retired")})
+            old.setdefault(x.asset_number, []).append({f: getattr(x, f) for f in ("description", "location_text", "major_category", "category_segment", "cost", "original_cost", "net_book_value", "current_units", "date_retired", "in_service_date")})
         new: dict[str, list] = {}
         for r in parsed.rows:
             new.setdefault(r["asset_number"], []).append(r)
-        d = assets.diff(old, new)
+        if any(r.get("cost") is None and r.get("original_cost") is not None for r in parsed.rows[:50]):     # layout 2: compare what both exports state
+            d = assets.diff(old, new, ("description", "location_text", "major_category", "category_segment", "original_cost", "net_book_value", "current_units", "in_service_date"), swap_categories=True)
+        else:
+            d = assets.diff(old, new)
         d["previous_version"], d["previous_as_of"] = prev.version_no, prev.as_of_date.isoformat() if prev.as_of_date else None
         src.summary = {**prof, "diff_vs_previous": d}
     session.commit()

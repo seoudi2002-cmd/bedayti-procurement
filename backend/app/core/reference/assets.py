@@ -7,7 +7,7 @@ import io
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from openpyxl import load_workbook
@@ -29,8 +29,42 @@ REQUIRED = ("asset_number", "description", "location_text", "major_category", "c
 _DMY = re.compile(r"^\s*(\d{1,2})[-/](\d{1,2})[-/](\d{4})\s*$")
 
 
+# Second export layout (xlsb / xlsx): two header rows, «Asset No.», location split in three columns, no «Cost» / dates other than in-service.
+# Row-1 header -> field; the location and category blocks are named in row 2.
+HEADERS2 = {
+    "asset no.": "asset_number", "description": "description", "total units": "current_units", "life yr.mo": "life_raw", "asset type": "asset_type",
+    "date placed in service": "in_service", "tag no.": "tag_number", "original cost": "original_cost", "recoverable cost": "recoverable_cost",
+    "depreciation reserve": "accumulated_depreciation", "year-to-date depreciation": "ytd_depreciation", "net book value": "net_book_value",
+}
+SUB2 = {"country": "location_governorate", "city": "location_city", "location": "location_office", "major category": "major_category", "minor category": "category_segment"}
+_EXCEL_EPOCH = date(1899, 12, 30)
+
+
 class UnrecognisedAssetRegister(ValueError):
     pass
+
+
+def _grid(content: bytes, filename: str = "") -> tuple[list[tuple], str]:
+    """First sheet as a list of row tuples, from .xlsx/.xlsm (openpyxl) or .xlsb (pyxlsb)."""
+    if filename.lower().endswith(".xlsb"):
+        try:
+            from pyxlsb import open_workbook
+        except ImportError as exc:  # pragma: no cover
+            raise UnrecognisedAssetRegister("Reading .xlsb needs the pyxlsb package") from exc
+        with open_workbook(io.BytesIO(content)) as wb:
+            with wb.get_sheet(1) as sh:
+                return [tuple(c.v for c in r) for r in sh.rows(sparse=False)], wb.sheets[0]
+    ws = load_workbook(io.BytesIO(content), data_only=True).worksheets[0]
+    return [tuple(r) for r in ws.iter_rows(values_only=True)], ws.title
+
+
+def _layout(grid) -> int | None:
+    names = {_norm(c) for c in (grid[0] if grid else ())}
+    if {"asset number", "major category", "original cost"} <= names:
+        return 1
+    if {"asset no.", "original cost", "net book value"} <= names and len(grid) > 2:
+        return 2
+    return None
 
 
 @dataclass
@@ -63,12 +97,9 @@ def _norm(h) -> str:
     return " ".join(str(h or "").lower().split())
 
 
-def is_asset_register(content: bytes) -> bool:
+def is_asset_register(content: bytes, filename: str = "") -> bool:
     try:
-        wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
-        row = next(wb.worksheets[0].iter_rows(max_row=1, values_only=True), ())
-        names = {_norm(c) for c in row}
-        return {"asset number", "major category", "original cost"} <= names
+        return _layout(_grid(content, filename)[0]) is not None
     except Exception:
         return False
 
@@ -113,9 +144,78 @@ def split_location(text: str | None):
     return tuple(parts) if len(parts) == 3 and all(parts) else None
 
 
-def parse_assets(content: bytes) -> ParsedAssets:
-    wb = load_workbook(io.BytesIO(content), data_only=True)
-    ws = wb.worksheets[0]
+def _serial_date(v):
+    """Excel serial number (as xlsb stores dates) or a real date -> date; anything else -> None."""
+    if isinstance(v, (datetime, date)):
+        return _date(v)[0]
+    if isinstance(v, (int, float)) and not isinstance(v, bool) and 20000 < v < 80000:
+        return _EXCEL_EPOCH + timedelta(days=int(v))
+    return None
+
+
+def _parse_layout2(grid, sheet) -> ParsedAssets:
+    head, sub = grid[0], grid[1]
+    cols: dict[int, str] = {}
+    for i, h in enumerate(head):
+        if _norm(h) in HEADERS2:
+            cols[i] = HEADERS2[_norm(h)]
+    for i, h in enumerate(sub):
+        if _norm(h) in SUB2:
+            cols[i] = SUB2[_norm(h)]
+    out = ParsedAssets(columns=[_txt(h) or _txt(sub[i]) for i, h in enumerate(head) if h is not None or (i < len(sub) and sub[i] is not None)], sheet=sheet)
+    missing = [f for f in REQUIRED if f not in cols.values() and f not in ("cost", "location_text")]
+    if missing:
+        raise UnrecognisedAssetRegister(f"Not an asset register export (columns not found: {', '.join(missing)})")
+    unmapped = [str(h) for i, h in enumerate(head) if h is not None and i not in cols and _norm(h) not in ("location", "category")]
+    if unmapped:
+        out.issue("unknown_columns", "info", "Columns present in the file that this reader does not map (kept only in the stored original)", ", ".join(unmapped[:6]), len(unmapped))
+    totals_row: list[dict] = []
+    for rno, row in enumerate(grid[2:], 3):
+        if all(v in (None, "") for v in row):
+            continue
+        r: dict = {"row_no": rno, "flags": [], "monthly_depreciation": {}}
+        for i, f in cols.items():
+            v = row[i] if i < len(row) else None
+            if f == "in_service":
+                d = _serial_date(v)
+                r["in_service_date"] = d
+                r["in_service_raw"] = None if d or v in (None, "") else _txt(v)
+            elif f in ("original_cost", "recoverable_cost", "ytd_depreciation", "accumulated_depreciation", "net_book_value", "current_units"):
+                r[f] = _dec(v)
+            elif f == "asset_number":
+                r[f] = str(int(v)) if isinstance(v, (int, float)) and float(v).is_integer() else _txt(v)
+            else:
+                r[f] = _txt(v)
+        if not r.get("asset_number") and not r.get("description"):
+            totals_row.append(r)          # the sheet's own grand-total line: reconciled below, not an asset
+            continue
+        if not r.get("asset_number"):
+            out.issue("asset_number_missing", "critical", "A register row without an asset number (kept)", f"row {rno}")
+            r["asset_number"] = ""
+        parts = [r.get("location_governorate"), r.get("location_city"), r.get("location_office")]
+        if all(parts):
+            r["location_text"] = "-".join(parts) + "-"     # same shape the other export writes; built from the three columns
+        elif any(parts):
+            r["flags"].append("location_not_split")
+        out.rows.append(r)
+    if not out.rows:
+        raise UnrecognisedAssetRegister("The register has no asset rows")
+    _observe(out)
+    for t in totals_row:
+        for f in ("original_cost", "recoverable_cost", "accumulated_depreciation", "ytd_depreciation", "net_book_value"):
+            got = sum((r[f] for r in out.rows if r.get(f) is not None), ZERO)
+            if t.get(f) is not None and abs(got - t[f]) > Decimal("0.5"):
+                out.issue("stated_total_differs", "warning", f"The sheet's own total line differs from the sum of its asset rows (total line kept out of the assets) — {f}: stated {t[f]}, rows {got}", f"row {t['row_no']}")
+        out.issue("stated_total_row", "info", "A grand-total line at the end of the sheet (no asset number or description) was read as a control total, not as an asset", f"row {t['row_no']}")
+    out.issue("layout_without_cost_and_months", "info", "This export has no «Cost», accounting/prorate/retired dates, serial number or monthly depreciation columns (left empty, not derived)", None, 1)
+    return out
+
+
+def parse_assets(content: bytes, filename: str = "") -> ParsedAssets:
+    grid, sheet = _grid(content, filename)
+    if _layout(grid) == 2:
+        return _parse_layout2(grid, sheet)
+    ws = type("Sheet", (), {"title": sheet, "iter_rows": lambda self, min_row=1, max_row=None, values_only=True: iter(grid[min_row - 1:max_row])})()
     head = [c for c in next(ws.iter_rows(min_row=1, max_row=1, values_only=True))]
     cols = {i: HEADERS[_norm(h)] for i, h in enumerate(head) if _norm(h) in HEADERS}
     out = ParsedAssets(columns=[str(h) for h in head if h is not None], sheet=ws.title)
@@ -177,7 +277,8 @@ def _observe(p: ParsedAssets) -> None:
             r["flags"].append("zero_or_negative_cost")
         if r.get("cost") is not None and r.get("original_cost") is not None and r["cost"] != r["original_cost"]:
             r["flags"].append("cost_differs_from_original")
-        if None not in (r.get("cost"), r.get("accumulated_depreciation"), r.get("net_book_value")) and abs(r["cost"] - r["accumulated_depreciation"] - r["net_book_value"]) > Decimal("0.02"):
+        base = r["cost"] if r.get("cost") is not None else r.get("original_cost")      # layout 2 states no «Cost»: original cost is the base
+        if None not in (base, r.get("accumulated_depreciation"), r.get("net_book_value")) and abs(base - r["accumulated_depreciation"] - r["net_book_value"]) > Decimal("0.02"):
             r["flags"].append("nbv_not_cost_minus_accumulated")
         if r.get("accounting_date") and period and r["accounting_date"] > period:
             r["flags"].append("accounting_date_after_report_period")
@@ -227,7 +328,7 @@ def profile(p: ParsedAssets) -> dict:
             k = keyf(r) or None
             c = d.setdefault(k, {"key": k, "n": 0, "cost": ZERO, "nbv": ZERO})
             c["n"] += 1
-            c["cost"] += r.get("cost") or ZERO
+            c["cost"] += (r["cost"] if r.get("cost") is not None else r.get("original_cost")) or ZERO
             c["nbv"] += r.get("net_book_value") or ZERO
         out = sorted(d.values(), key=lambda c: (-c["cost"], str(c["key"])))
         return [{**c, "cost": str(c["cost"]), "nbv": str(c["nbv"])} for c in (out[:top] if top else out)]
@@ -250,9 +351,18 @@ def profile(p: ParsedAssets) -> dict:
             "issues": [{"code": i.code, "severity": i.severity, "message": i.message, "count": i.count, "examples": i.examples} for i in p.issues]}
 
 
-def diff(old: dict[str, list[dict]], new: dict[str, list[dict]]) -> dict:
-    """Version-to-version difference by asset number (no inference: added / removed / changed fields only)."""
-    fields = ("description", "location_text", "major_category", "category_segment", "cost", "net_book_value", "current_units", "date_retired")
+def _same(a, b) -> bool:
+    if isinstance(a, Decimal) and isinstance(b, Decimal):
+        return a == b
+    return str(a) == str(b)
+
+
+def diff(old: dict[str, list[dict]], new: dict[str, list[dict]], fields=None, swap_categories: bool = False) -> dict:
+    """Version-to-version difference by asset number (no inference: added / removed / changed fields only).
+    `fields` limits the comparison to what both exports state; `swap_categories` compares the old «Major Category» with the new «Minor Category»
+    (and the old «Category Segments» with the new «Major Category»): the two exports label the same two columns the other way round."""
+    fields = fields or ("description", "location_text", "major_category", "category_segment", "cost", "net_book_value", "current_units", "date_retired")
+    pair = {"major_category": "category_segment", "category_segment": "major_category"} if swap_categories else {}
     added = sorted(set(new) - set(old))
     removed = sorted(set(old) - set(new))
     changed: dict[str, int] = Counter()
@@ -260,9 +370,11 @@ def diff(old: dict[str, list[dict]], new: dict[str, list[dict]]) -> dict:
     for no in set(old) & set(new):
         o, n = old[no][0], new[no][0]
         for f in fields:
-            if str(o.get(f)) != str(n.get(f)):
+            if _same(o.get(f), n.get(pair.get(f, f))):
+                continue
+            if True:
                 changed[f] += 1
                 if len(examples[f]) < 5:
                     examples[f].append(no)
     return {"added": len(added), "removed": len(removed), "added_examples": added[:10], "removed_examples": removed[:10], "changed_by_field": dict(changed),
-            "changed_examples": dict(examples), "in_both": len(set(old) & set(new))}
+            "changed_examples": dict(examples), "in_both": len(set(old) & set(new)), "compared_fields": list(fields), "categories_compared_crosswise": swap_categories}
