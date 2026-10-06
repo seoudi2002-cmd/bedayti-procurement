@@ -144,18 +144,16 @@ dialog::backdrop{background:rgba(34,34,34,.45)}
     <button class="btn sec" id="copyPrev">ترحيل من الشهر السابق</button>
     <button class="btn sec" id="imp">استيراد من Excel</button><input type="file" id="impf" accept=".xlsx,.xls,.csv" hidden>
     <button class="btn" id="xls">تصدير Excel</button>
-    <button class="btn sec" id="prt">طباعة البيان</button>
-    <button class="btn sec" id="lock">اعتماد الشهر</button>
+    <button class="btn sec" id="prt">طباعة / حفظ PDF</button>
    </div>
-   <div id="lockBanner" class="banner lock" hidden>هذا الشهر معتمد ومغلق للتعديل. اضغط «إلغاء الاعتماد» لو محتاج تعدّل.</div>
    <div class="scroll"><table class="grid" id="grid">
     <thead>
-     <tr><th rowspan="2" class="stick s1">الكود</th><th rowspan="2" class="stick s2">الاسم</th><th colspan="2">مأموريات</th><th rowspan="2">وجبات</th><th colspan="2">ساعات فعلية</th><th rowspan="2">مثل الأجر</th><th colspan="3" class="calc">ساعات مرجّحة</th><th rowspan="2" class="calc">× معامل</th><th colspan="3" class="money">المبالغ (ج)</th><th rowspan="2">ملاحظات</th><th rowspan="2">يومي</th></tr>
-     <tr class="r2"><th>نهاري</th><th>ليلي</th><th>نهاري</th><th>ليلي</th><th class="calc" id="hD">نهاري</th><th class="calc" id="hN">ليلي</th><th class="calc">الإجمالي</th><th class="money">مأموريات ووجبات</th><th class="money">الإضافي</th><th class="money">الإجمالي</th></tr>
+     <tr><th rowspan="2" class="stick s1">الكود</th><th rowspan="2" class="stick s2">الاسم</th><th colspan="2">مأموريات</th><th rowspan="2">وجبات</th><th colspan="2">ساعات فعلية</th><th rowspan="2">مثل الأجر</th><th colspan="3" class="calc">ساعات مرجّحة</th><th rowspan="2" class="calc">× معامل</th><th rowspan="2">ملاحظات</th><th rowspan="2">يومي</th></tr>
+     <tr class="r2"><th>نهاري</th><th>ليلي</th><th>نهاري</th><th>ليلي</th><th class="calc" id="hD">نهاري</th><th class="calc" id="hN">ليلي</th><th class="calc">الإجمالي</th></tr>
     </thead>
     <tbody id="gbody"></tbody><tfoot id="gfoot"></tfoot>
    </table></div>
-   <p class="hint">الخانات الصفراء للإدخال. تنقّل بالأسهم أو Enter. تقدر تنسخ جدول من Excel وتلصقه في أي خانة. الإضافي بالجنيه يظهر لما تكتب الراتب في تبويب «الموظفون».</p>
+   <p class="hint">الخانات الصفراء للإدخال. تنقّل بالأسهم أو Enter. تقدر تنسخ جدول من Excel وتلصقه في أي خانة. للطباعة اختار «حفظ كـ PDF» أو الطابعة مباشرة.</p>
   </section>
 
   <!-- DASH -->
@@ -178,7 +176,7 @@ dialog::backdrop{background:rgba(34,34,34,.45)}
   <!-- EMP -->
   <section id="v-emp" hidden>
    <div class="sec-title"><span class="kicker">بيانات الأساس</span><h2 class="h1">الموظفون <span>والرواتب</span></h2></div>
-   <div class="bar"><button class="btn" id="addEmp">إضافة موظف</button><span class="hint">الراتب اختياري. لما تكتبه، البرنامج يحسب الإضافي بالجنيه: الراتب ÷ أيام الشهر ÷ ساعات اليوم × الساعات المرجّحة، ومثل الأجر × الأجر اليومي.</span></div>
+   <div class="bar"><button class="btn" id="addEmp">إضافة موظف</button><span class="hint">لو ألغيت «يظهر في البيان» يختفي الموظف من الجدول وتبقى سجلاته القديمة.</span></div>
    <div class="card"><div class="scroll" style="max-height:none"><table class="emp rep" id="empT"></table></div></div>
   </section>
  </main>
@@ -193,7 +191,7 @@ dialog::backdrop{background:rgba(34,34,34,.45)}
  </dialog>
 
  <dialog id="dlgSet"><h3>الإعدادات</h3><div class="setg" id="setg"></div>
-  <p class="hint">تغيير الأسعار والمعاملات يسري على الشهر المفتوح وكل الشهور، لأن الأرقام المحفوظة هي الساعات والأعداد.</p>
+  <p class="hint">المعاملات تُطبّق على كل الشهور. القيم الثلاث الأولى تظهر في ملاحظات البيان المطبوع فقط.</p>
   <div class="bar" style="margin:14px 0 0"><button class="btn" id="setOk">تم</button><button class="btn sec" id="bk">نسخة احتياطية</button><button class="btn sec" id="rs">استرجاع نسخة</button><input type="file" id="rsf" accept=".json" hidden><button class="btn danger" id="reset">مسح كل البيانات</button></div>
  </dialog>
 
@@ -211,8 +209,8 @@ dialog::backdrop{background:rgba(34,34,34,.45)}
 "use strict";
 const MONTHS=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 const KEY="bedayti-overtime-v2";
-const DEF={dayMission:100,nightMission:150,meal:40,dayF:1.35,nightF:1.7,equalF:2,daysInMonth:30,hoursPerDay:8,signer1:"نائب رئيس قطاع الشئون الإدارية",signer2:"أحمد بدوي"};
-const SETLBL={dayMission:"المأمورية النهارية (ج)",nightMission:"المأمورية الليلية (ج)",meal:"سعر الوجبة (ج)",dayF:"معامل الساعة النهارية",nightF:"معامل الساعة الليلية",equalF:"معامل «مثل الأجر»",daysInMonth:"أيام الشهر (للأجر اليومي)",hoursPerDay:"ساعات اليوم (للأجر بالساعة)",signer1:"المعتمِد (الوظيفة)",signer2:"المعتمِد (الاسم)"};
+const DEF={dayMission:100,nightMission:150,meal:40,dayF:1.35,nightF:1.7,equalF:2,signer1:"نائب رئيس قطاع الشئون الإدارية",signer2:"أحمد بدوي"};
+const SETLBL={dayMission:"قيمة المأمورية النهارية (للملاحظات)",nightMission:"قيمة المأمورية الليلية (للملاحظات)",meal:"قيمة الوجبة (للملاحظات)",dayF:"معامل الساعة النهارية",nightF:"معامل الساعة الليلية",equalF:"معامل «مثل الأجر»",signer1:"المعتمِد (الوظيفة)",signer2:"المعتمِد (الاسم)"};
 const SEED={"employees": [{"code": 58, "name": "حسام السبكي"}, {"code": 3035, "name": "كرم حمدان"}, {"code": 6347, "name": "رامي فؤاد"}, {"code": 8870, "name": "عبدالله طارق"}, {"code": 9300, "name": "طارق محسن"}, {"code": 9361, "name": "فرج صابر"}, {"code": 10302, "name": "سامح مرسي"}, {"code": 154, "name": "محمد طه"}, {"code": 9190, "name": "محمد علي علي"}, {"code": 64, "name": "محمد شعبان"}, {"code": 690, "name": "يوسف رمضان"}, {"code": 618, "name": "نبيل محمد عيسوي"}, {"code": 688, "name": "محمد وليد"}, {"code": 92, "name": "نجوي زينهم"}, {"code": 642, "name": "جمال صابر"}, {"code": 2581, "name": "عاطف سيد"}, {"code": 3728, "name": "احمد حسين"}, {"code": 4876, "name": "اسلام محمد"}, {"code": 8898, "name": "محمد عبد الباري"}, {"code": 9995, "name": "طارق عيد"}], "months": {"2026-05": {"58": {"md": 0, "mn": 0, "meals": 15, "hd": 32, "hn": 28.1, "eq": 0}, "3035": {"md": 0, "mn": 1, "meals": 15, "hd": 20, "hn": 40.7, "eq": 0}, "6347": {"md": 0, "mn": 0, "meals": 20, "hd": 19, "hn": 51.9, "eq": 2}, "8870": {"md": 0, "mn": 0, "meals": 18, "hd": 21, "hn": 39.9, "eq": 1}, "9300": {"md": 4, "mn": 2, "meals": 12, "hd": 24, "hn": 11.1, "eq": 0}, "9361": {"md": 0, "mn": 2, "meals": 19, "hd": 13, "hn": 52.3, "eq": 0}, "10302": {"md": 0, "mn": 0, "meals": 8, "hd": 8, "hn": 22, "eq": 0}, "154": {"md": 0, "mn": 0, "meals": 13, "hd": 20, "hn": 20.46, "eq": 1}, "9190": {"md": 0, "mn": 0, "meals": 10, "hd": 10, "hn": 6, "eq": 2}, "64": {"md": 0, "mn": 0, "meals": 14, "hd": 20, "hn": 30.18, "eq": 0}, "690": {"md": 0, "mn": 0, "meals": 13, "hd": 24.3, "hn": 26.58, "eq": 1}, "618": {"md": 0, "mn": 0, "meals": 13, "hd": 24, "hn": 26.62, "eq": 0}, "688": {"md": 0, "mn": 0, "meals": 17, "hd": 14.24, "hn": 3.24, "eq": 2}, "92": {"md": 0, "mn": 0, "meals": 15, "hd": 20.1, "hn": 20.65, "eq": 1}, "642": {"md": 0, "mn": 0, "meals": 19, "hd": 18, "hn": 22.23, "eq": 0}, "2581": {"md": 0, "mn": 0, "meals": 20, "hd": 32, "hn": 17.58, "eq": 2}, "3728": {"md": 0, "mn": 0, "meals": 17, "hd": 19, "hn": 31.94, "eq": 2}, "4876": {"md": 0, "mn": 0, "meals": 15, "hd": 15, "hn": 20.23, "eq": 3}, "8898": {"md": 0, "mn": 0, "meals": 15, "hd": 16, "hn": 20.34, "eq": 3}, "9995": {"md": 0, "mn": 0, "meals": 20, "hd": 18, "hn": 32.84, "eq": 2}}, "2026-06": {"58": {"md": 0, "mn": 0, "meals": 17, "hd": 17, "hn": 31.5, "eq": 0}, "3035": {"md": 0, "mn": 1, "meals": 17, "hd": 19, "hn": 31.9, "eq": 0}, "6347": {"md": 0, "mn": 0, "meals": 17, "hd": 21, "hn": 39, "eq": 1}, "8870": {"md": 0, "mn": 0, "meals": 17, "hd": 19, "hn": 21, "eq": 1}, "9300": {"md": 2, "mn": 3, "meals": 15, "hd": 16, "hn": 23, "eq": 0}, "9361": {"md": 0, "mn": 1, "meals": 16, "hd": 17, "hn": 39, "eq": 0}, "10302": {"md": 0, "mn": 0, "meals": 14, "hd": 18, "hn": 22.2, "eq": 0}, "154": {"md": 0, "mn": 0, "meals": 13, "hd": 14, "hn": 13.8, "eq": 0}, "9190": {"md": 0, "mn": 0, "meals": 9, "hd": 9, "hn": 2, "eq": 1}, "64": {"md": 0, "mn": 0, "meals": 12, "hd": 12, "hn": 13.69, "eq": 1}, "690": {"md": 0, "mn": 0, "meals": 18, "hd": 35, "hn": 15.31, "eq": 0}, "618": {"md": 0, "mn": 0, "meals": 10, "hd": 13, "hn": 27.22, "eq": 0}, "688": {"md": 0, "mn": 0, "meals": 13, "hd": 14, "hn": 1, "eq": 2}, "92": {"md": 0, "mn": 0, "meals": 15, "hd": 18, "hn": 20.5, "eq": 1}, "642": {"md": 0, "mn": 0, "meals": 16, "hd": 13, "hn": 0, "eq": 0}, "2581": {"md": 0, "mn": 0, "meals": 18, "hd": 16, "hn": 15.11, "eq": 2}, "3728": {"md": 0, "mn": 0, "meals": 20, "hd": 18, "hn": 35.34, "eq": 2}, "4876": {"md": 0, "mn": 0, "meals": 18, "hd": 18, "hn": 11.54, "eq": 2}, "8898": {"md": 0, "mn": 0, "meals": 20, "hd": 15, "hn": 11.5, "eq": 3}, "9995": {"md": 0, "mn": 0, "meals": 21, "hd": 17, "hn": 26.1, "eq": 2}}, "2026-07": {"58": {"md": 0, "mn": 0, "meals": 18, "hd": 18, "hn": 37.4, "eq": 0}, "3035": {"md": 0, "mn": 1, "meals": 20, "hd": 20, "hn": 40.3, "eq": 1}, "6347": {"md": 0, "mn": 0, "meals": 20, "hd": 16, "hn": 44.9, "eq": 1}, "8870": {"md": 0, "mn": 0, "meals": 22, "hd": 8, "hn": 62, "eq": 3}, "9300": {"md": 4, "mn": 2, "meals": 18, "hd": 17, "hn": 26.95, "eq": 0}, "9361": {"md": 1, "mn": 0, "meals": 21, "hd": 20, "hn": 40.7, "eq": 0}, "10302": {"md": 1, "mn": 1, "meals": 15, "hd": 12, "hn": 28.05, "eq": 0}, "154": {"md": 0, "mn": 0, "meals": 16, "hd": 16, "hn": 22.64, "eq": 0}, "9190": {"md": 0, "mn": 0, "meals": 17, "hd": 17, "hn": 18, "eq": 2}, "64": {"md": 0, "mn": 0, "meals": 16, "hd": 16, "hn": 17.52, "eq": 1}, "690": {"md": 0, "mn": 0, "meals": 22, "hd": 21, "hn": 33.94, "eq": 1}, "618": {"md": 0, "mn": 0, "meals": 15, "hd": 14, "hn": 41.27, "eq": 1}, "688": {"md": 0, "mn": 0, "meals": 22, "hd": 20, "hn": 0.42, "eq": 2}, "92": {"md": 0, "mn": 0, "meals": 17, "hd": 6, "hn": 19.68, "eq": 0}, "642": {"md": 0, "mn": 0, "meals": 14, "hd": 14, "hn": 0.65, "eq": 0}, "2581": {"md": 0, "mn": 0, "meals": 20, "hd": 18, "hn": 14.82, "eq": 2}, "3728": {"md": 0, "mn": 0, "meals": 20, "hd": 3, "hn": 42.42, "eq": 2}, "4876": {"md": 0, "mn": 0, "meals": 20, "hd": 17, "hn": 4.0, "eq": 2}, "8898": {"md": 0, "mn": 0, "meals": 17, "hd": 15, "hn": 6.81, "eq": 2}, "9995": {"md": 0, "mn": 0, "meals": 20, "hd": 20, "hn": 18.73, "eq": 2}}, "2026-08": {"58": {"md": 0, "mn": 0, "meals": 17, "hd": 16, "hn": 33, "eq": 0}, "3035": {"md": 0, "mn": 3, "meals": 18, "hd": 16, "hn": 30, "eq": 0}, "6347": {"md": 0, "mn": 6, "meals": 20, "hd": 10, "hn": 22, "eq": 0}, "8870": {"md": 0, "mn": 0, "meals": 20, "hd": 18, "hn": 40, "eq": 3}, "9300": {"md": 2, "mn": 1, "meals": 14, "hd": 12, "hn": 10, "eq": 0}, "9361": {"md": 1, "mn": 0, "meals": 20, "hd": 18, "hn": 40, "eq": 1}, "10302": {"md": 1, "mn": 2, "meals": 17, "hd": 15, "hn": 28.05, "eq": 1}, "154": {"md": 0, "mn": 0, "meals": 13, "hd": 12, "hn": 10, "eq": 0}, "9190": {"md": 0, "mn": 0, "meals": 14, "hd": 13, "hn": 13, "eq": 2}, "64": {"md": 0, "mn": 0, "meals": 17, "hd": 16, "hn": 19, "eq": 1}, "690": {"md": 0, "mn": 0, "meals": 20, "hd": 24, "hn": 35, "eq": 3}, "618": {"md": 0, "mn": 0, "meals": 15, "hd": 15, "hn": 35, "eq": 1}, "688": {"md": 0, "mn": 0, "meals": 21, "hd": 20, "hn": 0, "eq": 4}, "92": {"md": 0, "mn": 0, "meals": 16, "hd": 18, "hn": 14, "eq": 0}, "642": {"md": 0, "mn": 0, "meals": 14, "hd": 14, "hn": 5, "eq": 0}, "2581": {"md": 0, "mn": 0, "meals": 18, "hd": 15, "hn": 14.82, "eq": 2}, "3728": {"md": 0, "mn": 0, "meals": 18, "hd": 15, "hn": 30, "eq": 3}, "4876": {"md": 0, "mn": 0, "meals": 18, "hd": 15, "hn": 8, "eq": 2}, "8898": {"md": 0, "mn": 0, "meals": 17, "hd": 19, "hn": 6.81, "eq": 3}, "9995": {"md": 0, "mn": 0, "meals": 18, "hd": 20, "hn": 16.5, "eq": 3}}, "2026-09": {"58": {"md": 0, "mn": 0, "meals": 16, "hd": 18, "hn": 22, "eq": 2}, "3035": {"md": 0, "mn": 3, "meals": 15, "hd": 18, "hn": 20, "eq": 0}, "6347": {"md": 0, "mn": 0, "meals": 18, "hd": 22, "hn": 23, "eq": 2}, "8870": {"md": 0, "mn": 0, "meals": 18, "hd": 19.5, "hn": 20, "eq": 2}, "9300": {"md": 2, "mn": 2, "meals": 15, "hd": 16, "hn": 8, "eq": 1}, "9361": {"md": 0, "mn": 2, "meals": 20, "hd": 20, "hn": 21, "eq": 2}, "154": {"md": 0, "mn": 0, "meals": 17, "hd": 18, "hn": 9.74, "eq": 0}, "9190": {"md": 0, "mn": 0, "meals": 11, "hd": 11, "hn": 1, "eq": 0}, "64": {"md": 0, "mn": 0, "meals": 18, "hd": 35, "hn": 11, "eq": 1}, "690": {"md": 0, "mn": 0, "meals": 20, "hd": 27, "hn": 20, "eq": 2}, "618": {"md": 0, "mn": 0, "meals": 17, "hd": 24, "hn": 22.5, "eq": 1}, "688": {"md": 0, "mn": 0, "meals": 20, "hd": 20, "hn": 0, "eq": 4}, "92": {"md": 0, "mn": 0, "meals": 16, "hd": 5, "hn": 20, "eq": 2}, "642": {"md": 0, "mn": 0, "meals": 12, "hd": 13, "hn": 0, "eq": 0}, "2581": {"md": 0, "mn": 0, "meals": 18, "hd": 14.5, "hn": 12.25, "eq": 3}, "3728": {"md": 0, "mn": 0, "meals": 18, "hd": 13, "hn": 20, "eq": 2}, "4876": {"md": 0, "mn": 0, "meals": 12, "hd": 14, "hn": 7.03, "eq": 1}, "8898": {"md": 0, "mn": 0, "meals": 13, "hd": 13, "hn": 10.67, "eq": 2}, "9995": {"md": 0, "mn": 0, "meals": 19, "hd": 17, "hn": 10.4, "eq": 2}}}};
 const FIELDS=["md","mn","meals","hd","hn","eq"];
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -223,10 +221,10 @@ const norm=v=>{const s=String(v??"").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩
 let S,view="sheet",lastTouch=0,undoS=[],redoS=[],saveT;
 
 function freshState(){
- const emps=SEED.employees.map((e,i)=>({id:i+1,code:e.code??"",name:e.name,salary:"",active:true}));
+ const emps=SEED.employees.map((e,i)=>({id:i+1,code:e.code??"",name:e.name,active:true}));
  const byKey={};SEED.employees.forEach((e,i)=>byKey[e.code||e.name]=i+1);
  const months={};
- for(const [mk,d] of Object.entries(SEED.months)){const rows={};for(const [k,v] of Object.entries(d)){rows[byKey[k]]={...v,note:"",days:null}}months[mk]={locked:mk!=="2026-09",rows}}
+ for(const [mk,d] of Object.entries(SEED.months)){const rows={};for(const [k,v] of Object.entries(d)){rows[byKey[k]]={...v,note:"",days:null}}months[mk]={rows}}
  return{v:2,settings:{...DEF},employees:emps,months,cur:{y:2026,m:8}};
 }
 function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
@@ -234,19 +232,16 @@ function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},250)}
 const mkOf=(y,m)=>y+"-"+String(m+1).padStart(2,"0");
 const mk=()=>mkOf(S.cur.y,S.cur.m);
-const M=(k)=>S.months[k||mk()]||(S.months[k||mk()]={locked:false,rows:{}});
+const M=(k)=>S.months[k||mk()]||(S.months[k||mk()]={rows:{}});
 const R=(id,k)=>{const m=M(k);return m.rows[id]||(m.rows[id]={md:0,mn:0,meals:0,hd:0,hn:0,eq:0,note:"",days:null})};
 const hasData=r=>r&&FIELDS.some(f=>r[f]);
 function calc(e,r){const s=S.settings;r=r||{};
  const md=r.md||0,mn=r.mn||0,meals=r.meals||0,hd=r.hd||0,hn=r.hn||0,eq=r.eq||0;
  const wd=hd*s.dayF,wn=hn*s.nightF,tot=wd+wn,eq2=eq*s.equalF;
- const sal=norm(e.salary),daily=sal/(s.daysInMonth||30),hourly=daily/(s.hoursPerDay||8);
- const mm=md*s.dayMission+mn*s.nightMission+meals*s.meal;
- const ot=sal?tot*hourly+eq2*daily:0;
- return{wd,wn,tot,eq2,mm,ot,all:mm+ot,md,mn,meals,hd,hn,eq};}
-function totalsOf(k){const t={n:0,md:0,mn:0,meals:0,hd:0,hn:0,wd:0,wn:0,tot:0,eq:0,eq2:0,mm:0,ot:0,all:0};
+ return{wd,wn,tot,eq2,md,mn,meals,hd,hn,eq};}
+function totalsOf(k){const t={n:0,md:0,mn:0,meals:0,hd:0,hn:0,wd:0,wn:0,tot:0,eq:0,eq2:0};
  const m=S.months[k];if(!m)return t;
- S.employees.forEach(e=>{const r=m.rows[e.id];if(!hasData(r))return;const c=calc(e,r);t.n++;for(const f of ["md","mn","meals","hd","hn","wd","wn","tot","eq","eq2","mm","ot","all"])t[f]+=c[f]});return t}
+ S.employees.forEach(e=>{const r=m.rows[e.id];if(!hasData(r))return;const c=calc(e,r);t.n++;for(const f of ["md","mn","meals","hd","hn","wd","wn","tot","eq","eq2"])t[f]+=c[f]});return t}
 function prevKey(k){let [y,m]=k.split("-").map(Number);m--;if(m<1){m=12;y--}return y+"-"+String(m).padStart(2,"0")}
 function avgPrev(e){const ks=Object.keys(S.months).filter(k=>k<mk()).sort().slice(-3);const v=ks.map(k=>S.months[k].rows[e.id]).filter(hasData).map(r=>calc(e,r).tot);return v.length?v.reduce((a,b)=>a+b,0)/v.length:0}
 function toast(t){const n=$("#toast");n.textContent=t;n.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>n.hidden=true,2600)}
@@ -267,33 +262,30 @@ function visibleEmps(){const q=$("#q").value.trim().toLowerCase(),f=$("#flt").va
   if(f==="flag"&&!flagOf(e,r))return false;return true})}
 function flagOf(e,r){if(!hasData(r))return"";const a=avgPrev(e),t=calc(e,r).tot;if(a>0&&t>0&&Math.abs(t-a)/a>0.5)return"المتوسط السابق "+fmt(a)+" ساعة مرجّحة";return""}
 function renderSheet(){
- const k=mk(),m=M(),locked=!!m.locked;
+ const locked=false;
  $("#mon").value=S.cur.m;$("#yr").value=S.cur.y;
  $("#stitle").innerHTML="شهر "+MONTHS[S.cur.m]+" <span>"+S.cur.y+"</span>";
  $("#hD").textContent="نهاري ×"+S.settings.dayF;$("#hN").textContent="ليلي ×"+S.settings.nightF;
- $("#lockBanner").hidden=!locked;$("#lock").textContent=locked?"إلغاء الاعتماد":"اعتماد الشهر";
- const b=$("#gbody");b.innerHTML="";
+  const b=$("#gbody");b.innerHTML="";
  visibleEmps().forEach(e=>{
   const r=R(e.id),tr=document.createElement("tr");tr.dataset.id=e.id;
   const inp=f=>`<td><input inputmode="decimal" autocomplete="off" data-f="${f}" value="${r[f]||""}" ${locked?"disabled":""}></td>`;
   tr.innerHTML=`<td class="stick s1 c">${esc(e.code)}</td><td class="stick s2 name">${esc(e.name)}<span class="pill" data-flag hidden></span></td>
   ${inp("md")}${inp("mn")}${inp("meals")}${inp("hd")}${inp("hn")}${inp("eq")}
   <td class="calc c" data-c="wd"></td><td class="calc c" data-c="wn"></td><td class="calc tot c" data-c="tot"></td><td class="calc c" data-c="eq2"></td>
-  <td class="money c" data-c="mm"></td><td class="money c" data-c="ot"></td><td class="money c" data-c="all"></td>
   <td><input class="note" data-f="note" value="${esc(r.note||"")}" ${locked?"disabled":""}></td>
   <td><button class="btn sec sm" data-day="${e.id}">يومي</button></td>`;
   b.appendChild(tr);paintRow(tr,e)});
  paintFoot();updUR();
 }
 function paintRow(tr,e){const r=R(e.id),c=calc(e,r);
- for(const key of ["wd","wn","tot","eq2","mm","all"])tr.querySelector(`[data-c=${key}]`).textContent=fmt(c[key]);
- tr.querySelector("[data-c=ot]").textContent=c.ot?fmt(c.ot):"-";
+ for(const key of ["wd","wn","tot","eq2"])tr.querySelector(`[data-c=${key}]`).textContent=fmt(c[key]);
  tr.classList.toggle("zero",!hasData(r));
  const p=tr.querySelector("[data-flag]"),fl=flagOf(e,r);
  if(fl){p.hidden=false;p.textContent="غير معتاد";p.title=fl}else if(!hasData(r)&&e.active){p.hidden=false;p.textContent="لم يُدخل";p.className="pill muted";p.removeAttribute("title")}else{p.hidden=true}
  if(fl)p.className="pill"}
 function paintFoot(){const t=totalsOf(mk());
- $("#gfoot").innerHTML=`<tr><td class="stick s1" style="background:var(--brand-gray)">${t.n}</td><td class="stick s2" style="background:var(--brand-gray);color:#fff">الإجمالي</td><td class="c">${fmt(t.md)}</td><td class="c">${fmt(t.mn)}</td><td class="c">${fmt(t.meals)}</td><td class="c">${fmt(t.hd)}</td><td class="c">${fmt(t.hn)}</td><td class="c">${fmt(t.eq)}</td><td class="c">${fmt(t.wd)}</td><td class="c">${fmt(t.wn)}</td><td class="c">${fmt(t.tot)}</td><td class="c">${fmt(t.eq2)}</td><td class="c">${fmt(t.mm)}</td><td class="c">${t.ot?fmt(t.ot):"-"}</td><td class="c">${fmt(t.all)}</td><td colspan="2"></td></tr>`}
+ $("#gfoot").innerHTML=`<tr><td class="stick s1" style="background:var(--brand-gray)">${t.n}</td><td class="stick s2" style="background:var(--brand-gray);color:#fff">الإجمالي</td><td class="c">${fmt(t.md)}</td><td class="c">${fmt(t.mn)}</td><td class="c">${fmt(t.meals)}</td><td class="c">${fmt(t.hd)}</td><td class="c">${fmt(t.hn)}</td><td class="c">${fmt(t.eq)}</td><td class="c">${fmt(t.wd)}</td><td class="c">${fmt(t.wn)}</td><td class="c">${fmt(t.tot)}</td><td class="c">${fmt(t.eq2)}</td><td colspan="2"></td></tr>`}
 
 $("#gbody").addEventListener("input",ev=>{const i=ev.target;if(!i.dataset.f)return;const tr=i.closest("tr"),e=S.employees.find(x=>x.id==tr.dataset.id);
  touch();const r=R(e.id);
@@ -316,12 +308,12 @@ $("#gbody").addEventListener("click",ev=>{const b=ev.target.closest("[data-day]"
 let dEmp=null;
 function openDay(id){dEmp=id;const e=S.employees.find(x=>x.id===id),r=R(id);$("#dayT").textContent=e.name+" — "+MONTHS[S.cur.m]+" "+S.cur.y;
  const n=new Date(S.cur.y,S.cur.m+1,0).getDate(),b=$("#dayB");b.innerHTML="";
- for(let d=1;d<=n;d++){const v=(r.days&&r.days[d])||{},tr=document.createElement("tr"),dis=M().locked?"disabled":"";
+ for(let d=1;d<=n;d++){const v=(r.days&&r.days[d])||{},tr=document.createElement("tr"),dis="";
   tr.innerHTML=`<td class="c">${d}</td><td><input class="inp" style="width:80px" inputmode="decimal" data-dd="d" data-day="${d}" value="${v.d||""}" ${dis}></td><td><input class="inp" style="width:80px" inputmode="decimal" data-dd="n" data-day="${d}" value="${v.n||""}" ${dis}></td><td><input class="inp" style="width:80px" inputmode="decimal" data-dd="m" data-day="${d}" value="${v.m||""}" ${dis}></td>`;b.appendChild(tr)}
  daySum();$("#dlgDay").showModal()}
 function daySum(){const t={d:0,n:0,m:0};$$("#dlgDay [data-dd]").forEach(i=>t[i.dataset.dd]+=norm(i.value));$("#sd").textContent=fmt(t.d);$("#sn").textContent=fmt(t.n);$("#sm").textContent=fmt(t.m);return t}
 $("#dlgDay").addEventListener("input",daySum);$("#dayNo").onclick=()=>$("#dlgDay").close();
-$("#dayOk").onclick=()=>{if(M().locked){$("#dlgDay").close();return}touch();const days={};$$("#dlgDay [data-dd]").forEach(i=>{(days[i.dataset.day]=days[i.dataset.day]||{})[i.dataset.dd]=norm(i.value)});
+$("#dayOk").onclick=()=>{touch();const days={};$$("#dlgDay [data-dd]").forEach(i=>{(days[i.dataset.day]=days[i.dataset.day]||{})[i.dataset.dd]=norm(i.value)});
  const t=daySum(),r=R(dEmp);r.hd=r2(t.d);r.hn=r2(t.n);r.meals=t.m;r.days=days;save();$("#dlgDay").close();renderSheet()};
 
 /* toolbar */
@@ -331,10 +323,8 @@ $("#yr").onchange=e=>{S.cur.y=+e.target.value||S.cur.y;undoS=[];redoS=[];save();
 $("#undo").onclick=undo;$("#redo").onclick=redo;
 document.addEventListener("keydown",ev=>{if(view!=="sheet"||!(ev.ctrlKey||ev.metaKey))return;if(ev.key==="z"){ev.preventDefault();undo()}else if(ev.key==="y"){ev.preventDefault();redo()}});
 $("#copyPrev").onclick=()=>{const pk=prevKey(mk());if(!S.months[pk]){toast("لا توجد بيانات للشهر السابق");return}
- if(M().locked){toast("الشهر معتمد");return}
  if(!confirm("سيتم استبدال بيانات الشهر الحالي بنسخة من الشهر السابق. متابعة؟"))return;touch();lastTouch=0;
- const c=JSON.parse(JSON.stringify(S.months[pk]));c.locked=false;S.months[mk()]=c;save();renderAll()};
-$("#lock").onclick=()=>{const m=M();m.locked=!m.locked;save();renderSheet();toast(m.locked?"تم اعتماد الشهر":"تم إلغاء الاعتماد")};
+ const c=JSON.parse(JSON.stringify(S.months[pk]));S.months[mk()]=c;save();renderAll()};
 
 /* ---------- dashboard ---------- */
 function renderDash(){const k=mk(),t=totalsOf(k),p=totalsOf(prevKey(k));
@@ -343,8 +333,8 @@ function renderDash(){const k=mk(),t=totalsOf(k),p=totalsOf(prevKey(k));
  $("#kpis").innerHTML=`<div class="kpi"><span>الساعات المرجّحة</span><b>${fmt(t.tot)}</b>${d(t.tot,p.tot,1)}</div>
  <div class="kpi"><span>المأموريات (نهاري / ليلي)</span><b>${fmt(t.md)} / ${fmt(t.mn)}</b>${d(t.md+t.mn,p.md+p.mn,1)}</div>
  <div class="kpi"><span>الوجبات</span><b>${fmt(t.meals)}</b>${d(t.meals,p.meals,1)}</div>
- <div class="kpi"><span>مأموريات ووجبات (ج)</span><b>${fmt(t.mm)}</b>${d(t.mm,p.mm,1)}</div>
- <div class="kpi"><span>عدد الموظفين بالبيان</span><b>${t.n}</b><small>${t.ot?"الإضافي بالجنيه: "+fmt(t.ot):"أضف الرواتب لحساب الإضافي بالجنيه"}</small></div>`;
+ <div class="kpi"><span>مثل الأجر (× ${S.settings.equalF})</span><b>${fmt(t.eq2)}</b>${d(t.eq2,p.eq2,1)}</div>
+ <div class="kpi"><span>عدد الموظفين بالبيان</span><b>${t.n}</b><small>&nbsp;</small></div>`;
  const rows=S.employees.map(e=>({e,c:calc(e,M().rows[e.id])})).filter(x=>x.c.tot>0).sort((a,b)=>b.c.tot-a.c.tot).slice(0,10),mx=rows[0]?rows[0].c.tot:1;
  $("#topEmp").innerHTML=rows.length?rows.map(x=>`<div class="hbar"><span>${esc(x.e.name)}</span><span class="t"><i style="width:${x.c.tot/mx*100}%"></i></span><span class="num">${fmt(x.c.tot)}</span></div>`).join(""):'<p class="hint">لا توجد بيانات في هذا الشهر بعد.</p>';
  const ks=Object.keys(S.months).filter(x=>totalsOf(x).n).sort().slice(-12),vals=ks.map(x=>totalsOf(x).tot),mv=Math.max(1,...vals);
@@ -356,15 +346,15 @@ function goMonth(k){const [y,m]=k.split("-").map(Number);S.cur={y,m:m-1};undoS=[
 /* ---------- reports ---------- */
 function renderRep(){
  const ks=Object.keys(S.months).filter(k=>totalsOf(k).n).sort().reverse();
- $("#repM").innerHTML=`<thead><tr><th class="l">الشهر</th><th>الموظفون</th><th>مأموريات نهاري</th><th>مأموريات ليلي</th><th>وجبات</th><th>ساعات مرجّحة</th><th>مأموريات ووجبات (ج)</th><th>الإضافي (ج)</th><th>الحالة</th></tr></thead><tbody>`+
- ks.map(k=>{const t=totalsOf(k);return`<tr class="click" data-go="${k}"><td class="l">${MONTHS[+k.slice(5)-1]} ${k.slice(0,4)}</td><td class="c">${t.n}</td><td class="c">${fmt(t.md)}</td><td class="c">${fmt(t.mn)}</td><td class="c">${fmt(t.meals)}</td><td class="c">${fmt(t.tot)}</td><td class="c">${fmt(t.mm)}</td><td class="c">${t.ot?fmt(t.ot):"-"}</td><td>${S.months[k].locked?'<span class="pill ok">معتمد</span>':'<span class="pill muted">مسودة</span>'}</td></tr>`}).join("")+"</tbody>";
+ $("#repM").innerHTML=`<thead><tr><th class="l">الشهر</th><th>الموظفون</th><th>مأموريات نهاري</th><th>مأموريات ليلي</th><th>وجبات</th><th>ساعات مرجّحة</th><th>مثل الأجر</th><th>× معامل</th></tr></thead><tbody>`+
+ ks.map(k=>{const t=totalsOf(k);return`<tr class="click" data-go="${k}"><td class="l">${MONTHS[+k.slice(5)-1]} ${k.slice(0,4)}</td><td class="c">${t.n}</td><td class="c">${fmt(t.md)}</td><td class="c">${fmt(t.mn)}</td><td class="c">${fmt(t.meals)}</td><td class="c">${fmt(t.tot)}</td><td class="c">${fmt(t.eq)}</td><td class="c">${fmt(t.eq2)}</td></tr>`}).join("")+"</tbody>";
  const sel=$("#repE"),cur=sel.value;sel.innerHTML=S.employees.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join("");if(cur)sel.value=cur;
  const e=S.employees.find(x=>x.id==sel.value)||S.employees[0];if(!e){$("#repE2").innerHTML="";return}
- let tt={md:0,mn:0,meals:0,hd:0,hn:0,tot:0,eq:0,all:0},n=0;
+ let tt={md:0,mn:0,meals:0,hd:0,hn:0,tot:0,eq:0,eq2:0},n=0;
  const body=Object.keys(S.months).sort().reverse().filter(k=>hasData(S.months[k].rows[e.id])).map(k=>{const c=calc(e,S.months[k].rows[e.id]);n++;for(const f in tt)tt[f]+=c[f];
-  return`<tr class="click" data-go="${k}"><td class="l">${MONTHS[+k.slice(5)-1]} ${k.slice(0,4)}</td><td class="c">${fmt(c.md)}</td><td class="c">${fmt(c.mn)}</td><td class="c">${fmt(c.meals)}</td><td class="c">${fmt(c.hd)}</td><td class="c">${fmt(c.hn)}</td><td class="c">${fmt(c.tot)}</td><td class="c">${fmt(c.eq)}</td><td class="c">${fmt(c.all)}</td></tr>`}).join("");
- $("#repE2").innerHTML=`<thead><tr><th class="l">الشهر</th><th>مأموريات نهاري</th><th>مأموريات ليلي</th><th>وجبات</th><th>ساعات نهاري</th><th>ساعات ليلي</th><th>ساعات مرجّحة</th><th>مثل الأجر</th><th>مأموريات ووجبات + إضافي (ج)</th></tr></thead><tbody>${body}</tbody>`+
- (n?`<tfoot><tr><td class="l">الإجمالي (${n} شهر)</td><td class="c">${fmt(tt.md)}</td><td class="c">${fmt(tt.mn)}</td><td class="c">${fmt(tt.meals)}</td><td class="c">${fmt(tt.hd)}</td><td class="c">${fmt(tt.hn)}</td><td class="c">${fmt(tt.tot)}</td><td class="c">${fmt(tt.eq)}</td><td class="c">${fmt(tt.all)}</td></tr><tr><td class="l">المتوسط الشهري</td><td class="c">${fmt(tt.md/n)}</td><td class="c">${fmt(tt.mn/n)}</td><td class="c">${fmt(tt.meals/n)}</td><td class="c">${fmt(tt.hd/n)}</td><td class="c">${fmt(tt.hn/n)}</td><td class="c">${fmt(tt.tot/n)}</td><td class="c">${fmt(tt.eq/n)}</td><td class="c">${fmt(tt.all/n)}</td></tr></tfoot>`:"");
+  return`<tr class="click" data-go="${k}"><td class="l">${MONTHS[+k.slice(5)-1]} ${k.slice(0,4)}</td><td class="c">${fmt(c.md)}</td><td class="c">${fmt(c.mn)}</td><td class="c">${fmt(c.meals)}</td><td class="c">${fmt(c.hd)}</td><td class="c">${fmt(c.hn)}</td><td class="c">${fmt(c.tot)}</td><td class="c">${fmt(c.eq)}</td><td class="c">${fmt(c.eq2)}</td></tr>`}).join("");
+ $("#repE2").innerHTML=`<thead><tr><th class="l">الشهر</th><th>مأموريات نهاري</th><th>مأموريات ليلي</th><th>وجبات</th><th>ساعات نهاري</th><th>ساعات ليلي</th><th>ساعات مرجّحة</th><th>مثل الأجر</th><th>× معامل</th></tr></thead><tbody>${body}</tbody>`+
+ (n?`<tfoot><tr><td class="l">الإجمالي (${n} شهر)</td><td class="c">${fmt(tt.md)}</td><td class="c">${fmt(tt.mn)}</td><td class="c">${fmt(tt.meals)}</td><td class="c">${fmt(tt.hd)}</td><td class="c">${fmt(tt.hn)}</td><td class="c">${fmt(tt.tot)}</td><td class="c">${fmt(tt.eq)}</td><td class="c">${fmt(tt.eq2)}</td></tr><tr><td class="l">المتوسط الشهري</td><td class="c">${fmt(tt.md/n)}</td><td class="c">${fmt(tt.mn/n)}</td><td class="c">${fmt(tt.meals/n)}</td><td class="c">${fmt(tt.hd/n)}</td><td class="c">${fmt(tt.hn/n)}</td><td class="c">${fmt(tt.tot/n)}</td><td class="c">${fmt(tt.eq/n)}</td><td class="c">${fmt(tt.eq2/n)}</td></tr></tfoot>`:"");
 }
 $("#repM").addEventListener("click",ev=>{const c=ev.target.closest("[data-go]");if(c)goMonth(c.dataset.go)});
 $("#repE2").addEventListener("click",ev=>{const c=ev.target.closest("[data-go]");if(c)goMonth(c.dataset.go)});
@@ -372,8 +362,8 @@ $("#repE").onchange=renderRep;
 
 /* ---------- employees ---------- */
 function renderEmp(){
- $("#empT").innerHTML=`<thead><tr><th>الكود</th><th class="l">الاسم</th><th>الراتب الأساسي (ج)</th><th>يظهر في البيان</th><th></th></tr></thead><tbody>`+
- S.employees.map(e=>`<tr data-id="${e.id}"><td><input data-k="code" value="${esc(e.code)}" style="max-width:110px"></td><td><input data-k="name" value="${esc(e.name)}"></td><td><input data-k="salary" inputmode="decimal" value="${esc(e.salary)}" placeholder="اختياري" style="max-width:150px"></td><td><input type="checkbox" data-k="active" ${e.active?"checked":""} style="width:auto;min-width:0"></td><td><button class="btn danger sm" data-del="${e.id}">حذف</button></td></tr>`).join("")+"</tbody>"}
+ $("#empT").innerHTML=`<thead><tr><th>الكود</th><th class="l">الاسم</th><th>يظهر في البيان</th><th></th></tr></thead><tbody>`+
+ S.employees.map(e=>`<tr data-id="${e.id}"><td><input data-k="code" value="${esc(e.code)}" style="max-width:110px"></td><td><input data-k="name" value="${esc(e.name)}"></td><td><input type="checkbox" data-k="active" ${e.active?"checked":""} style="width:auto;min-width:0"></td><td><button class="btn danger sm" data-del="${e.id}">حذف</button></td></tr>`).join("")+"</tbody>"}
 $("#empT").addEventListener("input",ev=>{const i=ev.target,tr=i.closest("tr");if(!tr||!i.dataset.k)return;const e=S.employees.find(x=>x.id==tr.dataset.id);e[i.dataset.k]=i.type==="checkbox"?i.checked:i.value;save()});
 $("#empT").addEventListener("click",ev=>{const b=ev.target.closest("[data-del]");if(!b)return;const e=S.employees.find(x=>x.id==b.dataset.del);
  if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="تأكيد الحذف";setTimeout(()=>{b.dataset.arm="";b.textContent="حذف"},3000);return}
@@ -399,22 +389,20 @@ function exportRows(){return S.employees.filter(e=>hasData(M().rows[e.id])||e.ac
 $("#xls").onclick=async()=>{
  const s=S.settings,list=exportRows(),title="بيان بالأجر الإضافي والمأموريات لموظفي الخدمات المعاونة (إدارة الشئون الإدارية) - شهر "+MONTHS[S.cur.m]+" "+S.cur.y;
  let X;try{X=await loadXLSX()}catch(e){X=null}
- if(!X){const q=v=>'"'+String(v).replace(/"/g,'""')+'"';const rows=[["الكود","الاسم","مأموريات نهاري","مأموريات ليلي","وجبات","ساعات نهاري","ساعات ليلي","مثل الأجر","نهاري مرجّح","ليلي مرجّح","إجمالي الساعات","× معامل","مأموريات ووجبات","الإضافي","الإجمالي","ملاحظات"]];
-  list.forEach(e=>{const r=R(e.id),c=calc(e,r);rows.push([e.code,e.name,c.md,c.mn,c.meals,c.hd,c.hn,c.eq,r2(c.wd),r2(c.wn),r2(c.tot),r2(c.eq2),r2(c.mm),r2(c.ot),r2(c.all),r.note||""])});
+ if(!X){const q=v=>'"'+String(v).replace(/"/g,'""')+'"';const rows=[["الكود","الاسم","مأموريات نهاري","مأموريات ليلي","وجبات","ساعات نهاري","ساعات ليلي","مثل الأجر","نهاري مرجّح","ليلي مرجّح","إجمالي الساعات","× معامل","ملاحظات"]];
+  list.forEach(e=>{const r=R(e.id),c=calc(e,r);rows.push([e.code,e.name,c.md,c.mn,c.meals,c.hd,c.hn,c.eq,r2(c.wd),r2(c.wn),r2(c.tot),r2(c.eq2),r.note||""])});
   download("overtime-"+mk()+".csv",new Blob(["﻿"+rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv;charset=utf-8"}));toast("تم تصدير CSV (مكتبة Excel تحتاج إنترنت)");return}
- const H=["الكود","الاسم","مأموريات نهاري","مأموريات ليلي","وجبات","ساعات نهاري","ساعات ليلي","مثل الأجر","نهاري ×"+s.dayF,"ليلي ×"+s.nightF,"إجمالي الساعات المرجّحة","× معامل","مأموريات ووجبات (ج)","الإضافي (ج)","الإجمالي (ج)","الراتب","ملاحظات"];
+ const H=["الكود","الاسم","مأموريات نهاري","مأموريات ليلي","وجبات","ساعات نهاري","ساعات ليلي","مثل الأجر","نهاري ×"+s.dayF,"ليلي ×"+s.nightF,"إجمالي الساعات المرجّحة","× معامل","ملاحظات"];
  const ws={};const set=(a,o)=>ws[a]=o;const col=i=>X.utils.encode_col(i);
  set("A1",{t:"s",v:title});H.forEach((h,i)=>set(col(i)+"2",{t:"s",v:h}));
- list.forEach((e,i)=>{const r=R(e.id),c=calc(e,r),n=i+3,sal=norm(e.salary);
+ list.forEach((e,i)=>{const r=R(e.id),c=calc(e,r),n=i+3;
   set("A"+n,e.code===""?{t:"s",v:""}:{t:isNaN(+e.code)?"s":"n",v:isNaN(+e.code)?String(e.code):+e.code});set("B"+n,{t:"s",v:e.name});
   [c.md,c.mn,c.meals,c.hd,c.hn,c.eq].forEach((v,j)=>set(col(2+j)+n,{t:"n",v}));
   set("I"+n,{t:"n",f:`F${n}*${s.dayF}`,v:c.wd});set("J"+n,{t:"n",f:`G${n}*${s.nightF}`,v:c.wn});set("K"+n,{t:"n",f:`I${n}+J${n}`,v:c.tot});set("L"+n,{t:"n",f:`H${n}*${s.equalF}`,v:c.eq2});
-  set("M"+n,{t:"n",f:`C${n}*${s.dayMission}+D${n}*${s.nightMission}+E${n}*${s.meal}`,v:c.mm});
-  set("N"+n,{t:"n",f:`IF(P${n}>0,K${n}*P${n}/${s.daysInMonth}/${s.hoursPerDay}+L${n}*P${n}/${s.daysInMonth},0)`,v:c.ot});
-  set("O"+n,{t:"n",f:`M${n}+N${n}`,v:c.all});set("P"+n,{t:"n",v:sal});set("Q"+n,{t:"s",v:r.note||""})});
+  set("M"+n,{t:"s",v:r.note||""})});
  const last=list.length+2,tr=last+1;set("A"+tr,{t:"s",v:"الإجمالي"});
- for(let i=2;i<=15;i++){const L=col(i);let sum=0;for(let n=3;n<=last;n++)sum+=(ws[L+n]&&ws[L+n].v)||0;set(L+tr,{t:"n",f:`SUM(${L}3:${L}${last})`,v:sum})}
- ws["!ref"]="A1:Q"+tr;ws["!merges"]=[{s:{r:0,c:0},e:{r:0,c:16}}];ws["!cols"]=[{wch:8},{wch:22},...Array(14).fill({wch:13}),{wch:24}];
+ for(let i=2;i<=11;i++){const L=col(i);let sum=0;for(let n=3;n<=last;n++)sum+=(ws[L+n]&&ws[L+n].v)||0;set(L+tr,{t:"n",f:`SUM(${L}3:${L}${last})`,v:sum})}
+ ws["!ref"]="A1:M"+tr;ws["!merges"]=[{s:{r:0,c:0},e:{r:0,c:12}}];ws["!cols"]=[{wch:8},{wch:22},...Array(10).fill({wch:13}),{wch:24}];
  const wb=X.utils.book_new();wb.Workbook={Views:[{RTL:true}]};X.utils.book_append_sheet(wb,ws,MONTHS[S.cur.m]+" "+S.cur.y);
  X.writeFile(wb,"overtime-"+mk()+".xlsx");toast("تم تصدير ملف Excel بالمعادلات")};
 $("#prt").onclick=()=>{const s=S.settings,t=totalsOf(mk()),list=S.employees.filter(e=>hasData(M().rows[e.id]));
@@ -428,7 +416,7 @@ $("#prt").onclick=()=>{const s=S.settings,t=totalsOf(mk()),list=S.employees.filt
 
 /* ---------- import ---------- */
 let IM=null;const colL=i=>String.fromCharCode(65+i);
-$("#imp").onclick=()=>{if(M().locked){toast("الشهر معتمد");return}$("#impf").click()};
+$("#imp").onclick=()=>$("#impf").click();
 $("#impf").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;let X;try{X=await loadXLSX()}catch(x){toast("استيراد Excel يحتاج اتصال إنترنت لتحميل المكتبة");return}
  const rd=new FileReader();rd.onload=()=>{try{const wb=X.read(rd.result,{type:"array"});IM={X,wb};
   $("#iSheet").innerHTML=wb.SheetNames.map((n,i)=>`<option value="${i}">${esc(n)}</option>`).join("");impSheet();$("#dlgImp").showModal()}catch(x){toast("تعذر قراءة الملف")}};rd.readAsArrayBuffer(f)};
