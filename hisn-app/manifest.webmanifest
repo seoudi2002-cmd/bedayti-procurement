@@ -1,0 +1,25 @@
+{
+  "name": "حصن السعودي",
+  "short_name": "الحصن",
+  "description": "مدير الثروة والمصروفات الشخصي — البيانات على جهازك فقط",
+  "lang": "ar",
+  "dir": "rtl",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#04060E",
+  "theme_color": "#04060E",
+  "categories": ["finance"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ],
+  "shortcuts": [
+    {"name": "مصروف جديد", "short_name": "مصروف", "url": "./?add=e", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "دخل جديد", "short_name": "دخل", "url": "./?add=i", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]}
+  ]
+}

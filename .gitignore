@@ -21,3 +21,7 @@ uploads/
 deploy/.env
 deploy/.env.production
 deploy/backups/
+
+# hisn-app: personal finance data never goes into git (backups/exports stay on the phone)
+hisn-app/**/*backup*.json
+hisn-app/**/*seed*.json

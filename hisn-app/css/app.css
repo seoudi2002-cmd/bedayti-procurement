@@ -1,0 +1,180 @@
+/* App shell: views, bottom navigation, sheets and the money-manager components.
+   Same tokens as base.css (gold on lapis night). */
+:root{--nav-h:64px;--safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px)}
+html{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
+body{padding-bottom:calc(var(--nav-h) + var(--safe-b) + 28px);padding-top:var(--safe-t)}
+button{-webkit-user-select:none;user-select:none}
+input,select,textarea{font-size:16px} /* iOS: no zoom on focus */
+
+/* header: compact on phones */
+.cmd{top:0}
+.iconbtn{display:inline-flex;align-items:center;gap:6px}
+@media (max-width:640px){
+  .cmd{position:sticky;top:0;padding-top:calc(8px + var(--safe-t));margin-top:calc(-1*var(--safe-t))}
+  .cmd .wrap{gap:6px 10px}
+  .brand svg{width:28px;height:28px}.brand b{font-size:18px}.brand small{display:none}
+  .dates{order:3;width:100%;font-size:11.5px}.dates .clock{display:none}
+  .status{margin-inline-start:auto;gap:6px}
+  #syncChip{display:none}
+  .iconbtn span{display:none}.iconbtn{padding:6px 9px}
+  body:not([data-view="wealth"]) #btnPrices{display:none}
+}
+
+/* views */
+.view{display:none;padding-top:14px}
+.view.on{display:block;animation:vin .22s ease-out}
+@keyframes vin{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+.view > .panel,.view > .alerts,.view > .daily{margin-top:14px}
+#v-wealth > .hero{margin-top:6px}
+
+/* bottom nav */
+.bnav{position:fixed;inset-inline:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);
+  height:calc(var(--nav-h) + var(--safe-b));padding:0 max(6px,env(safe-area-inset-right,0px)) var(--safe-b) max(6px,env(safe-area-inset-left,0px));
+  background:linear-gradient(180deg,rgba(8,13,27,.92),rgba(4,6,14,.98));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line2)}
+.bnav button{background:none;border:none;color:var(--faint);display:grid;place-items:center;align-content:center;gap:2px;cursor:pointer;font-size:11px;font-family:var(--f-body);position:relative}
+.bnav svg{width:23px;height:23px}
+.bnav button[aria-current="page"]{color:var(--gold-hi)}
+.bnav button[aria-current="page"]::before{content:"";position:absolute;top:-1px;inset-inline:28%;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+@media (min-width:900px){.bnav{inset-inline:calc(50% - 300px);border:1px solid var(--line2);border-bottom:none;border-radius:16px 16px 0 0}}
+
+.fab{position:fixed;z-index:41;left:max(18px,env(safe-area-inset-left,0px));bottom:calc(var(--nav-h) + var(--safe-b) + 16px);width:58px;height:58px;border-radius:50%;
+  border:1px solid #EDD08A;background:linear-gradient(180deg,#EDD08A,#B98F3B);color:#1B1405;display:grid;place-items:center;cursor:pointer;
+  box-shadow:0 10px 28px -6px rgba(201,162,78,.55),0 0 0 6px rgba(4,6,14,.6)}
+.fab svg{width:28px;height:28px}
+.fab:active{transform:scale(.95)}
+body[data-view="wealth"] .fab{display:none}
+@media (min-width:900px){.fab{left:calc(50% - 360px)}}
+
+.toast{bottom:calc(var(--nav-h) + var(--safe-b) + 86px);max-width:calc(100% - 32px);text-align:center;white-space:normal}
+
+/* net-worth card on home */
+.nwcard{position:relative;margin-top:4px;border-radius:18px;padding:20px 18px 16px;text-align:center;cursor:pointer;overflow:hidden;
+  background:radial-gradient(140% 120% at 50% 0%,#16245A 0%,#0B1330 45%,#070B1A 100%);border:1px solid var(--line2);box-shadow:inset 0 1px 0 rgba(235,208,140,.1)}
+.nwcard::after{content:"";position:absolute;inset:auto -30% -60% -30%;height:120%;background:radial-gradient(50% 50% at 50% 50%,rgba(98,197,151,.10),transparent 70%);pointer-events:none}
+.nwv{font-family:var(--f-num);font-weight:600;font-size:clamp(42px,12vw,64px);line-height:1.05;margin:8px 0 2px;direction:ltr;
+  background:linear-gradient(180deg,#FBF0CF 0%,#EBD08C 45%,#B98F3B 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.nwv small{font-family:var(--f-mono);font-size:.22em;letter-spacing:3px;-webkit-text-fill-color:var(--gold);margin-inline-start:6px;vertical-align:middle}
+.nwpills{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:10px}
+.nwgo{margin-top:10px;font-size:12px;color:var(--gold)}
+.daily{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;justify-content:center;text-align:center;padding:4px 8px}
+.daily .dn{font-family:var(--f-ruqaa);font-size:24px;color:var(--gold-pale)}
+
+/* month card / trio */
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
+.trio .k{font-size:12px;color:var(--mute)}
+.trio .v{font-family:var(--f-num);font-weight:600;font-size:clamp(20px,6vw,28px);line-height:1.2;direction:ltr}
+.bline{margin-top:12px;display:grid;gap:5px}
+.pbar{position:relative;height:8px;border-radius:5px;background:rgba(255,255,255,.06);overflow:visible;margin:3px 0}
+.pbar > i{position:absolute;inset-block:0;right:0;border-radius:5px;background:var(--ok);transition:width .4s}
+.pbar.near > i{background:var(--amber)} .pbar.over > i{background:var(--red)}
+.pbar > b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.6;border-radius:1px}
+.warnc{color:var(--amber)}
+
+/* lists */
+.list{display:grid}
+.list.panel{padding:4px 12px}
+.row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 2px;border:none;border-bottom:1px solid var(--rule);background:none;width:100%;text-align:right;color:inherit;font:inherit}
+.list .row:last-child{border-bottom:none}
+button.row{cursor:pointer}
+button.row:active{background:rgba(201,162,78,.05)}
+.row .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:20px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.row .mid{display:grid;gap:1px;min-width:0}
+.row .mid b{font-weight:500;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .mid .small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .amt{font-size:14.5px;white-space:nowrap}
+.row .rcol{display:grid;justify-items:end;gap:4px}
+.row .rowacts{flex-wrap:wrap;justify-content:flex-end;gap:4px}
+.brow .mid .pbar{margin:4px 0}
+.dayh{display:flex;justify-content:space-between;align-items:center;margin:16px 4px 6px;font-size:12.5px;color:var(--mute)}
+
+/* accounts */
+.accts{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.accts::-webkit-scrollbar{display:none}
+.acct{flex:none;scroll-snap-align:start;min-width:132px;display:grid;gap:2px;text-align:right;padding:12px 14px;border-radius:14px;border:1px solid var(--line2);background:linear-gradient(180deg,rgba(16,24,58,.7),rgba(11,17,36,.9));cursor:pointer;color:inherit;font:inherit}
+.acct .ai{font-size:20px}.acct .an{font-size:12.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.acct .av{font-size:17px;color:var(--gold-hi)}
+
+/* month nav + filters */
+.mnav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.mnav b{font-family:var(--f-kufi);font-weight:500;font-size:18px;color:var(--gold-hi)}
+.mnav .btn{min-width:42px;font-size:18px;line-height:1}
+.filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.filters input{grid-column:1/-1}
+.filters select,.filters input{padding:8px 10px;font-size:14px}
+.chipbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* goals */
+.goals{display:grid;gap:12px}
+.goal{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;align-items:center;border:1px solid var(--rule);border-radius:12px;padding:10px 12px;background:rgba(4,6,14,.3)}
+.goal .mid{display:grid;gap:2px}
+.goal .rowacts{margin-top:6px;flex-wrap:wrap;gap:4px}
+.gring{width:72px;height:72px}
+.gring text{font-family:var(--f-num)!important;font-weight:600}
+
+/* sheets (bottom sheet on phones) */
+.modal .grab{display:none}
+@media (max-width:640px){
+  .scrim{place-items:end stretch;padding:0}
+  .modal{width:100%;max-height:92vh;border-radius:20px 20px 0 0;border-bottom:none;padding:10px 16px calc(16px + var(--safe-b));animation:sheet .22s ease-out}
+  .modal .grab{display:block;width:44px;height:5px;border-radius:3px;background:var(--line2);margin:0 auto 12px}
+  .mfoot .btn{flex:1;min-height:44px}
+  .mfoot #merr{flex-basis:100%}
+}
+@keyframes sheet{from{transform:translateY(40px);opacity:.5}to{transform:none;opacity:1}}
+.seg3{display:grid;grid-template-columns:repeat(3,1fr);width:100%}
+.seg3 button{padding:9px 0;font-size:14px}
+.amtbox{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:14px 0 4px}
+.amtbox input{width:100%;max-width:260px;background:none!important;border:none!important;border-bottom:1px solid var(--line2)!important;border-radius:0!important;
+  font-family:var(--f-num);font-weight:600;font-size:46px;text-align:center;direction:ltr;padding:2px 4px!important;color:var(--ink)}
+.amtbox input:focus{outline:none;border-bottom-color:var(--gold)!important}
+.amtbox span{font-family:var(--f-mono);color:var(--gold-dim);font-size:13px}
+.t-e .amtbox input{color:#F0A39D}.t-i .amtbox input{color:#8FDDB4}.t-x .amtbox input{color:#A9BDF0}
+.calcrow{display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:10px;min-height:34px}
+.calcrow button{width:38px;height:32px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--mute);font-size:16px;cursor:pointer}
+.calcrow span{min-width:70px}
+.catgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:12px;max-height:212px;overflow:auto;padding:2px}
+.catgrid button{display:grid;justify-items:center;gap:2px;padding:8px 2px 6px;border-radius:12px;border:1px solid var(--rule);background:rgba(4,6,14,.4);cursor:pointer;color:var(--mute);font:inherit;min-width:0}
+.catgrid button span{font-size:21px;line-height:1.1}
+.catgrid button small{font-size:10.5px;line-height:1.25;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.catgrid button.on{border-color:var(--cc,var(--gold));background:color-mix(in srgb,var(--cc,#C9A24E) 18%,transparent);color:var(--ink);box-shadow:0 0 0 1px var(--cc,var(--gold)) inset}
+.catgrid .addc{border-style:dashed}
+.txs .fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+.txs .fields label.full{grid-column:1/-1}
+.menu section{border-top:1px solid var(--rule);padding:12px 0}
+.menu section:first-of-type{border-top:none;padding-top:0}
+.menu h4{margin:0 0 4px;font-family:var(--f-kufi);font-weight:500;color:var(--gold-hi);font-size:15px}
+.menu p{margin:0 0 8px}
+.mrow{display:flex;gap:8px;flex-wrap:wrap}
+
+/* lock screen */
+.lock{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#14204A,#04060E 70%);padding:24px}
+.lock[hidden]{display:none}
+html.locked body > :not(#lock):not(#modalRoot){visibility:hidden}
+.lockin{display:grid;justify-items:center;gap:12px;text-align:center;max-width:320px}
+.lockin b{font-family:var(--f-kufi);font-size:22px;color:var(--gold-hi)}
+.pdots{display:flex;gap:12px;margin:6px 0}
+.pdots i{width:12px;height:12px;border-radius:50%;border:1px solid var(--gold);display:block}
+.pdots i.on{background:var(--gold)}
+.pdots.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.keypad{display:grid;grid-template-columns:repeat(3,72px);gap:12px;margin-top:6px}
+.keypad button{height:62px;border-radius:50%;border:1px solid var(--line2);background:rgba(255,255,255,.03);color:var(--ink);font-family:var(--f-num);font-size:26px;cursor:pointer}
+.keypad button:active{background:rgba(201,162,78,.15)}
+
+/* offline hint */
+body.offline .cmd::after{content:"أوفلاين · كل حاجة شغالة، والأسعار هتتحدث لما النت يرجع";display:block;text-align:center;font-size:11.5px;color:var(--amber);padding-top:4px}
+
+/* phone tweaks for the original dashboard sections */
+@media (max-width:640px){
+  .pstrip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pbox .v{font-size:22px}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;margin-top:18px}
+  .tab{padding:8px 12px 12px}
+  .panel{padding:14px 14px}
+  .ph h3{font-size:16.5px}
+  .radar{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fund-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filters select:last-child{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:reduce){.view.on,.modal{animation:none}}

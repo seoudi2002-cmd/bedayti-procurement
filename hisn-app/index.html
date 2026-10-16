@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#04060E">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="الحصن">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="مدير الثروة والمصروفات الشخصي: الذهب، الشهادات، الصناديق، الحسابات، الميزانيات والزكاة. البيانات على جهازك فقط.">
+<title>حصن السعودي</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Aref+Ruqaa:wght@400;700&family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&family=Reem+Kufi:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body data-view="home">
+<div id="lock" class="lock" hidden></div>
+<header class="cmd">
+  <div class="wrap">
+    <div class="brand">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6E7BE"/><stop offset="1" stop-color="#B98F3B"/></linearGradient></defs><g fill="none" stroke="url(#bg1)" stroke-width="1.5"><rect x="9" y="9" width="22" height="22"/><rect x="9" y="9" width="22" height="22" transform="rotate(45 20 20)"/><circle cx="20" cy="20" r="6.5"/></g><circle cx="20" cy="20" r="3" fill="#2F8F63"/></svg>
+      <div><b>حصن السعودي</b><small>AL-HUSSAINI · AL-SHARQAWI</small></div>
+    </div>
+    <div class="dates" id="dates"></div>
+    <div class="spacer"></div>
+    <div class="status">
+      <span class="chip" id="syncChip"><i></i><span>على جهازك</span></span>
+      <span class="chip" id="priceChip"><i></i><span>الأسعار</span></span>
+      <button class="btn gold sm" id="btnPrices" type="button">تحديث سعر الذهب</button>
+      <button class="btn sm iconbtn" id="btnSettings" type="button" aria-label="الإعدادات"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/></g></svg><span>الإعدادات</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="view on" id="v-home" aria-label="الرئيسية"></section>
+  <section class="view" id="v-tx" aria-label="المعاملات"></section>
+  <section class="view" id="v-reports" aria-label="التقارير"></section>
+  <section class="view" id="v-budget" aria-label="الميزانية"></section>
+  <section class="view" id="v-wealth" aria-label="الثروة">
+  <section class="hero" aria-label="لوحة القيادة">
+    <canvas id="stars" aria-hidden="true"></canvas>
+    <div class="aurora" aria-hidden="true"></div>
+    <div class="hero-in">
+      <div class="mihrab">
+        <svg class="frame" viewBox="0 0 600 340" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EBD08C" stop-opacity=".85"/><stop offset=".7" stop-color="#C9A24E" stop-opacity=".25"/><stop offset="1" stop-color="#C9A24E" stop-opacity="0"/></linearGradient>
+          <linearGradient id="fill1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EBD08C" stop-opacity=".07"/><stop offset=".8" stop-color="#EBD08C" stop-opacity="0"/></linearGradient></defs>
+          <path d="M20 340V150C20 60 150 8 300 8S580 60 580 150V340" fill="url(#fill1)" stroke="url(#fg)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+          <path d="M34 340V154C34 72 156 22 300 22S566 72 566 154V340" fill="none" stroke="url(#fg)" stroke-width="1" stroke-dasharray="2 5" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <div class="eyebrow">NET WORTH · صافي الثروة</div>
+        <div class="nw-label">قيمة كل ما تملك (الشهادة بقيمتها عند الاستحقاق)</div>
+        <div class="nw" id="nw">—</div>
+        <div id="nwDelta" class="small muted"></div>
+        <div class="nw-sub" id="nwSub"></div>
+        <div class="flag" id="flag" title="العلم المقلوب إشارة استغاثة: يظهر لما يكون فيه إنذار أحمر في المحفظة">
+          <svg viewBox="0 0 26 20" aria-hidden="true"><path d="M2 1v18" stroke="#9AA0B4" stroke-width="1.5"/><path d="M3 2h20l-4 5 4 5H3z" fill="#123A29" stroke="#2F8F63"/><g transform="translate(12 7)" fill="none" stroke="#EBD08C" stroke-width=".9"><rect x="-2.6" y="-2.6" width="5.2" height="5.2"/><rect x="-2.6" y="-2.6" width="5.2" height="5.2" transform="rotate(45)"/></g></svg>
+          <span id="flagTxt">العلم مرفوع</span>
+        </div>
+      </div>
+
+      <div class="medallion">
+        <div class="star">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <defs><radialGradient id="mg" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#16245A"/><stop offset="1" stop-color="#0A112B"/></radialGradient>
+            <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6E7BE"/><stop offset=".5" stop-color="#C9A24E"/><stop offset="1" stop-color="#7E6631"/></linearGradient></defs>
+            <g class="ring"><circle cx="100" cy="100" r="96" fill="none" stroke="#C9A24E" stroke-opacity=".35" stroke-dasharray="1 5.3"/></g>
+            <g transform="translate(100 100)">
+              <rect x="-62" y="-62" width="124" height="124" fill="url(#mg)" stroke="url(#sg)" stroke-width="1.6"/>
+              <rect x="-62" y="-62" width="124" height="124" fill="url(#mg)" stroke="url(#sg)" stroke-width="1.6" transform="rotate(45)"/>
+              <rect x="-54" y="-54" width="108" height="108" fill="none" stroke="#C9A24E" stroke-opacity=".35"/>
+              <rect x="-54" y="-54" width="108" height="108" fill="none" stroke="#C9A24E" stroke-opacity=".35" transform="rotate(45)"/>
+              <circle r="58" fill="none" stroke="#2F8F63" stroke-opacity=".45"/>
+            </g>
+          </svg>
+          <div class="nm" id="nm">الرزّاق</div>
+        </div>
+        <div class="lbl">اسم اليوم · NAME OF THE DAY</div>
+        <div class="mean" id="mean"></div>
+        <button class="btn sm ghost" type="button" data-names style="margin-top:6px">الأسماء الحسنى كاملة ◆</button>
+      </div>
+
+      <div class="gauge" id="gauge"></div>
+    </div>
+
+    <div class="hadith" id="hadith" aria-live="polite">
+      <button class="nav prev" type="button" data-h="-1" aria-label="السابق">›</button>
+      <div class="intro" id="hIntro">قال رسول الله ﷺ</div>
+      <div class="txt" id="hTxt"></div>
+      <div class="src" id="hSrc"></div>
+      <div class="dots" id="hDots"></div>
+      <button class="nav next" type="button" data-h="1" aria-label="التالي">‹</button>
+    </div>
+
+    <svg class="skyline" viewBox="0 0 1200 132" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="sil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#121C40"/><stop offset="1" stop-color="#04060E"/></linearGradient>
+        <linearGradient id="dome" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1F6B48"/><stop offset=".45" stop-color="#62C597"/><stop offset="1" stop-color="#174F36"/></linearGradient>
+        <radialGradient id="glow" cx=".5" cy=".7" r=".5"><stop offset="0" stop-color="#62C597" stop-opacity=".28"/><stop offset="1" stop-color="#62C597" stop-opacity="0"/></radialGradient>
+      </defs>
+      <!-- crescent -->
+      <g transform="translate(1110 26)"><circle r="13" fill="#EBD08C" opacity=".9"/><circle cx="6" cy="-4" r="12" fill="#0B1330"/></g>
+      <g fill="url(#sil)" stroke="#C9A24E" stroke-opacity=".38" stroke-width=".9">
+        <!-- Al-Azhar double-headed minaret -->
+        <path d="M150 132V70h34v62z"/><path d="M144 70h46v-5h-46z"/><path d="M152 65V40h30v25z"/><path d="M147 40h40v-4h-40z"/>
+        <path d="M154 36V20h10v16zM170 36V20h10v16z"/><path d="M153 20h12v-3h-12zM169 20h12v-3h-12z"/>
+        <path d="M155 17q4-13 8 0zM171 17q4-13 8 0z"/>
+        <!-- Qaytbay-style minaret -->
+        <path d="M232 132V78h22v54z"/><path d="M228 78h30v-4h-30z"/><path d="M235 74V52h16v22z"/><path d="M231 52h24v-3h-24z"/><path d="M237 49V36h12v13z"/><path d="M237 36q6-20 12 0z"/>
+        <!-- Fatimid keel arcade -->
+        <path d="M270 132v-34h300v34z"/>
+        <!-- Madinah minaret -->
+        <path d="M748 132V58h20v74z"/><path d="M744 58h28v-4h-28z"/><path d="M751 54V36h14v18z"/><path d="M747 36h22v-3h-22z"/><path d="M752 33q6-18 12 0z"/>
+        <path d="M640 132v-36h260v36z"/>
+        <!-- Andalusian block -->
+        <path d="M930 132v-42h270v42z"/><path d="M0 132v-28h120v28z"/>
+      </g>
+      <!-- keel arches -->
+      <g fill="#04060E" stroke="#C9A24E" stroke-opacity=".45" stroke-width=".9">
+        <path d="M284 132v-18q0-10 11-15 11 5 11 15v18M320 132v-18q0-10 11-15 11 5 11 15v18M356 132v-18q0-10 11-15 11 5 11 15v18M392 132v-18q0-10 11-15 11 5 11 15v18M428 132v-18q0-10 11-15 11 5 11 15v18M464 132v-18q0-10 11-15 11 5 11 15v18M500 132v-18q0-10 11-15 11 5 11 15v18M536 132v-18q0-10 11-15 11 5 11 15v18"/>
+      </g>
+      <!-- Cordoba horseshoe arches with voussoirs -->
+      <g fill="#04060E" stroke="#C9A24E" stroke-width="2.4" stroke-dasharray="4 3" stroke-opacity=".55">
+        <path d="M950 132v-16a13 13 0 1 1 26 0v16M992 132v-16a13 13 0 1 1 26 0v16M1034 132v-16a13 13 0 1 1 26 0v16M1076 132v-16a13 13 0 1 1 26 0v16M1118 132v-16a13 13 0 1 1 26 0v16M1160 132v-16a13 13 0 1 1 26 0v16"/>
+      </g>
+      <!-- Green Dome -->
+      <ellipse cx="820" cy="70" rx="80" ry="40" fill="url(#glow)"/>
+      <path d="M786 96V80h68v16z" fill="#0E1736" stroke="#2F8F63" stroke-opacity=".5"/>
+      <path d="M789 80c0-30 22-40 31-56 9 16 31 26 31 56z" fill="url(#dome)" stroke="#62C597" stroke-opacity=".6"/>
+      <path d="M804 80c1-20 9-34 16-50M836 80c-1-20-9-34-16-50M820 80V30" stroke="#0D3324" stroke-opacity=".55" fill="none"/>
+      <path d="M820 24v-9" stroke="#EBD08C"/><path d="M816 11a4 4 0 1 0 7 2.5 3 3 0 1 1-7-2.5z" fill="#EBD08C"/>
+      <path d="M0 131.5h1200" stroke="#C9A24E" stroke-opacity=".45"/>
+    </svg>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="المؤشرات"></section>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-t="ops" aria-selected="true"><span class="c">OP-00</span><span class="l">القيادة</span></button>
+    <button class="tab" role="tab" data-t="gold"><span class="c">OP-01</span><span class="l">الذهب العيني</span></button>
+    <button class="tab" role="tab" data-t="funds"><span class="c">OP-02</span><span class="l">ثاندر</span></button>
+    <button class="tab" role="tab" data-t="certs"><span class="c">OP-03</span><span class="l">الشهادات والنقد</span></button>
+    <button class="tab" role="tab" data-t="income"><span class="c">OP-04</span><span class="l">الدخل والادخار</span></button>
+    <button class="tab" role="tab" data-t="intel"><span class="c">OP-05</span><span class="l">المستشار</span></button>
+    <button class="tab" role="tab" data-t="zakat"><span class="c">OP-07</span><span class="l">الزكاة</span></button>
+    <button class="tab" role="tab" data-t="nasab"><span class="c">OP-08</span><span class="l">النسب الشريف</span></button>
+    <button class="tab" role="tab" data-t="future"><span class="c">OP-06</span><span class="l">خريطة النمو</span></button>
+  </nav>
+
+  <section class="sector on" id="s-ops"></section>
+  <section class="sector" id="s-gold"></section>
+  <section class="sector" id="s-funds"></section>
+  <section class="sector" id="s-certs"></section>
+  <section class="sector" id="s-income"></section>
+  <section class="sector" id="s-intel"></section>
+  <section class="sector" id="s-zakat"></section>
+  <section class="sector" id="s-future"></section>
+  <section class="sector" id="s-nasab"></section>
+
+  <p class="doctrine" id="doctrine"></p>
+</section>
+</main>
+<nav class="bnav" aria-label="الأقسام">
+  <button type="button" data-vw="home"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 12 4l8 7v8.5a.5.5 0 0 1-.5.5H15v-6H9v6H4.5a.5.5 0 0 1-.5-.5z"/></g></svg><span>الرئيسية</span></button>
+  <button type="button" data-vw="tx"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14M5 12h14M5 18h9"/></g></svg><span>المعاملات</span></button>
+  <button type="button" data-vw="reports"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></g></svg><span>التقارير</span></button>
+  <button type="button" data-vw="budget"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v8l6 4"/></g></svg><span>الميزانية</span></button>
+  <button type="button" data-vw="wealth"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10l3 5-8 11L4 9z"/><path d="M4 9h16M12 20 9 9l3-5 3 5z"/></g></svg><span>الثروة</span></button>
+</nav>
+<button type="button" class="fab" data-m="fab" aria-label="إضافة معاملة"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></g></svg></button>
+<div id="modalRoot"></div>
+<script src="js/version.js"></script>
+<script src="js/money.js"></script>
+<script src="js/app.js"></script>
+<script src="js/pwa.js"></script>
+</body></html>
