@@ -9,5 +9,7 @@ navigator.serviceWorker.register("sw.js").then(reg=>{
   reg.addEventListener("updatefound",()=>{const w=reg.installing;w&&w.addEventListener("statechange",()=>{if(w.state==="installed"&&navigator.serviceWorker.controller)ask(w)})});
   setInterval(()=>reg.update().catch(()=>{}),6*36e5);
 }).catch(()=>{});
-let reloaded=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!reloaded){reloaded=true;location.reload()}});
+/* reload only when an already-running copy is replaced by an update the user accepted; the very first install must never reload the page under them */
+const hadController=!!navigator.serviceWorker.controller;let reloaded=false;
+navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!hadController||reloaded)return;reloaded=true;location.reload()});
 })();

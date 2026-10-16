@@ -524,7 +524,7 @@ function openForm(kind,vals,onSave,title){const F=FORMS[kind];
    <div class="mfoot"><button class="btn gold" type="submit">حفظ</button><button class="btn ghost" type="button" id="mcancel">إلغاء</button><span class="small down" id="merr"></span></div></form></div>`;
   const close=()=>$("#modalRoot").innerHTML="";$("#mcancel").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
   $("#mform").onsubmit=e=>{e.preventDefault();const o={};F.f.forEach(([k,,t])=>{const v=$("#f-"+k).value;o[k]=t==="number"?(v===""?"":N(v)):v});const err=onSave(o);if(err){$("#merr").textContent=err;return}close()};
-  setTimeout(()=>$("#mform input,#mform select")?.focus(),30)}
+  setTimeout(()=>{const f=$("#mform");if(f&&!f.contains(document.activeElement))f.querySelector("input,select")?.focus()},30)}
 const LIST={gold:"gold",fund:"funds",cert:"certs",cash:"cash",debt:"debts"};
 function listFor(kind){if(kind==="extra")return S.income.extras;if(kind==="debt"&&!Array.isArray(S.debts))S.debts=[];return S[LIST[kind]]}
 function add(kind){const t=today();const defs={gold:{karat:"24",date:t},fund:{cls:"growth",navAt:t,custodian:"ثاندر"},cert:{share:1,payDay:1},cash:{type:"cash"},debt:{dir:"me"},extra:{date:t}}[kind];
