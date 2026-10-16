@@ -45,7 +45,7 @@ input,select,textarea{font-size:16px} /* iOS: no zoom on focus */
 body[data-view="wealth"] .fab{display:none}
 @media (min-width:900px){.fab{left:calc(50% - 360px)}}
 
-.toast{bottom:calc(var(--nav-h) + var(--safe-b) + 86px);max-width:calc(100% - 32px);text-align:center;white-space:normal}
+.toast{pointer-events:none;bottom:calc(var(--nav-h) + var(--safe-b) + 86px);max-width:calc(100% - 32px);text-align:center;white-space:normal}
 
 /* net-worth card on home */
 .nwcard{position:relative;margin-top:4px;border-radius:18px;padding:20px 18px 16px;text-align:center;cursor:pointer;overflow:hidden;

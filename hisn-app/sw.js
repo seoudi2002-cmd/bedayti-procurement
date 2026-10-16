@@ -1,6 +1,6 @@
 /* حصن السعودي service worker: the app shell is precached so the app opens offline;
    Google Fonts are cached on first use; price APIs always go to the network. */
-const VERSION="1.0.0";
+const VERSION="1.0.1";
 const SHELL="hisn-shell-"+VERSION, FONTS="hisn-fonts-v1";
 const ASSETS=["./","index.html","css/base.css","css/app.css","js/version.js","js/money.js","js/app.js","js/pwa.js",
   "manifest.webmanifest","icons/icon.svg","icons/icon-192.png","icons/icon-512.png","icons/maskable-512.png","icons/apple-touch-icon.png"];
